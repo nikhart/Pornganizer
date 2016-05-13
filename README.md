@@ -1,2 +1,0 @@
-# wordpress_pg
-Pornganizer
