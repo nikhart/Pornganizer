@@ -6,21 +6,6 @@
  Theme URI : http://www.wpexplorer.com
 
 /*------------------------------------------------------------------
-[Table of contents]
-
-# Visibility
-# Greater than tablets
-# Tablet & Small Desktop Widths 768px - 1280px
-# All Devices under 960px
-# Tablet Landscape
-# Tablet Portrait
-# Under 500px
-# Phone Portrait and Landscape
-# Phone Landscape
-# Visual Composer
-# Font Awesome Smoothing
-
-/*------------------------------------------------------------------
 [# Visibility]
 -------------------------------------------------------------------*/
 .hidden-desktop,
@@ -32,7 +17,7 @@
 /*------------------------------------------------------------------
 [# Greater than tablets]
 -------------------------------------------------------------------*/
-@media only screen and (min-width: 768px) { 
+@media only screen and (min-width: 768px) {
 	.content-area { max-width: 70% }
 	#sidebar { max-width: 26% }
 }
@@ -98,9 +83,6 @@
 	body.has-mobile-menu.wpex-mobile-toggle-menu-fixed_top { padding-top: 50px; } /* offset fixed mobile menu*/
 	body.has-mobile-menu.wpex-mobile-toggle-menu-fixed_top #site-header #site-logo { float: none; width: 100%; text-align: center; }
 	
-	/* Page Title */
-	body.has-breadcrumbs .page-header-title { max-width: 100%; width: 100%; }
-	
 	/* Visual Composer tabs */
 	.wpb_tour .wpb_tour_tabs_wrapper .wpb_tabs_nav,
 	.wpb_tour .wpb_tab,
@@ -154,7 +136,6 @@
 	.hidden-tablet-portrait { display: none !important }
 	
 	/*hide things*/
-	.single .meta-comments,
 	.blog-entry .wpex-social-share { display: none }
 	
 	/* main  */
@@ -217,7 +198,7 @@
 /*------------------------------------------------------------------
 [# Phone Portrait and Landscape]
 -------------------------------------------------------------------*/
-@media only screen and (max-width: 767px) { 
+@media only screen and (max-width: 767px) {
 	
 	/* visibility */
 	.hidden-desktop { display: block !important }
@@ -235,6 +216,10 @@
 	#wrap { width: 100% !important }
 	body.boxed-main-layout#wrap { width: auto !important }
 	/*body.vc_responsive .wpb_column { float: left; width: 100%; }*/
+
+	/* Simple columns */
+	.one-half, .one-third, .one-fourth, .one-fifth { width: 100%; float: none; }
+	div.wpcf7 .one-half { padding-left: 0; }
 	
 	/*.full-width-main-layout .center-row-inner { margin: 0 }*/
 	.col,
@@ -274,22 +259,22 @@
 	#top-bar { padding: 20px 0; }
 	#top-bar-content { float: none; text-align: center; }
 	#top-bar-social.top-bar-left,
-	#top-bar-social.top-bar-right { position: inherit; left: auto; right: auto; float: none; text-align: center; height: auto; line-height: 1.5em; }
+	#top-bar-social.top-bar-right { position: static; left: auto; right: auto; float: none; text-align: center; height: auto; line-height: 1.5em; margin-top: 0; }
 	body.boxed-main-layout #top-bar-social.top-bar-right { right: auto; }
-	.top-bar-right { padding-top: 20px; float: none; text-align: center; }
-	#top-bar-social { text-align: center }
-	#top-bar-social a { display: inline-block; float: none; margin-top: 7px; }
+	#top-bar-content { float: none; text-align: center; }
+	#top-bar-social { text-align: center; padding-top: 10px; }
+	#top-bar-social a { display: inline-block; float: none; }
 	#top-bar #lang_sel { text-align: left }
 	body.rtl #top-bar #lang_sel { text-align: right }
 	
 	/* page header */
-	.page-header.background-image-page-header .page-header-table { height: 150px; }
-	.page-header.background-image-page-header .page-header-title,
+	body.hasnt-header-overlay .page-header.background-image-page-header .page-header-table { height: 150px; }
+	body.hasnt-header-overlay .page-header.background-image-page-header .page-header-title,
 	.centered-page-header .page-header-title,
 	.centered-minimal-page-header .page-header-title { font-size: 1.846em }
 	.centered-page-header .page-subheading,
 	.centered-minimal-page-header .page-header-subheading,
-	.page-header.background-image-page-header .page-subheading { font-size: 1.077em }
+	body.hasnt-header-overlay .page-header.background-image-page-header .page-subheading { font-size: 1.077em }
 	
 	/* slider  */
 	.page-slider .ls-container .ls-nav-prev,
@@ -352,6 +337,9 @@
 	#footer-bottom-menu ul li { float: none; display: inline-block; height: auto; line-height: inherit; margin-top: 10px; }
 	#footer-bottom-menu ul li a,
 	#footer-bottom-menu ul li a:hover { text-decoration: underline }
+
+	/* position back to top closer to edge*/
+	#site-scroll-top { right: 20px; bottom: 20px; }
 	
 	/* vc tabs */
 	.wpb_tabs.tab-style-default .wpb_tabs_nav { height: auto }
@@ -366,6 +354,7 @@
 	.vcex-posttypes-flexslider .vcex-img-flexslider-caption { padding: 10px; text-align: center; background: rgba(0,0,0,0.7); }
 	.vcex-posttypes-flexslider .vcex-img-flexslider-caption .title { font-size: 14px }
 	.vcex-posttypes-flexslider .vcex-img-flexslider-caption .excerpt { display: none }
+	
 }
 
 /*------------------------------------------------------------------

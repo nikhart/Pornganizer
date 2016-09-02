@@ -45,6 +45,9 @@ ul.page-numbers li,
 /* Change left position to right position*/
 #top-bar-social.top-bar-left { left: auto; right: 0; }
 
+/* Slider fixes */
+.wpex-slider .sp-thumbnails-container.sp-bottom-thumbnails { direction:ltr }
+
 /* Topbar
 --------------------------------------------------------------*/
 
@@ -138,6 +141,10 @@ body.content-right-sidebar .modern-menu-widget a:after { right: auto; left: 10px
 .vcex-testimonials-filter li:last-child,
 .vcex-staff-filter li:last-child,
 .vcex-blog-filter li:last-child { margin-right: 5px }
+
+/*stretch row fix*/
+.wpex-vc-row-stretch_row { direction: ltr; }
+.wpex-vc-row-stretch_row .wpb_column { direction: rtl; }
 
 /* Staff*/
 .testimonial-caret { left: auto; right: 10px; }

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_Custom_CSS' ) ) {
+
 	class WPEX_Custom_CSS {
 
 		/**
@@ -22,12 +23,12 @@ if ( ! class_exists( 'WPEX_Custom_CSS' ) ) {
 		 * @since 1.6.0
 		 */
 		public function __construct() {
-			add_action( 'admin_menu', array( $this, 'add_page' ), 20 );
-			add_action( 'admin_bar_menu', array( $this, 'adminbar_menu' ), 999 );
-			add_action( 'admin_init', array( $this,'register_settings' ) );
-			add_action( 'admin_enqueue_scripts',array( $this,'scripts' ) );
-			add_action( 'admin_notices', array( $this, 'notices' ) );
-			add_action( 'wpex_head_css' , array( $this, 'output_css' ), 9999 );
+			add_action( 'admin_menu', array( 'WPEX_Custom_CSS', 'add_page' ), 20 );
+			add_action( 'admin_bar_menu', array( 'WPEX_Custom_CSS', 'adminbar_menu' ), 999 );
+			add_action( 'admin_init', array( 'WPEX_Custom_CSS','register_settings' ) );
+			add_action( 'admin_enqueue_scripts',array( 'WPEX_Custom_CSS','scripts' ) );
+			add_action( 'admin_notices', array( 'WPEX_Custom_CSS', 'notices' ) );
+			add_action( 'wpex_head_css' , array( 'WPEX_Custom_CSS', 'output_css' ), 9999 );
 		}
 
 		/**
@@ -35,14 +36,14 @@ if ( ! class_exists( 'WPEX_Custom_CSS' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function add_page() {
+		public static function add_page() {
 			add_submenu_page(
 				WPEX_THEME_PANEL_SLUG,
 				esc_html__( 'Custom CSS', 'total' ),
 				esc_html__( 'Custom CSS', 'total' ),
 				'administrator',
 				WPEX_THEME_PANEL_SLUG .'-custom-css',
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_Custom_CSS', 'create_admin_page' )
 			);
 		}
 
@@ -72,7 +73,7 @@ if ( ! class_exists( 'WPEX_Custom_CSS' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function scripts( $hook ) {
+		public static function scripts( $hook ) {
 			if ( WPEX_ADMIN_PANEL_HOOK_PREFIX . '-custom-css' == $hook ) {
 				wp_deregister_script( 'ace-editor' );
 				wp_enqueue_script(
@@ -89,8 +90,8 @@ if ( ! class_exists( 'WPEX_Custom_CSS' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function register_settings() {
-			register_setting( 'wpex_custom_css', 'wpex_custom_css', array( $this, 'sanitize' ) );
+		public static function register_settings() {
+			register_setting( 'wpex_custom_css', 'wpex_custom_css', array( 'WPEX_Custom_CSS', 'sanitize' ) );
 		}
 
 		/**
@@ -206,5 +207,7 @@ if ( ! class_exists( 'WPEX_Custom_CSS' ) ) {
 		}
 
 	}
+
+	new WPEX_Custom_CSS();
+
 }
-$wpex_custom_css = new WPEX_Custom_CSS();

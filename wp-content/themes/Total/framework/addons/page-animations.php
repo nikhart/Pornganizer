@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -16,7 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 
 	class WPEX_Page_Animations {
+
+		// Define vars
 		private $has_animations;
+		private $animate_in;
+		private $animate_out;
 
 		/**
 		 * Main constructor
@@ -43,23 +47,17 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 			// If page animations is enabled lets do things
 			if ( $this->has_animations ) {
 
-				// Load scripts
-				add_filter( 'wp_enqueue_scripts', array( $this, 'get_css' ) );
+				// Front-end stuff
+				if ( ! is_admin() ) {
+					add_filter( 'wp_enqueue_scripts', array( 'WPEX_Page_Animations', 'load_scripts' ) );
+					add_action( 'wpex_outer_wrap_before', array( 'WPEX_Page_Animations', 'open_wrapper' ) );
+					add_action( 'wpex_outer_wrap_after', array( 'WPEX_Page_Animations', 'close_wrapper' ) );
+					add_action( 'wpex_localize_array', array( $this, 'localize' ) );
+					add_action( 'wpex_head_css', array( 'WPEX_Page_Animations', 'loading_text' ) );
+				}
 
-				// Open wrapper
-				add_action( 'wpex_outer_wrap_before', array( $this, 'open_wrapper' ) );
-
-				// Close wrapper
-				add_action( 'wpex_outer_wrap_after', array( $this, 'close_wrapper' ) );
-			   
-				// Add to localize array
-				add_action( 'wpex_localize_array', array( $this, 'localize' ) );
-
-				// Add custom CSS for text
-				add_action( 'wpex_head_css', array( $this, 'loading_text' ) );
-
-				// Add strings to WPML
-				add_filter( 'wpex_register_theme_mod_strings', array( $this, 'register_strings' ) );
+				// Translations
+				add_filter( 'wpex_register_theme_mod_strings', array( 'WPEX_Page_Animations', 'register_strings' ) );
 
 			}
 
@@ -70,8 +68,10 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function get_css() {
+		public static function load_scripts() {
 			wp_enqueue_style( 'animsition', WPEX_CSS_DIR_URI .'lib/animsition.css' );
+			wp_enqueue_script( 'animsition', WPEX_JS_DIR_URI .'dynamic/animsition.js', array( 'jquery', 'wpex-core' ), '4.0.2', true );
+			wp_enqueue_script( 'wpex-animsition-init', WPEX_JS_DIR_URI .'dynamic/animsition-init.js', array( 'jquery', 'animsition' ), '1.0.0', true );
 		}
 
 		/**
@@ -82,29 +82,26 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		public function localize( $array ) {
 
 			// Set animation to true
-			$array['pageAnimation'] = true;
+			$array['animsition'] = array();
 
 			// Animate In
-			if ( $this->animate_in && array_key_exists( $this->animate_in, $this->in_transitions() ) ) {
-				$array['pageAnimationIn'] = $this->animate_in;
+			if ( $this->animate_in && array_key_exists( $this->animate_in, self::in_transitions() ) ) {
+				$array['animsition']['inClass'] = $this->animate_in;
 			}
 
 			// Animate out
-			if ( $this->animate_out && array_key_exists( $this->animate_out, $this->out_transitions() ) ) {
-				$array['pageAnimationOut'] = $this->animate_out;
+			if ( $this->animate_out && array_key_exists( $this->animate_out, self::out_transitions() ) ) {
+				$array['animsition']['outClass'] = $this->animate_out;
 			}
 
 			// Animation Speeds
 			$speed = wpex_get_mod( 'page_animation_speed' );
 			$speed = $speed ? $speed : 400;
-			$array['pageAnimationInDuration']  = $speed;
-			$array['pageAnimationOutDuration'] = $speed;
+			$array['animsition']['inDuration']  = $speed;
+			$array['animsition']['outDuration'] = $speed;
 
-			// Loading text
-			$text = wpex_get_mod( 'page_animation_loading' );
-			$text = $text ? $text : esc_html__( 'Loading...', 'total' );
-			$array['pageAnimationLoadingText'] = $text;
-
+			// Link Elements
+			$array['animsition']['linkElement'] = 'a[href]:not([target="_blank"]):not([href^="#"]):not([href*="javascript"]):not([href*=".jpg"]):not([href*=".jpeg"]):not([href*=".gif"]):not([href*=".png"]):not([href*=".mov"]):not([href*=".swf"]):not([href*=".mp4"]):not([href*=".flv"]):not([href*=".avi"]):not([href*=".mp3"]):not([href^="mailto:"]):not([href*="?"]):not([href*="#localscroll"]):not([class="wcmenucart"]):not([class="local-scroll"]):not([class="local-scroll-link"])';
 	
 			// Output opening div
 			return $array;
@@ -117,7 +114,7 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		 * @since 2.1.0
 		 *
 		 */
-		public function open_wrapper() {
+		public static function open_wrapper() {
 			echo '<div class="wpex-page-animation-wrap animsition clr">';
 		}
 
@@ -127,7 +124,7 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		 * @since 2.1.0
 		 *
 		 */
-		public function close_wrapper() {
+		public static function close_wrapper() {
 			echo '</div><!-- .animsition -->';
 		}
 
@@ -183,7 +180,7 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function register_strings( $strings ) {
+		public static function register_strings( $strings ) {
 			$strings['page_animation_loading'] = esc_html__( 'Loading...', 'total' );
 			return $strings;
 		}
@@ -195,7 +192,7 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function customizer_settings( $sections ) {
+		public static function customizer_settings( $sections ) {
 			$sections['wpex_page_animations'] = array(
 				'title' => esc_html__( 'Page Animations', 'total' ),
 				'panel' => 'wpex_general',
@@ -204,25 +201,25 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 					array(
 						'id' => 'page_animation_in',
 						'transport' => 'postMessage',
-						'control' => array (
+						'control' => array(
 							'label' => esc_html__( 'In Animation', 'total' ),
 							'type' => 'select',
-							'choices' => $this->in_transitions(),
+							'choices' => self::in_transitions(),
 						),
 					),
 					array(
 						'id' => 'page_animation_out',
 						'transport' => 'postMessage',
-						'control' => array (
+						'control' => array(
 							'label' => esc_html__( 'Out Animation', 'total' ),
 							'type' => 'select',
-							'choices' => $this->out_transitions(),
+							'choices' => self::out_transitions(),
 						),
 					),
 					array(
 						'id' => 'page_animation_loading',
 						'transport' => 'postMessage',
-						'control' => array (
+						'control' => array(
 							'label' => esc_html__( 'Loading Text', 'total' ),
 							'type' => 'text',
 						),
@@ -231,7 +228,7 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 						'id' => 'page_animation_speed',
 						'transport' => 'postMessage',
 						'default' => 400,
-						'control' => array (
+						'control' => array(
 							'label' => esc_html__( 'Speed', 'total' ),
 							'type' => 'number',
 						),
@@ -246,7 +243,7 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function loading_text( $css ) {
+		public static function loading_text( $css ) {
 			$text = wpex_get_mod( 'page_animation_loading' );
 			$text = $text ? $text : esc_html__( 'Loading...', 'total' );
 			$css .= '/*PAGE ANIMATIONS*/.animsition-loading{content:"'. $text .'";}';
@@ -254,5 +251,7 @@ if ( ! class_exists( 'WPEX_Page_Animations' ) ) {
 		}
 
 	}
+
+	new WPEX_Page_Animations();
+
 }
-$wpex_page_transitions = new WPEX_Page_Animations();

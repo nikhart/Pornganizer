@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -14,9 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_User_Actions' ) ) {
+
 	class WPEX_User_Actions {
-		private $options = array();
-		private $custom_actions;
 
 		/**
 		 * Start things up
@@ -25,14 +24,14 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 		 */
 		public function __construct() {
 
-			// Update vars
-			$this->custom_actions = get_option( 'wpex_custom_actions' );
-
 			// Actions
-			add_action( 'admin_menu', array( $this, 'add_page' ), 40 );
-			add_action( 'admin_init', array( $this,'register_settings' ) );
-			add_action( 'init', array( $this,'output' ) );
-			add_action( 'admin_print_styles-'. WPEX_ADMIN_PANEL_HOOK_PREFIX . '-user-actions', array( $this,'admin_css' ), 40 );
+			if ( is_admin() ) {
+				add_action( 'admin_menu', array( 'WPEX_User_Actions', 'add_page' ), 40 );
+				add_action( 'admin_init', array( 'WPEX_User_Actions','register_settings' ) );
+				add_action( 'admin_print_styles-'. WPEX_ADMIN_PANEL_HOOK_PREFIX . '-user-actions', array( 'WPEX_User_Actions','admin_css' ), 40 );
+			} else {
+				add_action( 'init', array( 'WPEX_User_Actions','output' ) );
+			}
 
 		}
 
@@ -41,7 +40,7 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 		 *
 		 * @since 3.0.0
 		 */
-		public function add_page() {
+		public static function add_page() {
 			$slug = WPEX_THEME_PANEL_SLUG;
 			add_submenu_page(
 				$slug,
@@ -49,7 +48,7 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 				esc_html__( 'Custom Actions', 'total' ),
 				'administrator',
 				$slug .'-user-actions',
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_User_Actions', 'create_admin_page' )
 			);
 		}
 
@@ -58,8 +57,8 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 		 *
 		 * @since 3.0.0
 		 */
-		public function register_settings() {
-			register_setting( 'wpex_custom_actions', 'wpex_custom_actions', array( $this, 'admin_sanitize' ) ); 
+		public static function register_settings() {
+			register_setting( 'wpex_custom_actions', 'wpex_custom_actions', array( 'WPEX_User_Actions', 'admin_sanitize' ) ); 
 		}
 
 		/**
@@ -95,7 +94,7 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 		 *
 		 * @since 3.0.0
 		 */
-		public function create_admin_page() { ?>
+		public static function create_admin_page() { ?>
 
 			<div class="wrap wpex-custom-actions-admin-wrap">
  
@@ -237,15 +236,13 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 		 *
 		 * @since 3.0.0
 		 */
-		public function output() {
+		public static function output() {
 
 			// Get actions
-			$actions = $this->custom_actions;
+			$actions = get_option( 'wpex_custom_actions' );
 
-			//print_r( $actions ); // for testing
-
-			// Front end only
-			if ( is_admin() || empty( $actions ) ) {
+			// Return if actions are empty
+			if ( empty( $actions ) ) {
 				return;
 			}
 
@@ -253,7 +250,7 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 			foreach ( $actions as $key => $val ) {
 				if ( ! empty( $val['action'] ) ) {
 					$priority = isset( $val['priority'] ) ? intval( $val['priority'] ) : 10;
-					add_action( $key, array( $this, 'execute_action' ), $priority );
+					add_action( $key, array( 'WPEX_User_Actions', 'execute_action' ), $priority );
 				}
 			}
 
@@ -264,11 +261,11 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 		 *
 		 * @since 3.0.0
 		 */
-		public function execute_action() {
+		public static function execute_action() {
 
 			// Set main vars
 			$hook    = current_filter();
-			$actions = $this->custom_actions;
+			$actions = get_option( 'wpex_custom_actions' );
 			$php     = ! empty( $actions[$hook]['php'] ) ?  true : false;
 			$output  = $actions[$hook]['action'];
 
@@ -277,7 +274,7 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 				if ( $php ) {
 					eval( "?>$output<?php " );
 				} else {
-					echo do_shortcode( $output, 'html' );
+					echo do_shortcode( $output );
 				}
 			}
 
@@ -304,5 +301,7 @@ if ( ! class_exists( 'WPEX_User_Actions' ) ) {
 		<?php }
 		
 	}
+
+	new WPEX_User_Actions();
+
 }
-$wpex_user_actions = new WPEX_User_Actions();

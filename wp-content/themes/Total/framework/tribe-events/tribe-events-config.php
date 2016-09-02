@@ -4,20 +4,13 @@
  *
  * @package Total WordPress Theme
  * @subpackage Configs
- * @version 3.3.5
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-/*-------------------------------------------------------------------------------*/
-/* -  Main Configuration Class
-/*-------------------------------------------------------------------------------*/
-
-// Global class var
-global $wpex_tribe_events_config;
 
 // Start Class
 if ( ! class_exists( 'WPEX_Tribe_Events_Config' ) ) {
@@ -32,19 +25,19 @@ if ( ! class_exists( 'WPEX_Tribe_Events_Config' ) ) {
 		public function __construct() {
 
 			// Actions
-			add_action( 'wp_enqueue_scripts', array( $this, 'load_custom_stylesheet' ), 10 );
+			add_action( 'wp_enqueue_scripts', array( 'WPEX_Tribe_Events_Config', 'load_custom_stylesheet' ), 10 );
 
 			// Filters
-			add_filter( 'wpex_post_layout_class', array( $this, 'layouts' ), 10 );
-			add_filter( 'wpex_main_metaboxes_post_types', array( $this, 'metaboxes' ), 10 );
-			add_filter( 'wpex_title', array( $this, 'page_header_title' ), 10 );
-			add_filter( 'widgets_init', array( $this, 'register_events_sidebar' ), 10 );
-			add_filter( 'wpex_get_sidebar', array( $this, 'display_events_sidebar' ), 10 );
-			add_filter( 'wpex_has_next_prev', array( $this, 'next_prev' ) );
-			add_filter( 'wpex_accent_backgrounds', array( $this, 'accent_backgrounds' ) );
+			add_filter( 'wpex_post_layout_class', array( 'WPEX_Tribe_Events_Config', 'layouts' ), 10 );
+			add_filter( 'wpex_main_metaboxes_post_types', array( 'WPEX_Tribe_Events_Config', 'metaboxes' ), 10 );
+			add_filter( 'wpex_title', array( 'WPEX_Tribe_Events_Config', 'page_header_title' ), 10 );
+			add_filter( 'widgets_init', array( 'WPEX_Tribe_Events_Config', 'register_events_sidebar' ), 10 );
+			add_filter( 'wpex_get_sidebar', array( 'WPEX_Tribe_Events_Config', 'display_events_sidebar' ), 10 );
+			add_filter( 'wpex_has_next_prev', array( 'WPEX_Tribe_Events_Config', 'next_prev' ) );
+			add_filter( 'wpex_accent_backgrounds', array( 'WPEX_Tribe_Events_Config', 'accent_backgrounds' ) );
 
 			// Add Customizer settings
-			add_filter( 'wpex_customizer_panels', array( $this, 'add_customizer_panel' ) );
+			add_filter( 'wpex_customizer_panels', array( 'WPEX_Tribe_Events_Config', 'add_customizer_panel' ) );
 
 		}
 
@@ -62,10 +55,10 @@ if ( ! class_exists( 'WPEX_Tribe_Events_Config' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function layouts( $class ) {
+		public static function layouts( $class ) {
 
 			// Return full-width for event posts and archives
-			if ( $this->is_tribe_events() ) {
+			if ( self::is_tribe_events() ) {
 				if ( is_singular( 'tribe_events' ) ) {
 					$class = wpex_get_mod( 'tribe_events_single_layout', 'full-width' );
 				} else {
@@ -83,8 +76,8 @@ if ( ! class_exists( 'WPEX_Tribe_Events_Config' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function metaboxes( $types ) {
-			$types[] = 'tribe_events';
+		public static function metaboxes( $types ) {
+			$types['tribe_events'] = 'tribe_events';
 			return $types;
 		}
 
@@ -93,7 +86,7 @@ if ( ! class_exists( 'WPEX_Tribe_Events_Config' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function page_header_title( $title ) {
+		public static function page_header_title( $title ) {
 
 			// Fixes issue with search results
 			if ( is_search() ) {
@@ -146,8 +139,8 @@ if ( ! class_exists( 'WPEX_Tribe_Events_Config' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function display_events_sidebar( $sidebar ) {
-			if ( $this->is_tribe_events() && is_active_sidebar( 'tribe_events_sidebar' ) ) {
+		public static function display_events_sidebar( $sidebar ) {
+			if ( self::is_tribe_events() && is_active_sidebar( 'tribe_events_sidebar' ) ) {
 				$sidebar = 'tribe_events_sidebar';
 			}
 			return $sidebar;
@@ -218,7 +211,7 @@ if ( ! class_exists( 'WPEX_Tribe_Events_Config' ) ) {
 
 	}
 }
-$wpex_tribe_events_config = new WPEX_Tribe_Events_Config();
+new WPEX_Tribe_Events_Config();
 
 /*-------------------------------------------------------------------------------*/
 /* -  Helper Functions

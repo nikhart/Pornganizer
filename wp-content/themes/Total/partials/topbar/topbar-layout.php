@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -19,6 +19,9 @@ if ( wpex_get_mod( 'top_bar_sticky' ) ) {
 }
 if ( $visibility = wpex_get_mod( 'top_bar_visibility' ) ) {
 	$classes .= ' '. $visibility;
+}
+if ( 'full-width' == wpex_global_obj( 'main_layout' ) && wpex_get_mod( 'top_bar_fullwidth' ) ) {
+	$classes .= ' wpex-full-width';
 } ?>
 
 <?php wpex_hook_topbar_before(); ?>

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -23,13 +23,7 @@ if ( ! class_exists( 'WPEX_Accent_Color' ) ) {
 		 * @since 2.0.0
 		 */
 		public function __construct() {
-		   
-			// Define a default accent color
-			$this->default_accent = '#3b86b0'; // Needs to be filterable via skin?
-
-			// Add custom CSS for the accent
-			add_filter( 'wpex_head_css', array( $this, 'generate' ), 1 );
-
+			add_filter( 'wpex_head_css', array( 'WPEX_Accent_Color', 'generate' ), 1 );
 		}
 
 		/**
@@ -117,13 +111,14 @@ if ( ! class_exists( 'WPEX_Accent_Color' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function generate( $output ) {
+		public static function generate( $output ) {
 
 			// Get custom accent
-			$custom_accent = wpex_get_mod( 'accent_color' );
+			$default_accent = '#3b86b0';
+			$custom_accent  = wpex_get_mod( 'accent_color' );
 
 			// Return if accent color is empty or equal to default
-			if ( ! $custom_accent || ( $this->default_accent == $custom_accent ) ) {
+			if ( ! $custom_accent || ( $default_accent == $custom_accent ) ) {
 				return $output;
 			}
 
@@ -131,9 +126,9 @@ if ( ! class_exists( 'WPEX_Accent_Color' ) ) {
 			$css = '';
 
 			// Get arrays
-			$texts       = $this->arrays( 'texts' );
-			$backgrounds = $this->arrays( 'backgrounds' );
-			$borders     = $this->arrays( 'borders' );
+			$texts       = self::arrays( 'texts' );
+			$backgrounds = self::arrays( 'backgrounds' );
+			$borders     = self::arrays( 'borders' );
 
 			// Texts
 			if ( ! empty( $texts ) ) {

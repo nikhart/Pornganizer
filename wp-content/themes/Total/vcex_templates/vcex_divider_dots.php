@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.5
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,8 +17,14 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_divider_dots', $atts ) );
 
 // Sanitize vars
 $count = $count ? $count : '3';
@@ -26,10 +32,10 @@ $count = $count ? $count : '3';
 // Wrap classes
 $wrap_classes = array( 'vcex-divider-dots', 'vcex-clr' );
 if ( $css_animation ) {
-	$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $el_class ) {
-	$wrap_classes[] = $this->getExtraClass( $el_class );
+	$wrap_classes[] = vcex_get_extra_class( $el_class );
 }
 if ( $align ) {
 	$wrap_classes[] = 'text'. $align;
@@ -44,8 +50,8 @@ $output = '';
 
 // Wrap style
 $wrap_style = vcex_inline_style( array(
-	'margin_top'    => $margin_top,
-	'margin_bottom' => $margin_bottom,
+	'padding_top'    => $margin_top,
+	'padding_bottom' => $margin_bottom,
 ) );
 
 // Span style

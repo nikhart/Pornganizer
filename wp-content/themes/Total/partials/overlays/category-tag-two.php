@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -21,22 +21,26 @@ if ( 'outside_link' != $position ) {
 $taxonomy = wpex_get_post_type_cat_tax();
 
 // Get terms
-if ( $taxonomy ) :
+if ( $taxonomy ) {
 
 	// Get terms
 	$terms = wp_get_post_terms( get_the_ID(), $taxonomy );
 
 	// Display if we have terms
-	if ( $terms ) : ?>
+	if ( $terms ) {
 
-		<div class="overlay-category-tag-two theme-overlay wpex-clr">
-			<?php
-			// Loop through terms
-			foreach ( $terms as $term ) : ?>
-				<a href="<?php echo esc_url( get_term_link( $term->term_id, $taxonomy ) ); ?>" title="<?php echo esc_attr( $term->name ); ?>"><?php echo $term->name; ?></a>
-			<?php endforeach; ?>
-		</div>
+		$output = '<div class="overlay-category-tag-two theme-overlay wpex-clr">';
 
-	<?php endif; ?>
+			foreach ( $terms as $term ) {
 
-<?php endif; ?>
+				$output .= '<a href="'. esc_url( get_term_link( $term->term_id, $taxonomy ) ) .'" title="'. esc_attr( $term->name ) .'">'. $term->name .'</a>';
+				
+			}
+
+		$output .= '</div>';
+
+		echo $output;
+
+	}
+
+}

@@ -5,6 +5,8 @@
  * @package Total WordPress Theme
  * @subpackage VC Functions
  * @version 3.2.2
+ *
+ * @todo Turn into single class
  */
 
 /**

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.5
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -41,9 +41,9 @@ $args = apply_filters( 'wpex_post_series_query_args', array(
 	'order'            => 'ASC',
 	'no_found_rows'    => true,
 	'tax_query'        => array( array(
-			'taxonomy' => 'post_series',
-			'field'    => 'id',
-			'terms'    => $terms[0]->term_id
+		'taxonomy' => 'post_series',
+		'field'    => 'id',
+		'terms'    => $terms[0]->term_id
 	) ),
 ) );
 
@@ -57,8 +57,7 @@ if ( $wpex_query->have_posts() ) : ?>
 		<div id="post-series-title" class="clr">
 			<?php echo wpex_get_mod( 'post_series_heading', esc_html__( 'Post Series:', 'total' ) ); ?> <a href="<?php echo esc_url( get_term_link( $terms[0], 'post_series' ) ); ?>" title="<?php echo esc_attr( $terms[0]->name ); ?>"><?php echo esc_html( $terms[0]->name ); ?></a>
 		</div><!-- #post-series-title -->
-		<ul id="post-series-list" class="clr">
-			<?php
+		<ul id="post-series-list" class="clr"><?php
 			// Define counter var
 			$count=0;
 			// Loop through posts
@@ -73,8 +72,8 @@ if ( $wpex_query->have_posts() ) : ?>
 				else : ?>
 					<li><span class="post-series-count"><?php echo intval( $count ); ?>.</span><a href="<?php wpex_permalink(); ?>" title="<?php wpex_esc_title(); ?>"><?php the_title(); ?></a></li>
 				<?php endif; ?>
-			<?php endforeach; ?>
-		</ul><!-- #post-series-list -->
+			<?php endforeach;
+		?></ul><!-- #post-series-list -->
 	</section><!-- #post-series -->
 
 <?php endif; ?>

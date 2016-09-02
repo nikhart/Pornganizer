@@ -4,6 +4,14 @@
 
 	$( document ).on( 'ready', function() {
 
+		// Date picker
+		var $date = $( '.wpex-date-meta' );
+		if ( $date.length && $.datepicker ) {
+			$date.datepicker( {
+				dateFormat: "<?php echo esc_html( $date_format ); ?>"
+			});
+		}
+
 		// Tabs
 		$( 'div#wpex-metabox ul.wp-tab-bar a').click( function() {
 			var lis = $( '#wpex-metabox ul.wp-tab-bar li' ),
@@ -45,47 +53,25 @@
 		// Reset
 		$( 'div#wpex-metabox div.wpex-mb-reset a.wpex-reset-btn' ).click( function() {
 			var $confirm = $( 'div.wpex-mb-reset div.wpex-reset-checkbox' ),
-				$txt     = confirm.is(':visible') ? "<?php esc_html_e(  'Reset Settings', 'total' ); ?>" : "<?php esc_html_e(  'Cancel Reset', 'total' ); ?>";
+				$txt     = $confirm.is(':visible') ? "<?php esc_html_e(  'Reset Settings', 'total' ); ?>" : "<?php esc_html_e(  'Cancel Reset', 'total' ); ?>";
 			$( this ).text( $txt );
 			$( 'div.wpex-mb-reset div.wpex-reset-checkbox input' ).attr('checked', false);
 			$confirm.toggle();
 		});
 
 		// Show hide title options
-		var titleField          = $( 'div#wpex-metabox select#wpex_disable_title' ),
-			titleMainSettings   = $( '#wpex_disable_header_margin_tr, #wpex_post_subheading_tr,#wpex_post_title_style_tr'),
+		var titleMainSettings   = $( '#wpex_disable_header_margin_tr, #wpex_post_subheading_tr,#wpex_post_title_style_tr'),
 			titleStyleField     = $( 'div#wpex-metabox select#wpex_post_title_style' ),
 			titleStyleFieldVal  = titleStyleField.val(),
 			pageTitleBgSettings = $( '#wpex_post_title_background_color_tr, #wpex_post_title_background_redux_tr,#wpex_post_title_height_tr,#wpex_post_title_background_overlay_tr,#wpex_post_title_background_overlay_opacity_tr'),
 			solidColorElements  = $( '#wpex_post_title_background_color_tr');
 
-		if ( titleField.val() === 'on' ) {
-			titleMainSettings.hide();
-			pageTitleBgSettings.hide();
-		} else {
-			titleMainSettings.show();
-		}
-
+		// Show hide title style settings
 		if ( titleStyleFieldVal === 'background-image' ) {
 			pageTitleBgSettings.show();
 		} else if ( titleStyleFieldVal === 'solid-color' ) {
 			solidColorElements.show();
 		}
-
-		titleField.change(function () {
-			if ( $(this).val() === 'on' ) {
-				titleMainSettings.hide();
-				pageTitleBgSettings.hide();
-			} else {
-				titleMainSettings.show();
-				var titleStyleFieldVal = titleStyleField.val();
-				if ( titleStyleFieldVal === 'background-image' ) {
-					pageTitleBgSettings.show();
-				} else if ( titleStyleFieldVal === 'solid-color' ) {
-					solidColorElements.show();
-				}
-			}
-		} );
 
 		titleStyleField.change(function () {
 			pageTitleBgSettings.hide();
@@ -99,7 +85,7 @@
 
 		// Show hide Overlay options
 		var overlayField = $( 'div#wpex-metabox select#wpex_overlay_header' ),
-			overlayFieldDependents = $( '#wpex_overlay_header_style_tr, #wpex_overlay_header_font_size_tr,#wpex_overlay_header_logo_tr,#wpex_overlay_header_logo_retina_tr,#wpex_overlay_header_logo_retina_height_tr');
+			overlayFieldDependents = $( '#wpex_overlay_header_style_tr, #wpex_overlay_header_font_size_tr,#wpex_overlay_header_logo_tr,#wpex_overlay_header_logo_retina_tr,#wpex_overlay_header_logo_retina_height_tr,#wpex_overlay_header_dropdown_style_tr');
 		if ( overlayField.val() === 'on' ) {
 			overlayFieldDependents.show();
 		} else {
@@ -116,4 +102,4 @@
 
 	} );
 
-} ) ( jQuery );	
+} ) ( jQuery );

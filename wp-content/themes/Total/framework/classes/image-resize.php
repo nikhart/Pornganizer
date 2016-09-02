@@ -4,7 +4,7 @@
  * 
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -16,17 +16,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists( 'WPEX_Image_Resize' ) ) {
 
 	class WPEX_Image_Resize {
-		private $retina_enabled;
-
-		/**
-		 * No initialization allowed
-		 * Constructor defines variables only
-		 *
-		 * @since 1.0.0
-		 */
-		public function __construct() {
-			$this->retina_enabled = apply_filters( 'wpex_image_resize_retina', wpex_global_obj( 'retina' ) );
-		}
 
 		/**
 		 * Run image resizing function
@@ -34,7 +23,6 @@ if ( ! class_exists( 'WPEX_Image_Resize' ) ) {
 		 * @since 1.0.0
 		 */
 		public function process( $args ) {
-
 
 			// Args must be an array
 			if ( ! is_array( $args ) ) {

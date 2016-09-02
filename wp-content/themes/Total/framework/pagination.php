@@ -4,16 +4,17 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 /**
  * Numbered Pagination
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 if ( ! function_exists( 'wpex_pagination' ) ) {
-	function wpex_pagination( $query = '' ) {
+
+	function wpex_pagination( $query = '', $echo = true ) {
 		
 		// Arrows with RTL support
 		$prev_arrow = is_rtl() ? 'fa fa-angle-right' : 'fa fa-angle-left';
@@ -52,32 +53,40 @@ if ( ! function_exists( 'wpex_pagination' ) ) {
 				$format = '&paged=%#%';
 			}
 
-			// Midsize
-			$mid_size = '3';
-
-			// Output pagination
-			echo paginate_links( array(
+			$args = apply_filters( 'wpex_pagination_args', array(
 				'base'      => str_replace( $big, '%#%', html_entity_decode( get_pagenum_link( $big ) ) ),
 				'format'    => $format,
 				'current'   => max( 1, $current_page ),
 				'total'     => $total,
-				'mid_size'  => $mid_size,
+				'mid_size'  => 3,
 				'type'      => 'list',
 				'prev_text' => '<span class="'. $prev_arrow .'"></span>',
 				'next_text' => '<span class="'. $next_arrow .'"></span>',
 			) );
+
+			$align = wpex_get_mod( 'pagination_align' );
+			$align = ( 'left' != $align ) ? ' wpex-'. $align : '';
+
+			// Output pagination
+			if ( $echo ) {
+				echo '<div class="wpex-pagination wpex-clr'. $align .'">'. paginate_links( $args ) .'</div>';
+			} else {
+				return '<div class="wpex-pagination wpex-clr'. $align .'">'. paginate_links( $args ) .'</div>';
+			}
+
 		}
 
 	}
+	
 }
 
 /**
  * Next/Prev Pagination
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 if ( ! function_exists( 'wpex_pagejump' ) ) {
-	function wpex_pagejump( $pages = '', $range = 4 ) {
+	function wpex_pagejump( $pages = '', $range = 4, $echo = true ) {
 		$output     = '';
 		$showitems  = ($range * 2)+1; 
 		global $paged;
@@ -91,38 +100,45 @@ if ( ! function_exists( 'wpex_pagejump' ) ) {
 			}
 		}
 		if ( 1 != $pages ) {
-		$output .= '<div class="page-jump clr">';
-			$output .= '<div class="alignleft newer-posts">';
-				$output .= get_previous_posts_link( '&larr; '. esc_html__( 'Newer Posts', 'total' ) );
+
+			$output .= '<div class="page-jump wpex-clr">';
+				$output .= '<div class="alignleft newer-posts">';
+					$output .= get_previous_posts_link( '&larr; '. esc_html__( 'Newer Posts', 'total' ) );
+				$output .= '</div>';
+				$output .= '<div class="alignright older-posts">';
+					$output .= get_next_posts_link( esc_html__( 'Older Posts', 'total' ) .' &rarr;' );
+				$output .= '</div>';
 			$output .= '</div>';
-			$output .= '<div class="alignright older-posts">';
-				$output .= get_next_posts_link( esc_html__( 'Older Posts', 'total' ) .' &rarr;' );
-			$output .= '</div>';
-		$output .= '</div>';
+
+			if ( $echo ) {
+				echo $output;
+			} else {
+				return $output;
+			}
+
 		}
-		echo $output;
 	}
 }
 
 /**
  * Infinite Scroll Pagination
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 if ( ! function_exists( 'wpex_infinite_scroll' ) ) {
 	function wpex_infinite_scroll( $type = 'standard' ) {
-		
-		// Load infinite scroll js for standard blog style
-		if ( $type == 'standard' ) {
-			wp_enqueue_script( 'wpex-infinitescroll', WPEX_JS_DIR_URI .'infinite-scroll/infinitescroll.js', array( 'jquery' ), 1.0, true );
-			wp_enqueue_script( 'wpex-infinitescroll-standard', WPEX_JS_DIR_URI .'infinite-scroll/infinitescroll-standard.js', array( 'jquery' ), 1.0, true );
-		}
-		
-		// Load infinite scroll js for grid
-		if ( $type == 'standard-grid' ) {
-			wp_enqueue_script( 'wpex-infinitescroll', WPEX_JS_DIR_URI .'infinite-scroll/infinitescroll.js', array( 'jquery' ), 1.0, true );
-			wp_enqueue_script( 'wpex-infinitescroll-grid', WPEX_JS_DIR_URI .'infinite-scroll/infinitescroll-standard-grid.js', array( 'jquery' ), 1.0, true );
-		}
+
+		// Make sure lightbox CSS is loaded to prevent bugs when items are loaded that must load this CSS
+		wpex_enqueue_ilightbox_skin();
+
+		// Load infinite scroll script
+		wp_enqueue_script(
+			'wpex-infinitescroll',
+			WPEX_JS_DIR_URI .'dynamic/infinitescroll.js',
+			array( 'jquery' ),
+			1.0,
+			true
+		);
 		
 		// Localize loading text
 		$is_params = array( 'msgText' => esc_html__( 'Loading...', 'total' ) );
@@ -149,7 +165,7 @@ if ( ! function_exists( 'wpex_infinite_scroll' ) ) {
  * Used to load the correct pagination function for blog archives
  * Execute the correct pagination function based on the theme settings
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 if ( ! function_exists( 'wpex_blog_pagination' ) ) {
 	function wpex_blog_pagination() {

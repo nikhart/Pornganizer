@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.4
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,13 +17,22 @@ if ( is_admin() ) {
     return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output var
+$output = '';
+
 // Deprecated Attributes
 if ( ! empty( $atts['term_slug'] ) && empty( $atts['include_categories']) ) {
 	$atts['include_categories'] = $atts['term_slug'];
 }
 
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_blog_grid', $atts );
 extract( $atts );
 
 // Define user-generated attributes
@@ -52,10 +61,9 @@ if ( $wpex_query->have_posts() ) :
 	$inline_js          = array( 'ilightbox' );
 	$is_isotope         = false;
 	$read_more_text     = $read_more_text ? $read_more_text : esc_html__( 'read more', 'total' );
-	$css_animation      = $css_animation ? $this->getCSSAnimation( $css_animation ) : '';
+	$css_animation      = vcex_get_css_animation( $css_animation );
 	$css_animation      = ( 'true' == $filter ) ? false : $css_animation;
-	$equal_heights_grid = ( 'true' == $equal_heights_grid ) ? true : false;
-	$equal_heights_grid = ( $equal_heights_grid && $columns > '1' ) ? true : false;
+	$equal_heights_grid = ( 'true' == $equal_heights_grid && $columns > '1' ) ? true : false;
 	$overlay_style      = $overlay_style ? $overlay_style : 'none';
 	$url_target         = vcex_html( 'target_attr', $url_target );
 	$title_tag          = apply_filters( 'vcex_grid_default_title_tag', $title_tag, $atts );
@@ -68,8 +76,7 @@ if ( $wpex_query->have_posts() ) :
 
 	// Enable Isotope?
 	if ( 'true' == $filter || 'masonry' == $grid_style ) {
-		$is_isotope         = true;
-		$equal_heights_grid = false;
+		$is_isotope = true;
 	}
 
 	// No need for masonry if not enough columns and filter is disabled
@@ -106,7 +113,7 @@ if ( $wpex_query->have_posts() ) :
 			// Check url for filter cat
 			$filter_url_param = vcex_grid_filter_url_param();
 			if ( isset( $_GET[$filter_url_param] ) ) {
-				$filter_active_category = $_GET[$filter_url_param];
+				$filter_active_category = esc_html( $_GET[$filter_url_param] );
 				if ( ! is_numeric( $filter_active_category ) ) {
 					$get_term = get_term_by( 'name', $filter_active_category, $filter_taxonomy );
 					if ( $get_term ) {
@@ -294,13 +301,12 @@ if ( $wpex_query->have_posts() ) :
 	// Convert arrays into strings
 	$wrap_classes  = implode( ' ', $wrap_classes );
 	$grid_classes  = implode( ' ', $grid_classes );
-	$grid_data     = $grid_data ? ' '. implode( ' ', $grid_data ) : ''; ?>
+	$grid_data     = $grid_data ? ' '. implode( ' ', $grid_data ) : '';
 
-	<div class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?>>
+	$output .='<div class="'. $wrap_classes .'"'. vcex_get_unique_id( $unique_id ) .'>';
 
-		<?php
 		// Display filter links
-		if ( $filter_taxonomy && ! empty( $filter_terms ) ) {
+		if ( $filter_taxonomy && ! empty( $filter_terms ) ) :
 
 			// Sanitize all text
 			$all_text = $all_text ? $all_text : esc_html__( 'All', 'total' );
@@ -311,31 +317,53 @@ if ( $wpex_query->have_posts() ) :
 			// Filter font size
 			$filter_style = vcex_inline_style( array(
 				'font_size' => $filter_font_size,
-			) ); ?>
+			) );
 
-			<ul class="vcex-portfolio-filter vcex-filter-links wpex-clr<?php if ( 'yes' == $center_filter ) echo ' center'; ?>"<?php echo $filter_style; ?>>
+			$filter_classes = 'vcex-blog-filter vcex-filter-links clr';
+			if ( 'yes' == $center_filter ) {
+				$filter_classes .= ' center';
+			}
 
-				<?php if ( 'true' == $filter_all_link ) { ?>
+			$output .= '<ul class="'. $filter_classes .'"'. $filter_style .'>';
+				
+				if ( 'true' == $filter_all_link ) {
 
-					<li <?php if ( ! $filter_has_active_cat ) echo 'class="active"'; ?>><a href="#" data-filter="*" class="<?php echo $filter_button_classes; ?>"><span><?php echo $all_text; ?></span></a></li>
+					$output .= '<li';
+						if ( ! $filter_has_active_cat ) {
+							$output .= ' class="active"';
+						}
+					$output .= '>';
 
-				<?php } ?>
+						$output .= '<a href="#" data-filter="*" class="'. $filter_button_classes .'"><span>'. $all_text .'</span></a>';
 
-				<?php
-				// Loop through terms to display filter links
-				foreach ( $filter_terms as $term ) : ?>
+					$output .= '</li>';
 
-					<li class="filter-cat-<?php echo $term->term_id; ?><?php if ( $filter_active_category == $term->term_id ) echo ' active'; ?>"><a href="#" data-filter=".cat-<?php echo $term->term_id; ?>" class="<?php echo $filter_button_classes; ?>"><?php echo $term->name; ?></a></li>
+				}
 
-				<?php endforeach; ?>
+				foreach ( $filter_terms as $term ) :
 
-			</ul><!-- .vcex-portfolio-filter -->
+					$output .= '<li class="filter-cat-'. $term->term_id;
+						if ( $filter_active_category == $term->term_id ) {
+							$output .= ' active';
+						}
+					$output .= '">';
 
-		<?php } ?>
+					$output .= '<a href="#" data-filter=".cat-'. $term->term_id .'" class="'. $filter_button_classes .'">';
+						$output .= $term->name;
+					$output .= '</a></li>';
 
-		<div class="<?php echo esc_attr( $grid_classes ); ?>"<?php echo $grid_data; ?>>
+				endforeach;
 
-			<?php
+				if ( $vcex_after_grid_filter = apply_filters( 'vcex_after_grid_filter', '', $atts ) ) { 
+					$output .= $vcex_after_grid_filter;
+				}
+
+			$output .= '</ul>';
+
+		endif; // End filter links check
+
+		$output .= '<div class="'. esc_attr( $grid_classes ) .'"'. $grid_data .'>';
+
 			// Define counter var to clear floats
 			$count = '';
 
@@ -345,22 +373,19 @@ if ( $wpex_query->have_posts() ) :
 				// Get post from query
 				$wpex_query->the_post();
 
-				// Create new post object.
-				$post = new stdClass();
-
-				// Get post data
-				$get_post = get_post();
-
 				// Post Data
-				$post->ID        = $get_post->ID;
-				$post->title     = $get_post->post_title;
-				$post->permalink = wpex_get_permalink( $post->ID );
-				$post->format    = get_post_format( $post->ID );
-				$post->excerpt   = '';
+				$atts['post_id']           = get_the_ID();
+				$atts['post_title']        = get_the_title();
+				$atts['post_esc_title']    = wpex_get_esc_title();
+				$atts['post_permalink']    = wpex_get_permalink( $atts['post_id'] );
+				$atts['post_format']       = get_post_format( $atts['post_id'] );
+				$atts['post_excerpt']      = '';
+				$atts['post_video']        = '';
+				$atts['post_video_oembed'] = '';
 
 				// Post Excerpt
 				if ( 'true' == $excerpt ) {
-					$post->excerpt = wpex_get_excerpt( array (
+					$atts['post_excerpt'] = wpex_get_excerpt( array (
 						'length' => intval( $excerpt_length ),
 					) );
 				}
@@ -369,14 +394,14 @@ if ( $wpex_query->have_posts() ) :
 				$count++;
 
 				// Get video
-				if ( 'video' == $post->format ) {
-					$post->video        = wpex_get_post_video( $post->ID );
-					$post->video_oembed = wpex_get_post_video_html( $post->video );
+				if ( 'video' == $atts['post_format'] ) {
+					$atts['post_video']        = wpex_get_post_video( $atts['post_id'] );
+					$atts['post_video_oembed'] = wpex_get_post_video_html( $atts['post_video'] );
 				}
 
 				// Does entry have details?
 				if ( 'true' == $title
-					|| ( 'true' == $excerpt && $post->excerpt )
+					|| ( 'true' == $excerpt && $atts['post_excerpt'] )
 					|| 'true' == $read_more
 				) {
 					$entry_has_details = true;
@@ -403,49 +428,49 @@ if ( $wpex_query->have_posts() ) :
 					$entry_classes[] = $css_animation;
 				}
 				if ( $filter_taxonomy ) {
-					if ( $post_terms = get_the_terms( $post, $filter_taxonomy ) ) {
+					if ( $post_terms = get_the_terms( $atts['post_id'], $filter_taxonomy ) ) {
 						foreach ( $post_terms as $post_term ) {
 							$entry_classes[] = 'cat-'. $post_term->term_id;
 						}
 					}
-				} ?>
+				}
 
-				<div <?php post_class( $entry_classes ); ?>>
+				// Begin entry output
+				$output .= '<div '. vcex_grid_get_post_class( $entry_classes, $atts['post_id'] ) .'>';
 
-					<div class="vcex-blog-entry-inner entry-inner wpex-clr<?php if ( $entry_css ) echo ' '. $entry_css; ?>">
+					$output .= '<div class="vcex-blog-entry-inner entry-inner wpex-clr';
+						if ( $entry_css ) {
+							$output .= ' '. $entry_css;
+						}
+					$output .= '">';
 
-						<?php
 						// If media is enabled
-						if ( 'true' == $entry_media ) : ?>
+						if ( 'true' == $entry_media ) :
 
-							<?php
 							// Display post video if defined and is video format
-							if ( 'true' == $featured_video && ! empty( $post->video ) && $post->video_oembed ) : ?>
+							if ( 'true' == $featured_video && ! empty( $atts['post_video'] ) && $atts['post_video_oembed'] ) :
 
-								<div class="vcex-blog-entry-media entry-media">
-									<?php echo $post->video_oembed; ?>
-								</div><!-- .vcex-blog-entry-media -->
+								$output .= '<div class="vcex-blog-entry-media entry-media">';
+									$output .= $atts['post_video_oembed'];
+								$output .= '</div>';
 
-							<?php
 							// Otherwise if post thumbnail is defined
-							elseif ( has_post_thumbnail( $post->ID ) ) : ?>
+							elseif ( has_post_thumbnail( $atts['post_id'] ) ) :
 
-								<div class="<?php echo esc_attr( $media_classes ); ?>">
+								$output .= '<div class="'. esc_attr( $media_classes ) .'">';
 
-									<?php
 									// Open link tag if thumblink does not equal nowhere
-									if ( 'nowhere' != $thumb_link ) : ?>
+									if ( 'nowhere' != $thumb_link ) :
 
-										<?php
 										// Lightbox Links
 										if ( $thumb_link == 'lightbox' ) :
 
 											// Video lightbox link
-											if ( 'video' == $post->format ) :
+											if ( 'video' == $atts['post_format'] ) :
 
 												// Try and convert video URL into embed URL
-												$embed_url = wpex_sanitize_data( $post->video, 'embed_url' );
-												$atts['lightbox_link'] = $embed_url ? $embed_url : $post->video;
+												$embed_url = wpex_sanitize_data( $atts['post_video'], 'embed_url' );
+												$atts['lightbox_link'] = $embed_url ? $embed_url : $atts['post_video'];
 
 												// Data options
 												$data_options =  'width:1920,height:1080';
@@ -453,174 +478,174 @@ if ( $wpex_query->have_posts() ) :
 												// Add smart recognition if we can't generate an embed_url
 												if ( ! $embed_url ) {
 													$data_options .=',smartRecognition:true';
-												} ?>
+												}
 
-												<a href="<?php echo $atts['lightbox_link']; ?>" title="<?php wpex_esc_title(); ?>" class="wpex-lightbox" data-type="iframe" data-options="<?php echo $data_options; ?>">
+												$output .= '<a href="'. $atts["lightbox_link"] .'" title="'. $atts['post_esc_title'] .'" class="wpex-lightbox" data-type="iframe" data-options="'. $data_options .'">';
 
-											<?php
 											// Image lightbox link
 											else :
 
 												// Add lightbox attributes
-												$atts['lightbox_link'] = wpex_get_lightbox_image(); ?>
+												$atts['lightbox_link'] = wpex_get_lightbox_image();
 
-												<a href="<?php echo $atts['lightbox_link']; ?>" title="<?php wpex_esc_title(); ?>" class="wpex-lightbox">
+												$output .= '<a href="'. $atts["lightbox_link"] .'" title="'. $atts['post_esc_title'] .'" class="wpex-lightbox">';
 
-											<?php endif; ?>
+											endif;
 
-										<?php else : ?>
+										else :
 
-											 <a href="<?php echo $post->permalink; ?>" title="<?php wpex_esc_title(); ?>"<?php echo $url_target; ?>>
+											 $output .= '<a href="'. $atts['post_permalink'] .'" title="'. $atts['post_esc_title'] .'"'. $url_target .'>';
 
-										<?php endif; ?>
+										endif;
 
-									<?php endif; ?>
+									endif;
 
-										<?php
 										// Display featured image
-										wpex_post_thumbnail( array(
+										$output .= wpex_get_post_thumbnail( array(
 											'size'   => $img_size,
 											'width'  => $img_width,
 											'height' => $img_height,
 											'alt'    => wpex_get_esc_title(),
 											'crop'   => $img_crop,
 											'class'  => 'vcex-blog-entry-img',
-										) ); ?>
+										) );
 
-										<?php
 										// Inner link overlay HTML
-										if ( 'none' != $overlay_style ) {
+										if ( $overlay_style && 'none' != $overlay_style ) {
+											ob_start();
 											wpex_overlay( 'inside_link', $overlay_style, $atts );
-										} ?>
+											$output .= ob_get_clean();
+										}
 
-									<?php
 									// Close link tag
-									if ( 'nowhere' != $thumb_link ) echo '</a>'; ?>
+									if ( 'nowhere' != $thumb_link ) {
+										$output .= '</a>';
+									}
 
-									<?php
 									// Outer link overlay HTML
-									if ( 'none' != $overlay_style ) {
+									if ( $overlay_style && 'none' != $overlay_style ) {
+										ob_start();
 										wpex_overlay( 'outside_link', $overlay_style, $atts );
-									} ?>
+										$output .= ob_get_clean();
+									}
 
-								</div><!-- .blog-entry-media -->
+								$output .= '</div>';
 
-							<?php endif; // Video/thumbnail checks ?>
+							endif; // Video/thumbnail checks
 
-						<?php endif; // Display media check ?>
+						endif; // Display media check
 
-						<?php
 						// Open entry details div if the $title, $excerpt or $read_more vars are true
-						if ( $entry_has_details ) : ?>
+						if ( $entry_has_details ) :
 
-							<div class="vcex-blog-entry-details entry-details wpex-clr<?php if ( $content_css ) echo ' '. $content_css; ?>"<?php echo $content_style; ?>>
+							$output .= '<div class="vcex-blog-entry-details entry-details wpex-clr';
+								if ( $content_css ) {
+									$output .= ' '. $content_css;
+								}
+								$output .= '"';
+								$output .= $content_style;
+							$output .= '>';
 
-								<?php
 								// Open equal heights div if equal heights is enabled
-								if ( $equal_heights_grid ) echo '<div class="match-height-content">'; ?>
+								if ( $equal_heights_grid ) {
+									$output .= '<div class="match-height-content">';
+								}
 
-								<?php
 								// Display title if $title is true
-								if ( 'true' == $title ) : ?>
+								if ( 'true' == $title ) :
 
-									<<?php echo $title_tag; ?> class="vcex-blog-entry-title entry-title"<?php echo $heading_style; ?>><a href="<?php echo $post->permalink; ?>" title="<?php wpex_esc_title(); ?>"<?php echo $url_target; ?><?php echo $heading_link_style; ?>><?php echo $post->title; ?></a></<?php echo $title_tag; ?>>
+									$output .= '<'. $title_tag .' class="vcex-blog-entry-title entry-title"'. $heading_style .'><a href="'. $atts['post_permalink'] .'" title="'. $atts['post_esc_title'] .'"'. $url_target .''. $heading_link_style .'>'. $atts['post_title'] .'</a></'. $title_tag .'>';
 									
-								<?php endif; ?>
+								endif; // End title check
 
-								<?php
 								// Display date if $date is true
-								if ( 'true' == $date ) : ?>
+								if ( 'true' == $date ) :
 
-									<div class="vcex-blog-entry-date"<?php echo $date_style; ?>>
-										<?php echo get_the_date(); ?>
-									</div>
+									$output .= '<div class="vcex-blog-entry-date"'. $date_style .'>';
 
-								<?php endif; ?>
+										$output .= ''. get_the_date() .'';
 
-								<?php
+									$output .= '</div>';
+
+								endif; // End date check
+
 								// Display excerpt
-								if ( 'true' == $excerpt ) : ?>
+								if ( 'true' == $excerpt ) :
 
-									<div class="vcex-blog-entry-excerpt entry clr"<?php echo $excerpt_style; ?>>
+									$output .= '<div class="vcex-blog-entry-excerpt entry clr"'. $excerpt_style .'>';
 
-										<?php
 										// Display excerpt
-										if ( $excerpt && $post->excerpt ) : ?>
+										if ( $excerpt && $atts['post_excerpt'] ) {
 
-											<?php echo $post->excerpt; ?>
+											$output .= $atts['post_excerpt'];
 
-										<?php endif; ?>
+										}
 
-									</div><!-- .vcex-blog-entry-excerpt -->
+									$output .= '</div>';
 
-								<?php endif; ?>
+								endif; // End excerpt check
 
-								<?php
 								// Display read more button if $read_more is true and $read_more_text isn't empty
-								if ( 'true' == $read_more ) : ?>
+								if ( 'true' == $read_more ) :
 
-									<div class="vcex-blog-entry-readmore-wrap clr">
+									$output .= '<div class="vcex-blog-entry-readmore-wrap clr">';
 
-										<a href="<?php echo $post->permalink; ?>" title="<?php echo esc_attr( $read_more_text ); ?>" rel="bookmark" class="<?php echo $readmore_classes; ?>"<?php echo $url_target; ?><?php echo $readmore_style; ?><?php echo $readmore_data; ?>>
-											<?php echo $read_more_text; ?>
-											<?php
-											// Display readmore button rarr if enabled
-											if ( 'true' == $readmore_rarr ) : ?>
-												<span class="vcex-readmore-rarr"><?php echo wpex_element( 'rarr' ); ?></span>
-											<?php endif; ?>
-										</a>
+										$output .= '<a href="'. $atts['post_permalink'] .'" title="'. esc_attr( $read_more_text ) .'" rel="bookmark" class="'. $readmore_classes .'"'. $url_target .''. $readmore_style .''. $readmore_data .'>';
 
-									</div><!-- .vcex-blog-entry-readmore-wrap -->
+											$output .= $read_more_text;
 
-								<?php endif; ?>
+											if ( 'true' == $readmore_rarr ) {
+												$output .= '<span class="vcex-readmore-rarr">'. wpex_element( 'rarr' ) .'</span>';
+											}
 
-								<?php
+										$output .= '</a>';
+
+									$output .= '</div>';
+
+								endif; // End readmore check
+
 								// Close equal heights div if equal heights is enabled
-								if ( $equal_heights_grid ) echo '</div>'; ?>
+								if ( $equal_heights_grid ) {
+									$output .= '</div>';
+								}
 
-							</div><!-- .blog-entry-details -->
+							$output .= '</div>';
 
-						<?php endif; // title/excerpt check ?>
+						endif; // End details check
 
-					</div>
+					$output .= '</div>'; // Close entry inner
 
-				</div><!-- .blog-entry -->
+				$output .= '</div>'; // Close entry
 
-			<?php
 			// Reset entry counter
-			if ( $count == $columns ) $count = '0'; ?>
+			if ( $count == $columns ) {
+				$count = '0';
+			}
 
-			<?php
-			// End main loop
-			endwhile; ?>
+			endwhile; // End main loop
 			
-		</div><!-- .vcex-blog-grid -->
+		$output .= '</div>';
 
-		<?php
 		// Display pagination if enabled
-		if ( 'true' == $pagination ) : ?>
+		if ( 'true' == $pagination ) :
 
-			<?php wpex_pagination( $wpex_query ); ?>
+			$output .= wpex_pagination( $wpex_query, false );
 			
-		<?php endif; ?>
+		endif;
 
-	</div><!-- <?php echo $wrap_classes; ?> -->
-
-	<?php
-	// Remove post object from memory
-	$post = null;
+	$output .= '</div>';
 
 	// Reset the post data to prevent conflicts with WP globals
-	wp_reset_postdata(); ?>
+	wp_reset_postdata();
 
-<?php
+	// Echo output
+	echo $output;
+
 // If no posts are found display message
-else : ?>
+else :
 
-	<?php
 	// Display no posts found error if function exists
-	echo vcex_no_posts_found_message( $atts ); ?>
+	echo vcex_no_posts_found_message( $atts );
 
-<?php
 // End post check
-endif; ?>
+endif;

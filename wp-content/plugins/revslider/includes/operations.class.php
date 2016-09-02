@@ -900,7 +900,7 @@ class RevSliderOperations extends RevSliderElementsBase{
 			$c = update_site_option('revslider-static-css', $content);
 		}else{
 			$c = get_option('revslider-static-css', '');
-			$c = update_option('revslider-static-css', $content);
+			$c = RevSliderFunctionsWP::update_option('revslider-static-css', $content, 'off');
 		}
 
 		return $content;
@@ -1604,6 +1604,11 @@ ob_end_clean();
 		$upload_dir_multisiteless = $upload_dir_multisiteless['basedir'].'/';
 		
 		$search = array($cont_url, $cont_url_no_www, RS_PLUGIN_URL);
+		if(defined('WHITEBOARD_PLUGIN_URL')){
+			$search[] = WHITEBOARD_PLUGIN_URL;
+		}
+		
+		$search = apply_filters('revslider_html_export_replace_urls', $search);
 		
 		$added = array();
 		
@@ -1687,6 +1692,24 @@ ob_end_clean();
 						}
 						$remove = true;
 						$add = '/';
+					}else{
+						if(defined('WHITEBOARD_PLUGIN_PATH')){
+							if(is_file(WHITEBOARD_PLUGIN_PATH.$_file)){
+								$mf = str_replace('//', '/', WHITEBOARD_PLUGIN_PATH.$_file);
+						
+								//we need to be special with svg files
+								$__file = basename($_file);
+								
+								if(!$usepcl){
+									$zip->addFile($mf, $use_path_raw.'/'.$__file);
+								}else{
+									$v_list = $pclzip->add($mf, PCLZIP_OPT_REMOVE_PATH, str_replace(basename($mf), '', $mf), PCLZIP_OPT_ADD_PATH, $use_path_raw.'/');
+								}
+								$remove = true;
+								$add = '/';
+								
+							}
+						}
 					}
 
 					if($remove == true){
@@ -1961,6 +1984,8 @@ ob_end_clean();
 			'user-agent' => 'WordPress/'.$wp_version.'; '.get_bloginfo('url'),
 			'body' => array(
 				'code' => urlencode($data['code']),
+				//'email' => urlencode($data['email']),
+				'version' => urlencode(RevSliderGlobals::SLIDER_REVISION),
 				'product' => urlencode('revslider')
 			)
 		));
@@ -1971,17 +1996,31 @@ ob_end_clean();
 		if ( $response_code != 200 || is_wp_error( $version_info ) ) {
 			return false;
 		}
-
+		
 		if($version_info == 'valid'){
 			update_option('revslider-valid', 'true');
 			update_option('revslider-code', $data['code']);
-
+			//update_option('revslider-email', $data['email']);
+			update_option('revslider-temp-active-notice', 'false');
 			return true;
 		}elseif($version_info == 'exist'){
-			RevSliderFunctions::throwError(__('Purchase Code already registered!', 'revslider'));
+			return 'exist';
+			//RevSliderFunctions::throwError(__('Purchase Code already registered!', 'revslider'));
+		}elseif($version_info == 'temp_valid'){ //only temporary active, rechecking needs to be done soon on the themepunch servers (envato API may be down)
+			update_option('revslider-valid', 'true');
+			update_option('revslider-code', $data['code']);
+			//update_option('revslider-email', $data['email']);
+			update_option('revslider-temp-active', 'true');
+			update_option('revslider-temp-active-notice', 'false');
+			return 'temp';
 		}else{
 			return false;
 		}
+		/*elseif($version_info == 'bad_email'){
+			return 'bad_email';
+		}elseif($version_info == 'email_used'){
+			return 'email_used';
+		}*/
 
 	}
 
@@ -2007,6 +2046,8 @@ ob_end_clean();
 
 		if($version_info == 'valid'){
 			update_option('revslider-valid', 'false');
+			update_option('revslider-temp-active', 'false');
+			update_option('revslider-code', '');
 			return true;
 		}else{
 			return false;
@@ -6689,7 +6730,7 @@ $presets[] = array (
 								'values' => $data['values']
 							);
 		
-		update_option('revslider_presets', $customer_presets);
+		RevSliderFunctionsWP::update_option('revslider_presets', $customer_presets, 'off');
 		
 		return true;
 	}
@@ -6713,7 +6754,7 @@ $presets[] = array (
 			}
 		}
 		
-		update_option('revslider_presets', $customer_presets);
+		RevSliderFunctionsWP::update_option('revslider_presets', $customer_presets, 'off');
 		
 		return true;
 	}
@@ -6737,7 +6778,7 @@ $presets[] = array (
 			}
 		}
 		
-		update_option('revslider_presets', $customer_presets);
+		RevSliderFunctionsWP::update_option('revslider_presets', $customer_presets, 'off');
 		
 		return true;
 	}

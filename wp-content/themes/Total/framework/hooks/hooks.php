@@ -169,6 +169,15 @@ function wpex_hook_header_after() {
 	do_action( 'wpex_hook_header_after' );
 }
 
+/**
+ * Logo
+ *
+ * @since 3.5.1
+ */
+function wpex_hook_site_logo_inner() {
+	do_action( 'wpex_hook_site_logo_inner' );
+}
+
 
 /**
  * Wrap Hooks

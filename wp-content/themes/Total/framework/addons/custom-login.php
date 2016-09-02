@@ -4,6 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Framework
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -13,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
+
 	class WPEX_Custom_Login {
-		private $options = array();
 
 		/**
 		 * Start things up
@@ -22,9 +23,24 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 * @since 1.6.0
 		 */
 		public function __construct() {
+			if ( is_admin() ) {
+				add_action( 'admin_menu', array( 'WPEX_Custom_Login', 'add_admin_menu' ) );
+				add_action( 'admin_init', array( 'WPEX_Custom_Login', 'register_settings' ) );
+				add_action( 'admin_enqueue_scripts',array( 'WPEX_Custom_Login', 'scripts' ) );
+				add_action( 'admin_print_styles-'. WPEX_ADMIN_PANEL_HOOK_PREFIX . '-admin-login', array( 'WPEX_Custom_Login', 'admin_styles' ), 40 );
+			} else {
+				add_action( 'login_head', array( 'WPEX_Custom_Login', 'output_css' ) );
+				add_action( 'login_headerurl', array( 'WPEX_Custom_Login', 'logo_link' ) );
+			}
+		}
 
-			// Get options
-			$this->options = wpex_get_mod( 'login_page_design', array(
+		/**
+		 * Returns custom login page settings
+		 *
+		 * @since 3.5.0
+		 */
+		public static function get_mods() {
+			return wpex_get_mod( 'login_page_design', array(
 				'enabled'                 => true,
 				'logo'                    => null,
 				'logo_height'             => null,
@@ -37,15 +53,6 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 				'form_top'                => null,
 				'form_border_radius'      => null,
 			) );
-
-			// Add actions
-			add_action( 'admin_menu', array( $this, 'add_page' ) );
-			add_action( 'admin_init', array( $this,'register_settings' ) );
-			add_action( 'admin_enqueue_scripts',array( $this,'scripts' ) );
-			add_action( 'admin_print_styles-'. WPEX_ADMIN_PANEL_HOOK_PREFIX . '-admin-login', array( $this,'admin_styles' ), 40 );
-			add_action( 'login_head', array( $this, 'output_css' ) );
-			add_action( 'login_headerurl', array( $this, 'logo_link' ) );
-
 		}
 
 		/**
@@ -53,14 +60,14 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function add_page() {
+		public static function add_admin_menu() {
 			add_submenu_page(
 				WPEX_THEME_PANEL_SLUG,
 				esc_html__( 'Custom Login', 'total' ),
 				esc_html__( 'Custom Login', 'total' ),
 				'administrator',
 				WPEX_THEME_PANEL_SLUG .'-admin-login',
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_Custom_Login', 'create_admin_page' )
 			);
 		}
 
@@ -69,7 +76,7 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function scripts( $hook ) {
+		public static function scripts( $hook ) {
 
 			if ( WPEX_ADMIN_PANEL_HOOK_PREFIX . '-admin-login' != $hook ) {
 				return;
@@ -101,8 +108,8 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function register_settings() {
-			register_setting( 'wpex_custom_login', 'login_page_design', array( $this, 'sanitize' ) );
+		public static function register_settings() {
+			register_setting( 'wpex_custom_login', 'login_page_design', array( 'WPEX_Custom_Login', 'sanitize' ) );
 		}
 
 		/**
@@ -110,13 +117,10 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function sanitize( $options ) {
+		public static function sanitize( $options ) {
 
 			// If we have options lets save them in the theme_mods
 			if ( $options ) {
-
-				// Get current mod
-				$get_mod = get_theme_mod( 'login_page_design', $this->options );
 
 				// Loop through options to prevent empty vars from saving
 				foreach ( $options as $key => $val ) {
@@ -150,7 +154,7 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function create_admin_page() { ?>
+		public static function create_admin_page() { ?>
 
 			<div class="wrap">
 
@@ -163,7 +167,7 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 					<a href="#button" class="nav-tab"><?php esc_html_e( 'Button', 'total' ); ?></a>
 				</h2>
 
-				<?php $theme_mod = $this->options; ?>
+				<?php $theme_mod = self::get_mods(); ?>
 
 				<form method="post" action="options.php">
 
@@ -183,9 +187,10 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 							<th scope="row"><?php esc_html_e( 'Logo', 'total' ); ?></th>
 							<td>
 								<?php $option = isset( $theme_mod['logo'] ) ? $theme_mod['logo'] : ''; ?>
-								<input type="text" name="login_page_design[logo]" value="<?php echo esc_attr( $option ); ?>">
+								<input class="wpex-media-input" type="text" name="login_page_design[logo]" value="<?php echo esc_attr( $option ); ?>">
 								<input class="wpex-media-upload-button button-secondary" type="button" value="<?php esc_html_e( 'Upload', 'total' ); ?>" />
-								<?php $preview = $this->return_image ( $option ); ?>
+								<a href="#" class="wpex-media-remove button-secondary" style="display:none;"><span class="dashicons dashicons-no-alt" style="line-height: inherit;"></span></a>
+								<?php $preview = wpex_sanitize_data( $option, 'image_src_from_mod' ); ?>
 								<div class="wpex-media-live-preview">
 									<?php if ( $preview ) { ?>
 										<img src="<?php echo esc_url( $preview ); ?>" alt="<?php esc_html_e( 'Preview Image', 'total' ); ?>" />
@@ -223,9 +228,10 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 							<td>
 								<?php $option = isset( $theme_mod['background_img'] ) ? $theme_mod['background_img'] : ''; ?>
 								<div class="uploader">
-									<input type="text" name="login_page_design[background_img]" value="<?php echo esc_attr( $option ); ?>">
+									<input class="wpex-media-input" type="text" name="login_page_design[background_img]" value="<?php echo esc_attr( $option ); ?>">
 									<input class="wpex-media-upload-button button-secondary" type="button" value="<?php esc_html_e( 'Upload', 'total' ); ?>" />
-									<?php $preview = $this->return_image ( $option ); ?>
+									<a href="#" class="wpex-media-remove button-secondary" style="display:none;"><span class="dashicons dashicons-no-alt" style="line-height: inherit;"></span></a>
+									<?php $preview = wpex_sanitize_data( $option, 'image_src_from_mod' ); ?>
 									<div class="wpex-media-live-preview">
 										<?php if ( $preview ) { ?>
 											<img src="<?php echo esc_url( $preview ); ?>" alt="<?php esc_html_e( 'Preview Image', 'total' ); ?>" />
@@ -406,28 +412,11 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		}
 
 		/**
-		 * Returns correct image value
-		 *
-		 * @since 1.6.0
-		 */
-		private static function return_image( $val ) {
-			if ( is_numeric( $val ) ) {
-				$val = wp_get_attachment_image_src( $val, 'full' );
-				$val = $val[0];
-			} elseif( is_numeric( $val ) ) {
-				$val = absint( $val );
-			} else {
-				$val = esc_url( $val );
-			}
-			return $val;
-		}
-
-		/**
 		 * Prints styles for the admin page
 		 *
 		 * @since 3.0.0
 		 */
-		public function admin_styles() { ?>
+		public static function admin_styles() { ?>
 
 			<style type="text/css">
 				.wpex-custom-login-admin-tabs { min-height: 35px; }
@@ -443,10 +432,10 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function output_css() {
+		public static function output_css() {
 
 			// Get options
-			$options = $this->options;
+			$options = self::get_mods();
 
 			// Do nothing if disabled
 			if ( empty( $options['enabled'] ) ) {
@@ -454,22 +443,22 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 			}
 
 			// Sanitize data
-			$logo                    = $this->parseOption( 'logo' );
-			$logo_height             = $this->parseOption( 'logo_height', '84px' );
+			$logo                    = self::parseOption( 'logo' );
+			$logo_height             = self::parseOption( 'logo_height', '84px' );
 			$logo_height             = intval( $logo_height ) .'px';
-			$background_img          = $this->parseOption( 'background_img' );
-			$background_style        = $this->parseOption( 'background_style' );
-			$background_color        = $this->parseOption( 'background_color' );
-			$form_background_color   = $this->parseOption( 'form_background_color' );
-			$form_background_opacity = $this->parseOption( 'form_background_opacity' );
-			$form_text_color         = $this->parseOption( 'form_text_color' );
-			$form_top                = $this->parseOption( 'form_top', '150px' );
-			$form_input_bg           = $this->parseOption( 'form_input_bg' );
-			$form_input_color        = $this->parseOption( 'form_input_color' );
-			$form_border_radius      = $this->parseOption( 'form_border_radius' );
-			$form_button_bg          = $this->parseOption( 'form_button_bg' );
-			$form_button_bg_hover    = $this->parseOption( 'form_button_bg_hover' );
-			$form_button_color       = $this->parseOption( 'form_button_color' );
+			$background_img          = self::parseOption( 'background_img' );
+			$background_style        = self::parseOption( 'background_style' );
+			$background_color        = self::parseOption( 'background_color' );
+			$form_background_color   = self::parseOption( 'form_background_color' );
+			$form_background_opacity = self::parseOption( 'form_background_opacity' );
+			$form_text_color         = self::parseOption( 'form_text_color' );
+			$form_top                = self::parseOption( 'form_top', '150px' );
+			$form_input_bg           = self::parseOption( 'form_input_bg' );
+			$form_input_color        = self::parseOption( 'form_input_color' );
+			$form_border_radius      = self::parseOption( 'form_border_radius' );
+			$form_button_bg          = self::parseOption( 'form_button_bg' );
+			$form_button_bg_hover    = self::parseOption( 'form_button_bg_hover' );
+			$form_button_color       = self::parseOption( 'form_button_color' );
 
 			// Convert image ID's to urls
 			if ( is_numeric( $logo ) ) {
@@ -574,8 +563,8 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		private function parseOption( $option_id, $default = '' ) {
-			$options = $this->options;
+		private static function parseOption( $option_id, $default = '' ) {
+			$options = self::get_mods();
 			return ! empty( $options[$option_id] ) ? $options[$option_id] : $default;
 		}
 
@@ -584,12 +573,14 @@ if ( ! class_exists( 'WPEX_Custom_Login' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function logo_link( $url ) {
-			$options = $this->options;
+		public static function logo_link( $url ) {
+			$options = self::get_mods();
 			$url     = isset( $options['logo_url']) ? $options['logo_url'] : $url;
 			return esc_url( apply_filters( 'wpex_login_logo_link', $url ) );
 		}
 
 	}
+
+	new WPEX_Custom_Login();
+
 }
-new WPEX_Custom_Login();

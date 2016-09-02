@@ -4,11 +4,8 @@
  *
  * @package Total WordPress Theme
  * @subpackage Staff Functions
- * @version 3.3.3
+ * @version 3.5.3
  */
-
-// Set global var
-global $wpex_staff_config;
 
 // The class
 class WPEX_Staff_Config {
@@ -24,31 +21,34 @@ class WPEX_Staff_Config {
 		require_once( WPEX_FRAMEWORK_DIR .'staff/staff-helpers.php' );
 
 		// Adds the staff post type
-		add_action( 'init', array( $this, 'register_post_type' ), 0 );
+		add_action( 'init', array( 'WPEX_Staff_Config', 'register_post_type' ), 0 );
 
 		// Adds the staff taxonomies
 		if ( wpex_is_mod_enabled( wpex_get_mod( 'staff_tags', 'on' ) ) ) {
-			add_action( 'init', array( $this, 'register_tags' ), 0 );
+			add_action( 'init', array( 'WPEX_Staff_Config', 'register_tags' ), 0 );
 		}
 		if ( wpex_is_mod_enabled( wpex_get_mod( 'staff_categories', 'on' ) ) ) {
-			add_action( 'init', array( $this, 'register_categories' ), 0 );
+			add_action( 'init', array( 'WPEX_Staff_Config', 'register_categories' ), 0 );
 		}
 
 		// Register staff sidebar
 		if ( wpex_get_mod( 'staff_custom_sidebar', true ) ) {
-			add_filter( 'widgets_init', array( $this, 'register_sidebar' ), 10 );
+			add_filter( 'widgets_init', array( 'WPEX_Staff_Config', 'register_sidebar' ), 10 );
 		}
 
 		// Add image sizes
-		add_filter( 'wpex_image_sizes', array( $this, 'add_image_sizes' ), 10 );
+		add_filter( 'wpex_image_sizes', array( 'WPEX_Staff_Config', 'add_image_sizes' ), 10 );
 
 		// Create relations between users and staff members
 		if ( apply_filters( 'wpex_staff_users_relations', true ) ) {
-			add_action( 'personal_options_update', array( $this, 'save_custom_profile_fields' ) );
-			add_action( 'edit_user_profile_update', array( $this, 'save_custom_profile_fields' ) );
-			add_filter( 'personal_options', array( $this, 'personal_options' ) );
-			add_filter( 'wpex_post_author_bio_data', array( $this, 'post_author_bio_data' ) );
+			add_action( 'personal_options_update', array( 'WPEX_Staff_Config', 'save_custom_profile_fields' ) );
+			add_action( 'edit_user_profile_update', array( 'WPEX_Staff_Config', 'save_custom_profile_fields' ) );
+			add_filter( 'personal_options', array( 'WPEX_Staff_Config', 'personal_options' ) );
+			add_filter( 'wpex_post_author_bio_data', array( 'WPEX_Staff_Config', 'post_author_bio_data' ) );
 		}
+
+		// Add staff VC modules
+		add_filter( 'vcex_builder_modules', array( 'WPEX_Staff_Config', 'vc_modules' ) );
 
 		/*-------------------------------------------------------------------------------*/
 		/* -  Admin only actions/filters
@@ -56,23 +56,23 @@ class WPEX_Staff_Config {
 		if ( is_admin() ) {
 
 			// Adds columns in the admin view for taxonomies
-			add_filter( 'manage_edit-staff_columns', array( $this, 'edit_columns' ) );
-			add_action( 'manage_staff_posts_custom_column', array( $this, 'column_display' ), 10, 2 );
+			add_filter( 'manage_edit-staff_columns', array( 'WPEX_Staff_Config', 'edit_columns' ) );
+			add_action( 'manage_staff_posts_custom_column', array( 'WPEX_Staff_Config', 'column_display' ), 10, 2 );
 
 			// Allows filtering of posts by taxonomy in the admin view
-			add_action( 'restrict_manage_posts', array( $this, 'tax_filters' ) );
+			add_action( 'restrict_manage_posts', array( 'WPEX_Staff_Config', 'tax_filters' ) );
 
 			// Create Editor for altering the post type arguments
-			add_action( 'admin_menu', array( $this, 'add_page' ) );
-			add_action( 'admin_init', array( $this,'register_page_options' ) );
-			add_action( 'admin_notices', array( $this, 'setting_notice' ) );
-			add_action( 'admin_print_styles-staff_page_wpex-staff-editor', array( $this,'css' ) );
+			add_action( 'admin_menu', array( 'WPEX_Staff_Config', 'add_page' ) );
+			add_action( 'admin_init', array( 'WPEX_Staff_Config','register_page_options' ) );
+			add_action( 'admin_notices', array( 'WPEX_Staff_Config', 'setting_notice' ) );
+			add_action( 'admin_print_styles-staff_page_wpex-staff-editor', array( 'WPEX_Staff_Config','css' ) );
 
 			// Add new image sizes tab
-			add_filter( 'wpex_image_sizes_tabs', array( $this, 'image_sizes_tabs' ), 10 );
+			add_filter( 'wpex_image_sizes_tabs', array( 'WPEX_Staff_Config', 'image_sizes_tabs' ), 10 );
 
 			// Add gallery metabox to staff
-			add_filter( 'wpex_gallery_metabox_post_types', array( $this, 'add_gallery_metabox' ), 20 );
+			add_filter( 'wpex_gallery_metabox_post_types', array( 'WPEX_Staff_Config', 'add_gallery_metabox' ), 20 );
 		
 		}
 
@@ -83,26 +83,26 @@ class WPEX_Staff_Config {
 
 			// Displays correct sidebar for staff posts
 			if ( wpex_get_mod( 'staff_custom_sidebar', true ) ) {
-				add_filter( 'wpex_get_sidebar', array( $this, 'display_sidebar' ), 10 );
+				add_filter( 'wpex_get_sidebar', array( 'WPEX_Staff_Config', 'display_sidebar' ), 10 );
 			}
 
 			// Alter the post layouts for staff posts and archives
-			add_filter( 'wpex_post_layout_class', array( $this, 'layouts' ), 10 );
+			add_filter( 'wpex_post_layout_class', array( 'WPEX_Staff_Config', 'layouts' ), 10 );
 
 			// Add subheading for staff member if enabled
-			add_action( 'wpex_post_subheading', array( $this, 'add_position_to_subheading' ), 10 );
+			add_action( 'wpex_post_subheading', array( 'WPEX_Staff_Config', 'add_position_to_subheading' ), 10 );
 
 			// Posts per page & exclude from search
-			add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ), 10 );
+			add_action( 'pre_get_posts', array( 'WPEX_Staff_Config', 'pre_get_posts' ), 10 );
 
 			// Single next/prev visibility
-			add_filter( 'wpex_has_next_prev', array( $this, 'next_prev' ) );
+			add_filter( 'wpex_has_next_prev', array( 'WPEX_Staff_Config', 'next_prev' ) );
 
 			// Tweak page header title
-			add_filter( 'wpex_page_header_title_args', array( $this, 'alter_title' ) );
+			add_filter( 'wpex_page_header_title_args', array( 'WPEX_Staff_Config', 'alter_title' ) );
 
 			// Return true for social share check so it can use the builder
-			add_filter( 'wpex_has_social_share', array( $this, 'social_share' ) );
+			add_filter( 'wpex_has_social_share', array( 'WPEX_Staff_Config', 'social_share' ) );
 
 		}
 		
@@ -117,7 +117,7 @@ class WPEX_Staff_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_post_type() {
+	public static function register_post_type() {
 
 		// Get values and sanitize
 		$name          = wpex_get_staff_name();
@@ -171,7 +171,7 @@ class WPEX_Staff_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_tags() {
+	public static function register_tags() {
 
 		// Define and sanitize options
 		$name = wpex_get_mod( 'staff_tag_labels');
@@ -219,7 +219,7 @@ class WPEX_Staff_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_categories() {
+	public static function register_categories() {
 
 		// Define and sanitize options
 		$name = wpex_get_mod( 'staff_cat_labels');
@@ -348,16 +348,16 @@ class WPEX_Staff_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function add_page() {
+	public static function add_page() {
 		$wpex_staff_editor = add_submenu_page(
 			'edit.php?post_type=staff',
 			esc_html__( 'Post Type Editor', 'total' ),
 			esc_html__( 'Post Type Editor', 'total' ),
 			'administrator',
 			'wpex-staff-editor',
-			array( $this, 'create_admin_page' )
+			array( 'WPEX_Staff_Config', 'create_admin_page' )
 		);
-		add_action( 'load-'. $wpex_staff_editor, array( $this, 'flush_rewrite_rules' ) );
+		add_action( 'load-'. $wpex_staff_editor, array( 'WPEX_Staff_Config', 'flush_rewrite_rules' ) );
 	}
 
 	/**
@@ -378,8 +378,8 @@ class WPEX_Staff_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_page_options() {
-		register_setting( 'wpex_staff_options', 'wpex_staff_editor', array( $this, 'sanitize' ) );
+	public static function register_page_options() {
+		register_setting( 'wpex_staff_options', 'wpex_staff_editor', array( 'WPEX_Staff_Config', 'sanitize' ) );
 	}
 
 	/**
@@ -447,7 +447,7 @@ class WPEX_Staff_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function create_admin_page() {
+	public static function create_admin_page() {
 
 		// Delete option as we are using theme_mods instead
 		delete_option( 'wpex_staff_editor' ); ?>
@@ -909,5 +909,17 @@ class WPEX_Staff_Config {
 		return $data;
 	}
 
+	/**
+	 * Add custom VC modules
+	 *
+	 * @since 3.5.3
+	 */
+	public static function vc_modules( $modules ) {
+		$modules[] = 'staff_grid';
+		$modules[] = 'staff_carousel';
+		$modules[] = 'staff_social';
+		return $modules;
+	}
+
 }
-$wpex_staff_config = new WPEX_Staff_Config;
+new WPEX_Staff_Config;

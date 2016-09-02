@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -15,19 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 <?php wpex_hook_footer_before(); ?>
 
 	<?php
-	// Get page ID
-	$page_id = wpex_get_mod( 'footer_builder_page_id' );
-
-	// WPML fix
-	if ( function_exists( 'icl_object_id' ) ) {
-		$page_id = icl_object_id( $page_id, 'page' );
-	}
-
 	// Display footer builder
-	if ( $page_id ) : ?>
+	if ( $page_id = wpex_global_obj( 'footer_builder' ) ) : ?>
 
 		<div id="footer-builder" class="footer-builder clr">
-			<div class="footer-builder-content clr container">
+			<div class="footer-builder-content clr container entry">
 				<?php echo do_shortcode( get_post_field( 'post_content', $page_id ) ); ?>
 			</div><!-- .footer-builder-content -->
 		</div><!-- .footer-builder -->

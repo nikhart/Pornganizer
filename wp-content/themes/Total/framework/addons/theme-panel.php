@@ -4,16 +4,13 @@
  *
  * @package Total WordPress theme
  * @subpackage Framework
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-// Global class
-$wpex_theme_panel;
 
 // Start Class
 if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
@@ -27,19 +24,19 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		public function __construct() {
 
 			// Add panel menu
-			add_action( 'admin_menu', array( $this, 'add_menu_page' ), 0 );
+			add_action( 'admin_menu', array( 'WPEX_Theme_Panel', 'add_menu_page' ), 0 );
 
 			// Add panel submenu
-			add_action( 'admin_menu', array( $this, 'add_menu_subpage' ) );
+			add_action( 'admin_menu', array( 'WPEX_Theme_Panel', 'add_menu_subpage' ) );
 
 			// Add custom CSS for the theme panel
-			add_action( 'admin_print_styles-toplevel_page_wpex-panel', array( $this,'css' ) );
+			add_action( 'admin_print_styles-toplevel_page_wpex-panel', array( 'WPEX_Theme_Panel', 'css' ) );
 
 			// Register panel settings
-			add_action( 'admin_init', array( $this,'register_settings' ) );
+			add_action( 'admin_init', array( 'WPEX_Theme_Panel', 'register_settings' ) );
 
 			// Load addon files
-			$this->load_addons();
+			self::load_addons(); // Run right away
 
 		}
 
@@ -49,7 +46,7 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		 *
 		 * @since 3.3.3
 		 */
-		private function get_addons() {
+		private static function get_addons() {
 			$addons = array(
 				'under_construction' => array(
 					'label'    => esc_html__( 'Under Construction', 'total' ),
@@ -104,6 +101,11 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 				'post_series' => array(
 					'label'    => esc_html__( 'Post Series', 'total' ),
 					'icon'     => 'dashicons dashicons-edit',
+					'category' => esc_html__( 'Core', 'total' ),
+				),
+				'header_builder' => array(
+					'label'    => esc_html__( 'Header Builder', 'total' ),
+					'icon'     => 'dashicons dashicons-editor-insertmore',
 					'category' => esc_html__( 'Core', 'total' ),
 				),
 				'footer_builder' => array(
@@ -243,7 +245,7 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function add_menu_page() {
+		public static function add_menu_page() {
 		  add_menu_page(
 				esc_html__( 'Theme Panel', 'total' ),
 				'Theme Panel', // menu title - can't be translated because it' used for the $hook prefix
@@ -260,14 +262,14 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function add_menu_subpage(){
+		public static function add_menu_subpage(){
 			add_submenu_page(
 				'wpex-general',
 				esc_html__( 'General', 'total' ),
 				esc_html__( 'General', 'total' ),
 				'manage_options',
 				WPEX_THEME_PANEL_SLUG,
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_Theme_Panel', 'create_admin_page' )
 			);
 		}
 
@@ -276,8 +278,8 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function register_settings() {
-			register_setting( 'wpex_tweaks', 'wpex_tweaks', array( $this, 'admin_sanitize' ) ); 
+		public static function register_settings() {
+			register_setting( 'wpex_tweaks', 'wpex_tweaks', array( 'WPEX_Theme_Panel', 'admin_sanitize' ) ); 
 		}
 
 		/**
@@ -285,7 +287,7 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function admin_sanitize( $options ) {
+		public static function admin_sanitize( $options ) {
 
 			// Check options first
 			if ( ! is_array( $options ) || empty( $options ) || ( false === $options ) ) {
@@ -293,7 +295,7 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 			}
 
 			// Get addons array
-			$theme_addons = $this->get_addons();
+			$theme_addons = self::get_addons();
 
 			// Save checkboxes
 			$checkboxes = array();
@@ -356,13 +358,13 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function create_admin_page() {
+		public static function create_admin_page() {
 
 			// Delete option that isn't needed
 			delete_option( 'wpex_tweaks' );
 
 			// Get theme addons array
-			$theme_addons = $this->get_addons(); ?>
+			$theme_addons = self::get_addons(); ?>
 
 			<div class="wrap wpex-theme-panel wpex-clr">
 
@@ -541,15 +543,32 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 							e.preventDefault();
 							$( "#wpex-theme-panel-form #submit" ).click();
 						} );
+						// Checkbox change function - tweak classes
+						$( '.wpex-checkbox' ).change(function() {
+							var $this = $( this ),
+								$parentTr = $this.parent( 'th' ).parent( '.wpex-module' );
+							if ( $parentTr.hasClass( 'wpex-disabled' ) ) {
+								$parentTr.removeClass( 'wpex-disabled' );
+							} else {
+								$parentTr.addClass( 'wpex-disabled' );
+							}
+						});
 						// Module on click
 						$( '.wpex-theme-panel-module-link' ).click( function() {
 							$( '.wpex-theme-panel-updated' ).show();
-							var $ref = $(this).attr( 'href' ),
-								$checkbox = $($ref).find( '.wpex-checkbox' );
+							var $this     = $( this ),
+								$ref      = $this.attr( 'href' ),
+								$checkbox = $( $ref ).find( '.wpex-checkbox' ),
+								$parentTr = $this.parents( '.wpex-module' );
 							if ( $checkbox.is( ":checked" ) ) {
 								$checkbox.attr( 'checked', false );
 							} else {
 								$checkbox.attr( 'checked', true );
+							}
+							if ( $parentTr.hasClass( 'wpex-disabled' ) ) {
+								$parentTr.removeClass( 'wpex-disabled' );
+							} else {
+								$parentTr.addClass( 'wpex-disabled' );
 							}
 							return false;
 						} );
@@ -602,7 +621,7 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		private function load_addons() {
+		private static function load_addons() {
 
 			// Addons directory location
 			$dir = WPEX_FRAMEWORK_DIR .'addons/';
@@ -637,6 +656,11 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 				require_once( $dir .'custom-login.php' );
 			}
 
+			// Header builder
+			if ( wpex_get_mod( 'header_builder_enable', true ) ) {
+				require_once( $dir .'header-builder.php' );
+			}
+
 			// Footer builder
 			if ( wpex_get_mod( 'footer_builder_enable', true ) ) {
 				require_once( $dir .'footer-builder.php' );
@@ -652,7 +676,7 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 				require_once( $dir .'custom-css.php' );
 			}
 
-			// Custom JS / Only if not empty this is being deprecated
+			// Custom JS / Only if not empty this - this is deprecated
 			if ( wpex_get_mod( 'custom_js_enable', false ) && wpex_get_mod ( 'custom_js', null ) ) {
 				require_once( $dir .'custom-js.php' );
 			}
@@ -670,13 +694,13 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 			// Skins (deprecated since 3.0.0)
 			require_once( WPEX_THEME_DIR .'/skins/skins.php' );
 
-			// Import Export Functions
-			if ( is_admin() && wpex_get_mod( 'import_export_enable', true ) ) {
-				require_once( $dir .'import-export.php' );
-			}
-
 			/*** ADMIN ONLY ADDONS ***/
 			if ( is_admin() ) {
+
+				// Import Export Functions
+				if ( wpex_get_mod( 'import_export_enable', true ) ) {
+					require_once( $dir .'import-export.php' );
+				}
 
 				// Editor formats
 				if ( wpex_get_mod( 'editor_formats_enable', true ) ) {
@@ -724,7 +748,9 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 
 				tr.wpex-active { }
 				tr.wpex-disabled { opacity: 0.5; }
-				tr.wpex-disabled:hover { opacity: 1; }
+				tr.wpex-disabled:hover { opacity: 0.65; }
+
+				.wpex-theme-panel a:focus { box-shadow: none; -moz-box-shadow: none; -webkit-box-shadow: none; }
 
 				.admin-color-fresh .wpex-module a { color: #1a8dba; }
 				.admin-color-midnight .wpex-module a { color: #dd382d; }
@@ -767,4 +793,4 @@ if ( ! class_exists( 'WPEX_Theme_Panel' ) ) {
 
 	}
 }
-$wpex_theme_panel = new WPEX_Theme_Panel();
+new WPEX_Theme_Panel();

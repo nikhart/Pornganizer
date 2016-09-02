@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -23,7 +23,7 @@ if ( ! empty( $atts['term_slug'] ) && empty( $atts['include_categories']) ) {
 }
 
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_woocommerce_carousel', $atts );
 
 // Define vars
 $atts['post_type'] = 'product';
@@ -61,18 +61,39 @@ if ( $wpex_query->have_posts() ) :
 
 	// Wrap Classes
 	$wrap_classes = array( 'wpex-carousel', 'wpex-carousel-woocommerce', 'owl-carousel', 'clr' );
-	if ( $style ) {
+	
+	// Carousel style
+	if ( $style && 'default' != $style ) {
 		$wrap_classes[] = $style;
+		$arrows_position = ( 'no-margins' == $style && 'default' == $arrows_position ) ? 'abs' : $arrows_position;
 	}
+
+	// Arrow style
+	if ( $arrows_style ) {
+		$wrap_classes[] = 'arrwstyle-'. $arrows_style;
+	}
+
+	// Arrow position
+	if ( $arrows_position && 'default' != $arrows_position ) {
+		$wrap_classes[] = 'arrwpos-'. $arrows_position;
+	}
+
+	// Visibility
 	if ( $visibility ) {
 		$wrap_classes[] = $visibility;
 	}
+
+	// CSS animation
 	if ( $css_animation ) {
-		$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+		$wrap_classes[] = vcex_get_css_animation( $css_animation );
 	}
+
+	// Custom user classes
 	if ( $classes ) {
-		$wrap_classes[] = $this->getExtraClass( $classes );
+		$wrap_classes[] = vcex_get_extra_class( $classes );
 	}
+
+	// Main output style class
 	if ( $entry_output == 'woocommerce' ) {
 		$wrap_classes[] = 'products';
 	}
@@ -149,7 +170,7 @@ if ( $wpex_query->have_posts() ) :
 	$tablet_items           = wpex_intval( $tablet_items, 3 );
 	$mobile_landscape_items = wpex_intval( $mobile_landscape_items, 2 );
 	$mobile_portrait_items  = wpex_intval( $mobile_portrait_items, 1 );
-	$animation_speed        = wpex_intval( $animation_speed, 150 );
+	$animation_speed        = wpex_intval( $animation_speed );
 
 	// Disable autoplay
 	if ( vc_is_inline() || '1' == count( $wpex_query->posts ) ) {

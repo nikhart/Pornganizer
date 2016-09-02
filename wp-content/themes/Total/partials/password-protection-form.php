@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -31,4 +31,4 @@ if ( 'full-screen' == wpex_global_obj( 'post_layout' ) ) {
 		<p><?php esc_html_e( 'This content is password protected. To view it please enter your password below:', 'total' ); ?></p>
 		<input name="post_password" id="<?php echo esc_attr( $label ); ?>" type="password" size="20" maxlength="20" placeholder="<?php esc_attr_e( 'Password', 'total' ); ?>" /><input type="submit" name="Submit" value="<?php esc_attr_e( 'Submit', 'total' ); ?>" />
 	</form>
-</div><!-- .<?php echo esc_attr( $classes ); ?> -->
+</div>

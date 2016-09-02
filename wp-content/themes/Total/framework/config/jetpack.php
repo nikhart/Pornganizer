@@ -39,7 +39,7 @@ if ( ! class_exists( 'WPEX_Jetpack_Config' ) ) {
 			}
 
 			// Carousel
-			if ( $this->is_module_active( 'carousel' ) ||  $this->is_module_active( 'tiled-gallery' ) ) {
+			if ( $this->is_module_active( 'carousel' ) || $this->is_module_active( 'tiled-gallery' ) ) {
 
 				// Disable built-in custom gallery
 				add_filter( 'wpex_custom_wp_gallery', '__return_false' );
@@ -96,17 +96,7 @@ if ( ! class_exists( 'WPEX_Jetpack_Config' ) ) {
 			 * @version 3.3.5
 			 */
 			public static function wpex_remove_social_settings( $array ) {
-				$settings_to_remove = array(
-					'social_share_sites',
-					'social_share_position',
-					'social_share_style',
-					'social_share_heading_enable',
-					'social_share_heading',
-					'social_share_twitter_handle',
-				);
-				foreach ( $settings_to_remove as $setting ) {
-					unset( $array['wpex_social_sharing']['settings'][$setting] );
-				}
+				unset( $array['wpex_social_sharing'] );
 				return $array;
 			}
 

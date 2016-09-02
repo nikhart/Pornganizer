@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Widgets
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -20,8 +20,31 @@ class WPEX_Recent_Posts_Thumbnails_Widget extends WP_Widget {
 
 	/**
 	 * Register widget with WordPress.
+	 *
+	 * @since 1.0.0
 	 */
 	public function __construct() {
+
+		// Defaults
+		$this->defaults = array(
+			'title'           => esc_html__( 'Recent Posts', 'total' ),
+			'number'          => '3',
+			'style'           => 'default',
+			'post_type'       => 'post',
+			'taxonomy'        => '',
+			'terms'           => '',
+			'order'           => 'DESC',
+			'orderby'         => 'date',
+			'columns'         => '3',
+			'img_size'        => 'wpex_custom',
+			'img_hover'       => '',
+			'img_width'       => '',
+			'img_height'      => '',
+			'date'            => '',
+			'thumbnail_query' => true,
+		);
+
+		// Construtor
 		$branding = wpex_get_theme_branding();
 		$branding = $branding ? $branding . ' - ' : '';
 		parent::__construct(
@@ -29,32 +52,12 @@ class WPEX_Recent_Posts_Thumbnails_Widget extends WP_Widget {
 			$branding . esc_html__( 'Posts With Thumbnails', 'total' )
 		);
 
-		$this->defaults = array(
-			'title'      => esc_html__( 'Recent Posts', 'total' ),
-			'number'     => '3',
-			'style'      => 'default',
-			'post_type'  => 'post',
-			'taxonomy'   => '',
-			'terms'      => '',
-			'order'      => 'DESC',
-			'orderby'    => 'date',
-			'columns'    => '3',
-			'img_size'   => 'wpex_custom',
-			'img_hover'  => '',
-			'img_width'  => '',
-			'img_height' => '',
-			'date'       => '',
-		);
-
 	}
 
 	/**
 	 * Front-end display of widget.
 	 *
-	 * @see WP_Widget::widget()
-	 *
-	 * @param array $args     Widget arguments.
-	 * @param array $instance Saved values from database.
+	 * @since 1.0.0
 	 */
 	public function widget( $args, $instance ) {
 
@@ -79,9 +82,13 @@ class WPEX_Recent_Posts_Thumbnails_Widget extends WP_Widget {
 			$query_args = array(
 				'post_type'      => $post_type,
 				'posts_per_page' => $number,
-				'meta_key'       => '_thumbnail_id',
 				'no_found_rows'  => true,
 			);
+
+			// Query by thumbnail meta_key
+			if ( $thumbnail_query ) {
+				$query_args['meta_key'] = '_thumbnail_id';
+			}
 
 			// Order params - needs FALLBACK don't ever edit!
 			if ( ! empty( $orderby ) ) {
@@ -121,9 +128,11 @@ class WPEX_Recent_Posts_Thumbnails_Widget extends WP_Widget {
 			if ( $wpex_query->have_posts() ) :
 
 				// Loop through posts
-				while ( $wpex_query->have_posts() ) : $wpex_query->the_post(); ?>
+				while ( $wpex_query->have_posts() ) : $wpex_query->the_post();
 
-					<?php
+					// Check thumb
+					$has_thumb = has_post_thumbnail();
+
 					// Get hover classes
 					if ( $img_hover ) {
 						$hover_classes = ' '. wpex_image_hover_classes( $img_hover );
@@ -131,9 +140,9 @@ class WPEX_Recent_Posts_Thumbnails_Widget extends WP_Widget {
 						$hover_classes = '';
 					} ?>
 
-					<li class="wpex-widget-recent-posts-li clr">
+					<li class="wpex-widget-recent-posts-li clr<?php if ( ! $has_thumb ) echo ' wpex-no-thumb'; ?>">
 
-						<?php if ( has_post_thumbnail() ) : ?>
+						<?php if ( $has_thumb ) : ?>
 							<a href="<?php wpex_permalink(); ?>" title="<?php wpex_esc_title(); ?>" class="wpex-widget-recent-posts-thumbnail<?php echo esc_attr( $hover_classes ); ?>">
 								<?php wpex_post_thumbnail( array(
 									'size'   => $img_size,
@@ -174,37 +183,31 @@ class WPEX_Recent_Posts_Thumbnails_Widget extends WP_Widget {
 	/**
 	 * Sanitize widget form values as they are saved.
 	 *
-	 * @see WP_Widget::update()
-	 *
-	 * @param array $new_instance Values just sent to be saved.
-	 * @param array $old_instance Previously saved values from database.
-	 *
-	 * @return array Updated safe values to be saved.
+	 * @since 1.0.0
 	 */
 	public function update( $new_instance, $old_instance ) {
-		$instance               = $old_instance;
-		$instance['title']      = ! empty( $new_instance['title'] ) ? strip_tags( $new_instance['title'] ) : '';
-		$instance['post_type']  = ! empty( $new_instance['post_type'] ) ? strip_tags( $new_instance['post_type'] ) : '';
-		$instance['taxonomy']   = ! empty( $new_instance['taxonomy'] ) ? strip_tags( $new_instance['taxonomy'] ) : '';
-		$instance['terms']      = ! empty( $new_instance['terms'] ) ? strip_tags( $new_instance['terms'] ) : '';
-		$instance['number']     = ! empty( $new_instance['number'] ) ? strip_tags( $new_instance['number'] ) : '';
-		$instance['order']      = ! empty( $new_instance['order'] ) ? strip_tags( $new_instance['order'] ) : '';
-		$instance['orderby']    = ! empty( $new_instance['orderby'] ) ? strip_tags( $new_instance['orderby'] ) : '';
-		$instance['style']      = ! empty( $new_instance['style'] ) ? strip_tags( $new_instance['style'] ) : '';
-		$instance['img_hover']  = ! empty( $new_instance['img_hover'] ) ? strip_tags( $new_instance['img_hover'] ) : '';
-		$instance['img_size']   = ! empty( $new_instance['img_size'] ) ? strip_tags( $new_instance['img_size'] ) : 'wpex_custom';
-		$instance['img_height'] = ! empty( $new_instance['img_height'] ) ? intval( $new_instance['img_height'] ) : '';
-		$instance['img_width']  = ! empty( $new_instance['img_width'] ) ? intval( $new_instance['img_width'] ) : '';
-		$instance['date']       = isset( $new_instance['date'] ) ? true : false;
+		$instance                    = $old_instance;
+		$instance['title']           = ! empty( $new_instance['title'] ) ? strip_tags( $new_instance['title'] ) : '';
+		$instance['post_type']       = ! empty( $new_instance['post_type'] ) ? strip_tags( $new_instance['post_type'] ) : '';
+		$instance['taxonomy']        = ! empty( $new_instance['taxonomy'] ) ? strip_tags( $new_instance['taxonomy'] ) : '';
+		$instance['terms']           = ! empty( $new_instance['terms'] ) ? strip_tags( $new_instance['terms'] ) : '';
+		$instance['number']          = ! empty( $new_instance['number'] ) ? strip_tags( $new_instance['number'] ) : '';
+		$instance['order']           = ! empty( $new_instance['order'] ) ? strip_tags( $new_instance['order'] ) : '';
+		$instance['orderby']         = ! empty( $new_instance['orderby'] ) ? strip_tags( $new_instance['orderby'] ) : '';
+		$instance['style']           = ! empty( $new_instance['style'] ) ? strip_tags( $new_instance['style'] ) : '';
+		$instance['img_hover']       = ! empty( $new_instance['img_hover'] ) ? strip_tags( $new_instance['img_hover'] ) : '';
+		$instance['img_size']        = ! empty( $new_instance['img_size'] ) ? strip_tags( $new_instance['img_size'] ) : 'wpex_custom';
+		$instance['img_height']      = ! empty( $new_instance['img_height'] ) ? intval( $new_instance['img_height'] ) : '';
+		$instance['img_width']       = ! empty( $new_instance['img_width'] ) ? intval( $new_instance['img_width'] ) : '';
+		$instance['date']            = isset( $new_instance['date'] ) ? true : false;
+		$instance['thumbnail_query'] = isset( $new_instance['thumbnail_query'] ) ? true : false;
 		return $instance;
 	}
 
 	/**
 	 * Back-end widget form.
 	 *
-	 * @see WP_Widget::form()
-	 *
-	 * @param array $instance Previously saved values from database.
+	 * @since 1.0.0
 	 */
 	public function form( $instance ) {
 
@@ -333,6 +336,10 @@ class WPEX_Recent_Posts_Thumbnails_Widget extends WP_Widget {
 		<p>
 			<input name="<?php echo esc_attr( $this->get_field_name( 'date' ) ); ?>" type="checkbox" value="1" <?php checked( $date, '1', true ); ?> />
 			<label for="<?php echo esc_attr( $this->get_field_id( 'date' ) ); ?>"><?php esc_html_e( 'Disable Date?', 'total' ); ?></label>
+		</p>
+		<p>
+			<input name="<?php echo esc_attr( $this->get_field_name( 'thumbnail_query' ) ); ?>" type="checkbox" value="1" <?php checked( $thumbnail_query, '1', true ); ?> />
+			<label for="<?php echo esc_attr( $this->get_field_id( 'thumbnail_query' ) ); ?>"><?php esc_html_e( 'Post With Thumbnails Only', 'total' ); ?></label>
 		</p>
 
 	<?php

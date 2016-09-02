@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,15 +17,31 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define vars
+$output = '';
+
+// Milestone default args
+extract( apply_filters( 'vcex_milestone_settings', array(
+	'separator' => ',',
+	'decimal'   => '.',
+) ) );
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_milestone', $atts ) );
 
 // Sanitize data
 $number = isset( $number ) ? $number : '45';
 $number = str_replace( ',', '', $number );
-$number = round( $number );
-$number = str_replace( '.', '', $number );
-$number = intval( $number );
+//$number = str_replace( '.', '', $number );
+
+// Turn duration into seconds
+$speed = $speed/1000;
 
 // Inline js
 vcex_inline_js( 'milestone' );
@@ -42,7 +58,7 @@ if ( $visibility ) {
 	$wrap_classes[] = $visibility;
 }
 if ( $css_animation ) {
-	$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $hover_animation ) {
 	$wrap_classes[] = wpex_hover_animation_class( $hover_animation );
@@ -55,19 +71,26 @@ $wrap_classes = implode( ' ', $wrap_classes );
 $wrap_style = vcex_inline_style( array(
 	'width'         => $width,
 	'border_radius' => $border_radius,
-) ); ?>
+) );
 
-<?php if ( 'true' == $url_wrap && $url ) : ?>
+if ( 'true' == $url_wrap && $url ) :
 
-	<a href="<?php echo esc_url( $url ); ?>" class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrap_style; ?><?php echo vcex_html( 'rel_attr', $url_rel ); ?><?php echo vcex_html( 'target_attr', $url_target ); ?>>
+	$output .= '<a href="'. esc_url( $url ) .'" class="'. $wrap_classes .'"'
+			. vcex_get_unique_id( $unique_id )
+			. $wrap_style
+			. vcex_html( 'rel_attr', $url_rel )
+			. vcex_html( 'target_attr', $url_target );
+	$output .= '>';
 
-<?php else : ?>
+else :
 
-	<div class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrap_style; ?>>
+	$output .= '<div class="'. $wrap_classes .'"'
+			. vcex_get_unique_id( $unique_id )
+			. $wrap_style;
+	$output .= '>';
 
-<?php endif; ?>
+endif;
 
-	<?php
 	// Load custom font
 	if ( $number_font_family ) {
 		wpex_enqueue_google_font( $number_font_family );
@@ -80,48 +103,62 @@ $wrap_style = vcex_inline_style( array(
 		'margin_bottom' => $number_bottom_margin,
 		'font_weight'   => $number_weight,
 		'font_family'   => $number_font_family,
-	) ); ?>
+	) );
 
-	<div class="vcex-milestone-number"<?php echo $number_style; ?>>
+	$output .= '<div class="vcex-milestone-number"'. $number_style .'>';
 
-		<?php if ( $before ) : ?><span class="vcex-milestone-before"><?php echo $before; ?></span><?php endif; ?>
-		<span class="vcex-milestone-time" data-from="0" data-to="<?php echo intval( $number ); ?>" data-speed="<?php echo intval( $speed ); ?>" data-refresh-interval="<?php echo intval( $interval ); ?>"><?php echo $number; ?></span><?php if ( $after ) : ?><span class="vcex-milestone-after"><?php echo $after; ?></span><?php endif; ?>
+		if ( $before ) {
 
-	</div><!-- .vcex-milestone-number -->
+			$output .= '<span class="vcex-milestone-before">'. esc_html( $before ) .'</span>';
 
-	<?php if ( ! empty( $caption ) ) : ?>
+		}
 
-		<?php
+		$output .= '<span class="vcex-milestone-time" data-start-val="0" data-end-val="'. floatval( $number ) .'" data-duration="'. intval( $speed ) .'" data-decimals="'. intval( $decimals ) .'" data-separator="'. esc_attr( $separator ) .'" data-decimal="'. esc_attr( $decimal ) .'">0</span>';
+
+		if ( $after ) {
+
+			$output .= '<span class="vcex-milestone-after">'. esc_html( $after ) .'</span>';
+
+		}
+
+	$output .= '</div>';
+
+	if ( ! empty( $caption ) ) :
+
 		// Load custom font
 		if ( $caption_font_family ) {
 			wpex_enqueue_google_font( $caption_font_family );
 		}
+
 		// Caption Style
 		$caption_style = vcex_inline_style( array(
 			'font_family' => $caption_font_family,
 			'color'       => $caption_color,
 			'font_size'   => $caption_size,
 			'font_weight' => $caption_font,
-		) ); ?>
+		) );
 		
-		<?php if ( $url && ! $url_wrap ) : ?>
+		if ( $url && ! $url_wrap ) :
 
-			<a href="<?php echo esc_url( $url ); ?>" class="vcex-milestone-caption"<?php echo vcex_html( 'rel_attr', $url_rel ); ?><?php echo vcex_html( 'target_attr', $url_target ); ?><?php echo $caption_style; ?>><?php echo $caption; ?></a>
+			$output .= '<a href="'. esc_url( $url ) .'" class="vcex-milestone-caption"'. vcex_html( 'rel_attr', $url_rel ) .''. vcex_html( 'target_attr', $url_target ) .''. $caption_style .'>'. $caption .'</a>';
 
-		<?php else : ?>
+		else :
 
-			<div class="vcex-milestone-caption"<?php echo $caption_style; ?>><?php echo $caption; ?></div><!-- .vcex-milestone-caption -->
+			$output .= '<div class="vcex-milestone-caption"'. $caption_style .'>'. $caption .'</div>';
 
-		<?php endif; ?>
+		endif;
 		
-	<?php endif; ?>
+	endif;
 
-<?php if ( 'true' == $url_wrap && $url ) : ?>
+// Close wrap
+if ( 'true' == $url_wrap && $url ) :
 
-	</a><!-- .vcex-milestone -->
+	$output .= '</a>';
 
-<?php else : ?>
+else :
 
-	</div><!-- .vcex-milestone -->
+	$output .= '</div>';
 
-<?php endif; ?>
+endif;
+
+echo $output;

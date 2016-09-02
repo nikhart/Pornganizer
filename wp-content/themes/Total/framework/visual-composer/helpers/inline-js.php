@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Functions
- * @version 3.4.0
+ * @version 3.5.0
  */
 
 class VCEX_Inline_JS {
@@ -90,7 +90,22 @@ class VCEX_Inline_JS {
 	 */
 	private function isotope() { ?>
 
-		if("undefined"!=$.fn.imagesLoaded&&"undefined"!=$.fn.isotope){var self=this;$(".vcex-isotope-grid").each(function(){var t=$(this);t.imagesLoaded(function(){t.isotope({itemSelector:".vcex-isotope-entry",transformsEnabled:!0,isOriginLeft:wpexLocalize.isRTL?!1:!0,transitionDuration:t.data("transition-duration")?t.data("transition-duration")+"s":"0.4s",layoutMode:t.data("layout-mode")?t.data("layout-mode"):"masonry",filter:t.data("filter")?t.data("filter"):""})});var i=t.prev("ul.vcex-filter-links");if(i.length){var a=i.find("a");a.click(function(){var i=$(this).attr("data-filter");return t.isotope({filter:i}),$(this).parents("ul").find("li").removeClass("active"),$(this).parent("li").addClass("active"),!1})}})}
+		if("undefined"!=$.fn.imagesLoaded&&"undefined"!=$.fn.isotope){$(".vcex-isotope-grid").each(function(){var t=$(this);t.imagesLoaded(function(){t.isotope({itemSelector:".vcex-isotope-entry",transformsEnabled:!0,isOriginLeft:wpexLocalize.isRTL?!1:!0,transitionDuration:t.data("transition-duration")?t.data("transition-duration")+"s":"0.4s",layoutMode:t.data("layout-mode")?t.data("layout-mode"):"masonry",filter:t.data("filter")?t.data("filter"):""})});var i=t.prev("ul.vcex-filter-links");if(i.length){var a=i.find("a");a.click(function(){var i=$(this).attr("data-filter");return t.isotope({filter:i}),$(this).parents("ul").find("li").removeClass("active"),$(this).parent("li").addClass("active"),!1})}})}
+
+	<?php }
+
+	/**
+	 * Navbar module isotope
+	 *
+	 * @since 3.5.3
+	 */
+	private function navbar_isotope() { ?>
+
+		if("undefined"!=$.fn.imagesLoaded&&"undefined"!=$.fn.isotope){
+
+			var $filterNavbar=$(".vcex-filter-nav");$filterNavbar.each(function(){var a=$(this),t=$("#"+a.data("filter-grid"));t.hasClass("wpex-row")||(t=t.find(".wpex-row")),t.length&&(t.removeClass("vcex-isotope-grid"),t.imagesLoaded(function(){if(t.hasClass("vcex-navbar-filter-grid"))var i=t.isotope();else{t.addClass("vcex-navbar-filter-grid");var i=t.isotope({itemSelector:".col",transformsEnabled:!0,isOriginLeft:wpexLocalize.isRTL?!1:!0,transitionDuration:a.data("transition-duration")?a.data("transition-duration")+"s":"0.4s",layoutMode:a.data("layout-mode")?a.data("layout-mode"):"masonry"})}var e=a.find("a");e.click(function(){return i.isotope({filter:$(this).attr("data-filter")}),$(this).parents("ul").find("li").removeClass("active"),$(this).parent("li").addClass("active"),!1})}))});
+
+		}
 
 	<?php }
 
@@ -101,7 +116,8 @@ class VCEX_Inline_JS {
 	 */
 	private function carousel() { ?>
 
-		"undefined"!=$.fn.owlCarousel&&$(".wpex-carousel").each(function(){var e=$(this),a=e.data(),t=wpexLocalize.isRTL?!0:!1,s=a.smartSpeed?a.smartSpeed:wpexLocalize.carouselSpeed;e.owlCarousel({animateIn:!1,animateOut:!1,lazyLoad:!1,smartSpeed:s,rtl:t,dots:a.dots,nav:a.nav,items:a.items,slideBy:a.slideby,center:a.center,loop:a.loop,margin:a.margin,autoplay:a.autoplay,autoplayTimeout:a.autoplayTimeout,navText:['<span class="fa fa-chevron-left"><span>','<span class="fa fa-chevron-right"></span>'],responsive:{0:{items:a.itemsMobilePortrait},480:{items:a.itemsMobileLandscape},768:{items:a.itemsTablet},960:{items:a.items}}})});
+		if($.fn.owlCarousel!=undefined){$(".wpex-carousel").each(function(){var a=$(this),b=a.data();a.owlCarousel({animateIn:!1,animateOut:!1,lazyLoad:!1,smartSpeed:b.smartSpeed?b.smartSpeed:wpexLocalize.carouselSpeed,rtl:wpexLocalize.isRTL,dots:b.dots,nav:b.nav,items:b.items,slideBy:b.slideby,center:b.center,loop:b.loop,margin:b.margin,autoplay:b.autoplay,autoplayTimeout:b.autoplayTimeout,autoHeight:b.autoHeight,autoplayHoverPause:!0,navText:['<span class="fa fa-chevron-left"><span>','<span class="fa fa-chevron-right"></span>'],responsive:{0:{items:b.itemsMobilePortrait},480:{items:b.itemsMobileLandscape},768:{items:b.itemsTablet},960:{items:b.items}}})});}
+
 
 	<?php }
 
@@ -129,7 +145,7 @@ class VCEX_Inline_JS {
 
 		if($.fn.iLightBox!=undefined){
 
-			$(".wpex-carousel-lightbox").each(function(){var e=$(this).find(".owl-item"),i=$(this).find(".wpex-carousel-lightbox-item"),o=new Array;e.each(function(){if(!$(this).hasClass("cloned")){var e=$(this).find(".wpex-carousel-lightbox-item");e.length>0&&o.push({URL:e.attr("href"),title:e.attr("title")})}}),o.length>0&&i.on("click",function(e){e.preventDefault();var i=$(this).data("count")-1,i=i?i:0;$.iLightBox(o,{startFrom:parseInt(i),path:"horizontal",infinite:!0,skin:wpexLocalize.iLightbox.skin,show:{title:wpexLocalize.iLightbox.show.title,speed:parseInt(wpexLocalize.iLightbox.show.speed)},hide:{speed:parseInt(wpexLocalize.iLightbox.hide.speed)},controls:{arrows:wpexLocalize.iLightbox.controls.arrows,thumbnail:wpexLocalize.iLightbox.controls.thumbnail,fullscreen:wpexLocalize.iLightbox.controls.fullscreen,mousewheel:wpexLocalize.iLightbox.controls.mousewheel},effects:{reposition:!0,repositionSpeed:200,switchSpeed:300,loadedFadeSpeed:wpexLocalize.iLightbox.effects.loadedFadeSpeed,fadeSpeed:wpexLocalize.iLightbox.effects.fadeSpeed},overlay:wpexLocalize.iLightbox.overlay,social:wpexLocalize.iLightbox.social})})});
+			$(".wpex-carousel-lightbox").each(function(){var e=$(this),i=e.find(".owl-item"),t=e.find(".wpex-carousel-lightbox-item"),o=e.find(".wpex-carousel-lightbox-item").data(),a=new Array;i.each(function(){if(!$(this).hasClass("cloned")){var e=$(this).find(".wpex-carousel-lightbox-item");e.length>0&&a.push({URL:e.attr("href"),title:e.attr("data-title"),caption:e.attr("data-caption")})}}),a.length>0&&t.on("click",function(e){e.preventDefault();var i=$(this).data("count")-1,i=i?i:0;$.iLightBox(a,{startFrom:parseInt(i),path:"horizontal",infinite:wpexParseData(o.infinite,wpexLocalize.iLightbox.infinite),skin:wpexParseData(o.skin,wpexLocalize.iLightbox.skin),show:{title:wpexParseData(o.show_title,wpexLocalize.iLightbox.show.title),speed:parseInt(wpexLocalize.iLightbox.show.speed)},hide:{speed:parseInt(wpexLocalize.iLightbox.hide.speed)},controls:{arrows:wpexLocalize.iLightbox.controls.arrows,thumbnail:wpexLocalize.iLightbox.controls.thumbnail,fullscreen:wpexLocalize.iLightbox.controls.fullscreen,mousewheel:wpexLocalize.iLightbox.controls.mousewheel},effects:{reposition:!0,repositionSpeed:200,switchSpeed:300,loadedFadeSpeed:wpexLocalize.iLightbox.effects.loadedFadeSpeed,fadeSpeed:wpexLocalize.iLightbox.effects.fadeSpeed},overlay:wpexLocalize.iLightbox.overlay,social:wpexLocalize.iLightbox.social})})});
 
 		}
 
@@ -250,24 +266,33 @@ class VCEX_Inline_JS {
 	<?php }
 
 	/**
-	 * Skillbar
+	 * Milestone
 	 *
 	 * @since 2.0.0
 	 */
 	private function milestone() { ?>
 
-		if($.fn.appear!=undefined&&$.fn.countTo!=undefined){
+		if( typeof CountUp == 'function' ) {
 		
-			$( '.vcex-animated-milestone' ).each( function() {
-				$( this ).appear( function() {
-					$( this ).find( '.vcex-milestone-time' ).countTo( {
-						formatter: function ( value, options ) {
-							return value.toFixed(options.decimals).replace(/\B(?=(?:\d{3})+(?!\d))/g, ',');
-						},
-					} );
-				}, {
-					accX    : 0,
-					accY    : 0
+			$( '.vcex-milestone-time' ).each( function() {
+				var $this       = $( this ),
+					$data       = $this.data(),
+					$startVal   = $data.startVal,
+					$endVal     = $data.endVal,
+					$decimals   = $data.decimals,
+					$duration   = $data.duration;
+
+				var options = {
+					useEasing   : true,
+					useGrouping : true,
+					separator   : $data.separator,
+					decimal     : $data.decimal,
+					prefix      : '',
+					suffix      : ''
+				};
+				var numAnim    = new CountUp( this, $startVal, $endVal, $decimals, $duration, options );
+				$this.appear( function() {
+					numAnim.start();
 				} );
 			} );
 
@@ -310,7 +335,37 @@ class VCEX_Inline_JS {
 			$(".wpex-responsive-txt").each(function(){var a=$(this),t=a.data(),e=wpexParseData(t.minFontSize,13),n=wpexParseData(t.maxFontSize,40),o=wpexParseData(t.responsiveTextRatio,10);a.flowtype({fontRatio:o,minFont:e,maxFont:n})});
 		}
 	<?php }
-	
+
+	/**
+	 * Typed Text
+	 *
+	 * @since 2.0.0
+	 */
+	private function typed_text() { ?>
+		if ( $.fn.typed != undefined ) {
+			$( '.vcex-typed-text' ).each( function() {
+				var $this     = $( this );
+				var $settings = $this.data( 'settings' );
+				$settings.typeSpeed = parseInt( $settings.typeSpeed );
+				$settings.backDelay = parseInt( $settings.backDelay );
+				$settings.backSpeed = parseInt( $settings.backSpeed );
+				$settings.startDelay = parseInt( $settings.startDelay );
+				$settings.strings = $this.data( 'strings' );
+				$this.typed( $settings );
+			} );
+		}
+	<?php }
+
+	/**
+	 * Countdown
+	 *
+	 * @since 3.5.3
+	 */
+	private function countdown() { ?>
+
+		void 0!=$.fn.countdown&&$(".vcex-countdown").each(function(){var a=$(this),d=a.data("countdown"),l=a.data("days"),t=a.data("hours"),n=a.data("minutes"),s=a.data("seconds");d&&a.countdown(d,function(d){a.html(d.strftime("<div>%D <small>"+l+"</small></div> <div>%H <small>"+t+"</small> <div>%M <small></div>"+n+"</small></div> <div>%S <small>"+s+"</small></div>"))})});
+
+	<?php }
 
 } // End Class
 

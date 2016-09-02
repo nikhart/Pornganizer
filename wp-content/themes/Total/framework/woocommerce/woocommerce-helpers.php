@@ -6,11 +6,12 @@
  *
  * @package Total WordPress Theme
  * @subpackage WooCommerce
- * @version 3.3.5
+ * @version 3.5.3
  */
 
 /**
  * Creates the WooCommerce link for the navbar
+ * Must check if function exists for easier child theme edits.
  *
  * @since Total 1.0
  */
@@ -22,15 +23,12 @@ if ( ! function_exists( 'wpex_wcmenucart_menu_item' ) ) {
 		$icon_style   = wpex_get_mod( 'woo_menu_icon_style', 'drop-down' );
 		$custom_link  = wpex_get_mod( 'woo_menu_icon_custom_link' );
 		$header_style = wpex_global_obj( 'header_style' );
+		$count        = WC()->cart->cart_contents_count;
 
-		// URL
+		// Define cart icon link URL
 		if ( 'custom-link' == $icon_style && $custom_link ) {
 			$url = esc_url( $custom_link );
-		} else {
-			$cart_id = woocommerce_get_page_id( 'cart' );
-			if ( function_exists( 'icl_object_id' ) ) {
-				$cart_id = icl_object_id( $cart_id, 'page' );
-			}
+		} elseif ( $cart_id = wpex_parse_obj_id( wc_get_page_id( 'cart' ), 'page' ) ) {
 			$url = get_permalink( $cart_id );
 		}
 		
@@ -40,7 +38,7 @@ if ( ! function_exists( 'wpex_wcmenucart_menu_item' ) ) {
 			$cart_extra = WC()->cart->get_cart_total();
 			$cart_extra = str_replace( 'amount', 'wcmenucart-details', $cart_extra );
 		} elseif ( 'icon_count' == $display ) {
-			$cart_extra = '<span class="wcmenucart-details count">'. WC()->cart->cart_contents_count .'</span>';
+			$cart_extra = '<span class="wcmenucart-details count">'. esc_html( $count ) .'</span>';
 		} else {
 			$cart_extra = '';
 		}
@@ -53,7 +51,7 @@ if ( ! function_exists( 'wpex_wcmenucart_menu_item' ) ) {
 
 		ob_start(); ?>
 
-			<a href="<?php echo esc_url( $url ); ?>" class="wcmenucart" title="<?php esc_html_e( 'Your Cart', 'total' ); ?>">
+			<a href="<?php echo esc_url( $url ); ?>" class="wcmenucart wcmenucart-items-<?php echo esc_html( $count ); ?>" title="<?php esc_html_e( 'Your Cart', 'total' ); ?>">
 				<span class="link-inner">
 					<span class="wcmenucart-count"><?php echo $cart_icon; ?><?php echo $cart_extra; ?></span>
 				</span>

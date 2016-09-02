@@ -10,7 +10,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Templates
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 get_header(); ?>

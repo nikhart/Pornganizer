@@ -4,11 +4,8 @@
  *
  * @package Total WordPress Theme
  * @subpackage Testimonials
- * @version 3.3.3
+ * @version 3.5.3
  */
-
-// Set global var
-global $wpex_testimonials_config;
 
 // The class
 class WPEX_Testimonials_Config {
@@ -24,20 +21,23 @@ class WPEX_Testimonials_Config {
 		require_once( WPEX_FRAMEWORK_DIR .'testimonials/testimonials-helpers.php' );
 
 		// Adds the testimonials post type
-		add_action( 'init', array( $this, 'register_post_type' ), 0 );
+		add_action( 'init', array( 'WPEX_Testimonials_Config', 'register_post_type' ), 0 );
 
 		// Adds the testimonials taxonomies
 		if ( wpex_is_mod_enabled( wpex_get_mod( 'testimonials_categories', true ) ) ) {
-			add_action( 'init', array( $this, 'register_categories' ), 0 );
+			add_action( 'init', array( 'WPEX_Testimonials_Config', 'register_categories' ), 0 );
 		}
 
 		// Register testimonials sidebar
 		if ( wpex_get_mod( 'testimonials_custom_sidebar', true ) ) {
-			add_filter( 'widgets_init', array( $this, 'register_sidebar' ), 10 );
+			add_filter( 'widgets_init', array( 'WPEX_Testimonials_Config', 'register_sidebar' ), 10 );
 		}
 
 		// Add image sizes
-		add_filter( 'wpex_image_sizes', array( $this, 'add_image_sizes' ) );
+		add_filter( 'wpex_image_sizes', array( 'WPEX_Testimonials_Config', 'add_image_sizes' ) );
+
+		// Add testimonial VC modules
+		add_filter( 'vcex_builder_modules', array( 'WPEX_Testimonials_Config', 'vc_modules' ) );
 
 		/*-------------------------------------------------------------------------------*/
 		/* -  Admin only actions/filters
@@ -45,20 +45,23 @@ class WPEX_Testimonials_Config {
 		if ( is_admin() ) {
 
 			// Adds columns in the admin view for taxonomies
-			add_filter( 'manage_edit-testimonials_columns', array( $this, 'edit_columns' ) );
-			add_action( 'manage_testimonials_posts_custom_column', array( $this, 'column_display' ), 10, 2 );
+			add_filter( 'manage_edit-testimonials_columns', array( 'WPEX_Testimonials_Config', 'edit_columns' ) );
+			add_action( 'manage_testimonials_posts_custom_column', array( 'WPEX_Testimonials_Config', 'column_display' ), 10, 2 );
 
 			// Allows filtering of posts by taxonomy in the admin view
-			add_action( 'restrict_manage_posts', array( $this, 'tax_filters' ) );
+			add_action( 'restrict_manage_posts', array( 'WPEX_Testimonials_Config', 'tax_filters' ) );
 
 			// Create Editor for altering the post type arguments
-			add_action( 'admin_menu', array( $this, 'add_page' ) );
-			add_action( 'admin_init', array( $this, 'register_page_options' ) );
-			add_action( 'admin_notices', array( $this, 'setting_notice' ) );
-			add_action( 'admin_print_styles-testimonials_page_wpex-testimonials-editor', array( $this,'css' ) );
+			add_action( 'admin_menu', array( 'WPEX_Testimonials_Config', 'add_page' ) );
+			add_action( 'admin_init', array( 'WPEX_Testimonials_Config', 'register_page_options' ) );
+			add_action( 'admin_notices', array( 'WPEX_Testimonials_Config', 'setting_notice' ) );
+			add_action( 'admin_print_styles-testimonials_page_wpex-testimonials-editor', array( 'WPEX_Testimonials_Config','css' ) );
 
 			// Add new image sizes tab
-			add_filter( 'wpex_image_sizes_tabs', array( $this, 'image_sizes_tabs' ), 10 );
+			add_filter( 'wpex_image_sizes_tabs', array( 'WPEX_Testimonials_Config', 'image_sizes_tabs' ), 10 );
+
+			// Add meta settings
+			add_filter( 'wpex_metabox_array', array( 'WPEX_Testimonials_Config', 'add_meta' ), 10, 2 );
 		
 		}
 
@@ -69,26 +72,26 @@ class WPEX_Testimonials_Config {
 
 			// Display testimonials sidebar for testimonials
 			if ( wpex_get_mod( 'testimonials_custom_sidebar', true ) ) {
-				add_filter( 'wpex_get_sidebar', array( $this, 'display_sidebar' ) );
+				add_filter( 'wpex_get_sidebar', array( 'WPEX_Testimonials_Config', 'display_sidebar' ) );
 			}
 
 			// Alter the default page title
-			add_action( 'wpex_page_header_title_args', array( $this, 'alter_title' ) );
+			add_action( 'wpex_page_header_title_args', array( 'WPEX_Testimonials_Config', 'alter_title' ) );
 
 			// Alter the post layouts for testimonials posts and archives
-			add_filter( 'wpex_post_layout_class', array( $this, 'layouts' ) );
+			add_filter( 'wpex_post_layout_class', array( 'WPEX_Testimonials_Config', 'layouts' ) );
 
 			// Posts per page
-			add_action( 'pre_get_posts', array( $this, 'posts_per_page' ) );
+			add_action( 'pre_get_posts', array( 'WPEX_Testimonials_Config', 'posts_per_page' ) );
 
 			// Single next/prev visibility
-			add_filter( 'wpex_has_next_prev', array( $this, 'next_prev' ) );
+			add_filter( 'wpex_has_next_prev', array( 'WPEX_Testimonials_Config', 'next_prev' ) );
 
 			// Alter previous post link title
-			add_filter( 'wpex_prev_post_link_title', array( $this, 'prev_post_link_title' ) );
+			add_filter( 'wpex_prev_post_link_title', array( 'WPEX_Testimonials_Config', 'prev_post_link_title' ) );
 
 			// Alter next post link title
-			add_filter( 'wpex_next_post_link_title', array( $this, 'next_post_link_title' ) );
+			add_filter( 'wpex_next_post_link_title', array( 'WPEX_Testimonials_Config', 'next_post_link_title' ) );
 
 		}
 		
@@ -103,7 +106,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_post_type() {
+	public static function register_post_type() {
 
 		// Get values and sanitize
 		$name          = wpex_get_testimonials_name();
@@ -154,7 +157,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_categories() {
+	public static function register_categories() {
 
 		// Define and sanitize options
 		$name = wpex_get_mod( 'testimonials_cat_labels');
@@ -202,7 +205,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function edit_columns( $columns ) {
+	public static function edit_columns( $columns ) {
 		if ( taxonomy_exists( 'testimonials_category' ) ) {
 			$columns['testimonials_category'] = esc_html__( 'Category', 'total' );
 		}
@@ -214,7 +217,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function column_display( $column, $post_id ) {
+	public static function column_display( $column, $post_id ) {
 		switch ( $column ) :
 			case 'testimonials_category':
 				if ( $category_list = get_the_term_list( $post_id, 'testimonials_category', '', ', ', '' ) ) {
@@ -231,7 +234,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	function tax_filters() {
+	public static function tax_filters() {
 		global $typenow;
 
 		// An array of all the taxonomyies you want to display. Use the taxonomy name or slug
@@ -239,7 +242,7 @@ class WPEX_Testimonials_Config {
 
 		// must set this to the post type you want the filter(s) displayed on
 		if ( 'testimonials' == $typenow && taxonomy_exists( 'testimonials_category' ) ) {
-			$current_tax_slug   = isset( $_GET['testimonials_category'] ) ? $_GET['testimonials_category'] : false;
+			$current_tax_slug   = isset( $_GET['testimonials_category'] ) ? esc_html( $_GET['testimonials_category'] ) : false;
 			$tax_obj            = get_taxonomy( 'testimonials_category' );
 			$tax_name           = $tax_obj->labels->name;
 			$terms              = get_terms( 'testimonials_category' );
@@ -259,16 +262,16 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function add_page() {
+	public static function add_page() {
 		$wpex_testimonials_editor = add_submenu_page(
 			'edit.php?post_type=testimonials',
 			esc_html__( 'Post Type Editor', 'total' ),
 			esc_html__( 'Post Type Editor', 'total' ),
 			'administrator',
 			'wpex-testimonials-editor',
-			array( $this, 'create_admin_page' )
+			array( 'WPEX_Testimonials_Config', 'create_admin_page' )
 		);
-		add_action( 'load-'. $wpex_testimonials_editor, array( $this, 'flush_rewrite_rules' ) );
+		add_action( 'load-'. $wpex_testimonials_editor, array( 'WPEX_Testimonials_Config', 'flush_rewrite_rules' ) );
 	}
 
 	/**
@@ -288,8 +291,8 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_page_options() {
-		register_setting( 'wpex_testimonials_options', 'wpex_testimonials_editor', array( $this, 'sanitize' ) );
+	public static function register_page_options() {
+		register_setting( 'wpex_testimonials_options', 'wpex_testimonials_editor', array( 'WPEX_Testimonials_Config', 'sanitize' ) );
 	}
 
 	/**
@@ -297,7 +300,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function setting_notice() {
+	public static function setting_notice() {
 		settings_errors( 'wpex_testimonials_editor_page_notices' );
 	}
 
@@ -306,7 +309,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function sanitize( $options ) {
+	public static function sanitize( $options ) {
 
 		// Save values to theme mod
 		if ( ! empty ( $options ) ) {
@@ -356,7 +359,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function create_admin_page() {
+	public static function create_admin_page() {
 
 		// Delete option as we are using theme_mods instead
 		delete_option( 'wpex_testimonials_editor' ); ?>
@@ -498,7 +501,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_sidebar() {
+	public static function register_sidebar() {
 
 		// Get heading tag
 		$heading_tag = wpex_get_mod( 'sidebar_headings', 'div' );
@@ -525,7 +528,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function display_sidebar( $sidebar ) {
+	public static function display_sidebar( $sidebar ) {
 		if ( is_singular( 'testimonials' ) || wpex_is_testimonials_tax() ) {
 			$sidebar = 'testimonials_sidebar';
 		}
@@ -556,7 +559,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function layouts( $class ) {
+	public static function layouts( $class ) {
 		if ( is_singular( 'testimonials' ) ) {
 			$class = wpex_get_mod( 'testimonials_single_layout', 'right-sidebar' );
 		} elseif ( wpex_is_testimonials_tax() && ! is_search() ) {
@@ -570,7 +573,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function posts_per_page( $query ) {
+	public static function posts_per_page( $query ) {
 
 		// Main Checks
 		if ( is_admin() || ! $query->is_main_query() ) {
@@ -619,7 +622,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function add_image_sizes( $sizes ) {
+	public static function add_image_sizes( $sizes ) {
 		$obj            = get_post_type_object( 'testimonials' );
 		$post_type_name = $obj->labels->singular_name;
 		$sizes['testimonials_entry'] = array(
@@ -637,7 +640,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function next_prev( $return ) {
+	public static function next_prev( $return ) {
 		if ( is_singular( 'testimonials' ) && ! wpex_get_mod( 'testimonials_next_prev', true ) ) {
 			$return = false;
 		}
@@ -649,7 +652,7 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function prev_post_link_title( $title ) {
+	public static function prev_post_link_title( $title ) {
 		if ( is_singular( 'testimonials' ) ) {
 			$title = '<span class="fa fa-angle-double-left"></span>' . esc_html__( 'Previous', 'total' );
 		}
@@ -661,12 +664,67 @@ class WPEX_Testimonials_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function next_post_link_title( $title ) {
+	public static function next_post_link_title( $title ) {
 		if ( is_singular( 'testimonials' ) ) {
 			$title = esc_html__( 'Next', 'total' ) . '<span class="fa fa-angle-double-right"></span>';
 		}
 		return $title;
 	}
 
+	/**
+	 * Adds testimonials meta options
+	 *
+	 * @since 3.5.3
+	 */
+	public static function add_meta( $array, $post ) {
+		$obj = get_post_type_object( 'testimonials' );
+		$array['testimonials'] = array(
+			'title' => $obj->labels->singular_name,
+			'post_type' => array( 'testimonials' ),
+			'settings' => array(
+				'testimonial_author' => array(
+					'title' => esc_html__( 'Author', 'total' ),
+					'description' => esc_html__( 'Enter the name of the author for this testimonial.', 'total' ),
+					'id' => 'wpex_testimonial_author',
+					'type' => 'text',
+				),
+				'testimonial_company' => array(
+					'title' => esc_html__( 'Company', 'total' ),
+					'description' => esc_html__( 'Enter the name of the company for this testimonial.', 'total' ),
+					'id' => 'wpex_testimonial_company',
+					'type' => 'text',
+				),
+				'testimonial_url' => array(
+					'title' => esc_html__( 'Company URL', 'total' ),
+					'description' => esc_html__( 'Enter the url for the company for this testimonial.', 'total' ),
+					'id' => 'wpex_testimonial_url',
+					'type' => 'text',
+				),
+				'post_rating' => array(
+					'title' => esc_html__( 'Rating', 'total' ),
+					'description' => esc_html__( 'Enter a rating for this testimonial.', 'total' ),
+					'id' => 'wpex_post_rating', // Give it generic rating custom field that may be used on other types.
+					'type' => 'number',
+					'max' => '10',
+					'min' => '1',
+					'step' => '0.1',
+				),
+			),
+		);
+		return $array;
+	}
+
+	/**
+	 * Add custom VC modules
+	 *
+	 * @since 3.5.3
+	 */
+	public static function vc_modules( $modules ) {
+		$modules[] = 'testimonials_grid';
+		$modules[] = 'testimonials_carousel';
+		$modules[] = 'testimonials_slider';
+		return $modules;
+	}
+
 }
-$wpex_testimonials_config = new WPEX_Testimonials_Config;
+new WPEX_Testimonials_Config;

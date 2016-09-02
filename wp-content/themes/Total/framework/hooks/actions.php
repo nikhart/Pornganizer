@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Hooks
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly

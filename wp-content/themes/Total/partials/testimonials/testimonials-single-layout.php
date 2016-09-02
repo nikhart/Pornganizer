@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.3
  *
  * @todo Allow display of the title in the testimonial seperate from archive entry title setting
  */
@@ -14,26 +14,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 } ?>
 
-<div class="entry-content entry wpex-clr">
+<div class="entry-content entry wpex-clr"><?php
 
-	<?php if ( 'blockquote' == wpex_get_mod( 'testimonial_post_style', 'blockquote' ) ) : ?>
+	// "Quote" style
+	if ( 'blockquote' == wpex_get_mod( 'testimonial_post_style', 'blockquote' ) ) :
 
-		<?php get_template_part( 'partials/testimonials/testimonials-entry' ); ?>
+		get_template_part( 'partials/testimonials/testimonials-entry' );
 
-	<?php else : ?>
+	// Display full content
+	else :
 
-		<?php the_content(); ?>
+		the_content();
 
-	<?php endif; ?>
+	endif;
 
-</div>
+?></div>
 
 <?php
 // Displays comments if enabled
-if ( wpex_get_mod( 'testimonials_comments' ) && comments_open() ) : ?>
+if ( wpex_get_mod( 'testimonials_comments', false ) && comments_open() ) : ?>
 
-	<section id="testimonials-post-comments" class="clr">
-		<?php comments_template(); ?>
-	</section><!-- #testimonials-post-comments -->
+	<section id="testimonials-post-comments" class="clr"><?php
+
+		// Diplay comments
+		comments_template();
+
+	?></section>
 
 <?php endif; ?>

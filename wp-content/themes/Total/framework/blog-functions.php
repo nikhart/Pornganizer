@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 /**
@@ -186,17 +186,13 @@ function wpex_blog_entry_style() {
  * @return  bool
  */
 function wpex_blog_entry_equal_heights() {
-
-	// Return if disabled via theme mod
 	if ( ! wpex_get_mod( 'blog_archive_grid_equal_heights', false ) ) {
 		return false;
 	}
-
-	// Return true for the grid style
-	if ( 'grid-entry-style' == wpex_blog_entry_style() && 'masonry' != wpex_blog_grid_style() ) {
+	$entry_style = wpex_blog_entry_style();
+	if ( 'grid-entry-style' == $entry_style && 'masonry' != $entry_style ) {
 		return true;
 	}
-
 }
 
 /**
@@ -250,11 +246,6 @@ function wpex_blog_entry_classes() {
 	// Masonry classes
 	if ( 'masonry' == wpex_blog_grid_style() ) {
 		$classes[] = 'isotope-entry';
-	}
-
-	// Equal heights
-	if ( wpex_blog_entry_equal_heights() ) {
-		$classes[] = 'blog-entry-equal-heights';
 	}
 
 	// Add columns for grid style entries
@@ -397,7 +388,7 @@ function wpex_get_blog_post_thumbnail( $args = '' ) {
 	$args = wp_parse_args( $args, $defaults );
 
 	// Apply filter to args
-	$args = apply_filters( 'wpex_blog_entry_thumbnail_args', $args );
+	$args = apply_filters( 'wpex_blog_post_thumbnail_args', $args );
 
 	// Generate thumbnail
 	$thumbnail = wpex_get_post_thumbnail( $args );
@@ -480,14 +471,14 @@ function wpex_blog_wrap_classes( $classes = NULL ) {
 		
 	// Isotope classes
 	if ( $style == 'grid-entry-style' ) {
-		$classes[] = 'wpex-row ';
+		$classes[] = 'wpex-row';
 		if ( 'masonry' == wpex_blog_grid_style() ) {
-			$classes[] = 'blog-masonry-grid ';
+			$classes[] = 'blog-masonry-grid';
 		} else {
 			if ( 'infinite_scroll' == wpex_blog_pagination_style() ) {
-				$classes[] = 'blog-masonry-grid ';
+				$classes[] = 'blog-masonry-grid';
 			} else {
-				$classes[] = 'blog-grid ';
+				$classes[] = 'blog-grid';
 			}
 		}
 	}
@@ -497,15 +488,19 @@ function wpex_blog_wrap_classes( $classes = NULL ) {
 		$classes[] = 'left-thumbs';
 	}
 
-	
 	// Add some margin when author is enabled
 	if ( $style == 'grid-entry-style' && wpex_get_mod( 'blog_entry_author_avatar' ) ) {
-		$classes[] = 'grid-w-avatars ';
+		$classes[] = 'grid-w-avatars';
+	}
+
+	// Equal heights
+	if ( wpex_blog_entry_equal_heights() ) {
+		$classes[] = 'blog-equal-heights';
 	}
 	
 	// Infinite scroll classes
 	if ( 'infinite_scroll' == wpex_blog_pagination_style() ) {
-		$classes[] = 'infinite-scroll-wrap ';
+		$classes[] = 'infinite-scroll-wrap';
 	}
 	
 	// Add filter for child theming
@@ -551,7 +546,7 @@ function wpex_blog_entry_layout_blocks() {
 	}
 
 	// Set block keys equal to vals
-	$blocks = array_combine( $blocks, $blocks );
+	$blocks = $blocks ? array_combine( $blocks, $blocks ) : array();
 
 	// Apply filters to entry layout blocks after they are turned into an array
 	$blocks = apply_filters( 'wpex_blog_entry_layout_blocks', $blocks );
@@ -579,6 +574,14 @@ function wpex_blog_entry_meta_sections() {
 		$sections = explode( ',', $sections );
 	}
 
+	// Set keys equal to values for easier modification
+	$sections = $sections ? array_combine( $sections, $sections ) : array();
+
+	// Remove comments for link format
+	if ( $sections && 'link' == get_post_format() ) {
+		unset( $sections['comments'] );
+	}
+
 	// Apply filters for easy modification
 	$sections = apply_filters( 'wpex_blog_entry_meta_sections', $sections );
 
@@ -591,15 +594,28 @@ function wpex_blog_entry_meta_sections() {
  * Returns single blog post blocks
  *
  * @since 2.0.0
- * @return array
  */
 function wpex_blog_single_layout_blocks() {
+
+	// Default blocks
+	$defaults = array(
+		'featured_media',
+		'title',
+		'meta',
+		'post_series',
+		'the_content',
+		'post_tags',
+		'social_share',
+		'author_bio',
+		'related_posts',
+		'comments',
+	);
 
 	// Get layout blocks
 	$blocks = wpex_get_mod( 'blog_single_composer' );
 
-	// If blocks are 100% empty return defaults
-	$blocks = $blocks ? $blocks : 'featured_media,title,meta,post_series,the_content,post_tags,social_share,author_bio,related_posts,comments';
+	// If blocks are empty return defaults
+	$blocks = $blocks ? $blocks : $defaults;
 
 	// Convert blocks to array so we can loop through them
 	if ( ! is_array( $blocks ) ) {
@@ -607,7 +623,7 @@ function wpex_blog_single_layout_blocks() {
 	}
 
 	// Set block keys equal to vals
-	$blocks = array_combine( $blocks, $blocks );
+	$blocks = $blocks ? array_combine( $blocks, $blocks ) : array();
 
 	// Apply filters to entry layout blocks
 	$blocks = apply_filters( 'wpex_blog_single_layout_blocks', $blocks );
@@ -621,7 +637,6 @@ function wpex_blog_single_layout_blocks() {
  * Returns single blog post blocks
  *
  * @since 2.0.0
- * @return array
  */
 function wpex_blog_single_meta_sections() {
 
@@ -631,13 +646,16 @@ function wpex_blog_single_meta_sections() {
 	// Get Sections from Customizer
 	$sections = wpex_get_mod( 'blog_post_meta_sections', $sections );
 
-	// Apply filters for easy modification
-	$sections = apply_filters( 'wpex_blog_single_meta_sections', $sections );
-
 	// Turn into array if string
 	if ( $sections && ! is_array( $sections ) ) {
 		$sections = explode( ',', $sections );
 	}
+
+	// Set keys equal to values for easier modification
+	$sections = $sections ? array_combine( $sections, $sections ) : array();
+
+	// Apply filters for easy modification
+	$sections = apply_filters( 'wpex_blog_single_meta_sections', $sections );
 
 	// Return sections
 	return $sections;
@@ -648,7 +666,6 @@ function wpex_blog_single_meta_sections() {
  * Returns data attributes for the blog gallery slider
  *
  * @since 2.0.0
- * @return array
  */
 function wpex_blog_slider_data_atrributes() {
 
@@ -677,7 +694,6 @@ function wpex_blog_slider_data_atrributes() {
  * Adds unique class for the slider
  *
  * @since 2.0.0
- * @return array
  */
 function wpex_blog_slider_video( $attachment ) {
 	$video = get_post_meta( $attachment, '_video_url', true );

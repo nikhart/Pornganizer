@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -16,6 +16,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( is_admin() ) {
 	return;
 }
+
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output
+$output = '';
 
 // Deprecated Attributes
 if ( ! empty( $atts['class'] ) && empty( $classes ) ) {
@@ -29,7 +38,7 @@ if ( ! empty( $atts['lightbox_image'] ) ) {
 }
 
 // Get shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_button', $atts );
 
 // Extract shortcode attributes
 extract( $atts );
@@ -39,8 +48,6 @@ $content     = ! empty( $content ) ? $content : esc_html__( 'Button Text', 'tota
 $inline_js   = array();
 $data_attr   = array();
 $url         = $url ? esc_url( $url ) : '#';
-$target_html = vcex_html( 'target_attr', $target );
-$rel         = vcex_html( 'rel_attr', $rel );
 
 // Load custom font
 if ( $font_family ) {
@@ -66,10 +73,7 @@ if ( 'local' == $target ) {
 	$button_classes[] = 'local-scroll-link';
 }
 if ( $css_animation ) {
-	$button_classes[] = $this->getCSSAnimation( $css_animation );
-}
-if ( $classes ) {
-	$button_classes[] = $this->getExtraClass( $classes );
+	$button_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $visibility ) {
 	$button_classes[] = $visibility;
@@ -220,36 +224,52 @@ vcex_inline_js( $inline_js );
 
 // Turn arrays into strings
 $button_classes = implode( ' ', $button_classes );
-$data_attr      = implode( ' ', $data_attr );
+$data_attr      = ' '. implode( ' ', $data_attr );
 
 // Open CSS wrapper
-if ( $css_wrap ) echo '<div class="'. vc_shortcode_custom_css_class( $css_wrap ) .' wpex-clr">';
+if ( $css_wrap ) {
+	$output .= '<div class="'. vc_shortcode_custom_css_class( $css_wrap ) .' wpex-clr">';
+}
 
-// Open wrapper for specific button styles
-if ( $wrap_classes ) echo '<div class="'. esc_attr( $wrap_classes ) .'">'; ?>
-	<a href="<?php echo esc_url( $url ); ?>" class="<?php echo esc_attr( $button_classes ); ?>" title="<?php echo esc_attr( $title ); ?>"<?php echo $inline_style; ?><?php echo $target_html; ?><?php echo $rel; ?> <?php echo $data_attr; ?><?php echo vcex_unique_id( $unique_id ); ?>>
-		<span class="theme-button-inner"><?php
-			// Define output
-			$output = '';
-			// Display left Icon
-			if ( $icon_left ) {
-				$output .='<span class="vcex-icon-wrap theme-button-icon-left">
-					<span class="'. $icon_left .'"'. $icon_left_style .'></span>
-				</span>';
-			}
-			// Button Text
-			$output .= $content;
-			// Display Right Icon
-			if ( $icon_right ) {
-				$output .='<span class="vcex-icon-wrap theme-button-icon-right">
-					<span class="'. $icon_right .'"'. $icon_right_style .'></span>
-				</span>';
-			}
-			echo $output; ?></span><!-- .theme-button-inner -->
-	</a><!-- <?php echo esc_attr( $button_classes ); ?> -->
-<?php
-// Close wrapper for specific button styles
-if ( $wrap_classes ) echo '</div><!-- '. esc_attr( $wrap_classes ) .' -->';
+	// Open wrapper for specific button styles
+	if ( $wrap_classes ) {
+		$output .= '<div class="'. esc_attr( $wrap_classes ) .'">';
+	}
+
+		// Open Link
+		$output .= '<a href="'. esc_url( $url ) .'" class="'. esc_attr( $button_classes ) .'" title="'. esc_attr( $title ) .'"'. $inline_style . vcex_html( 'target_attr', $target ) . vcex_html( 'rel_attr', $rel ) . $data_attr . vcex_html( 'id_attr', $unique_id ) .'>';
+
+			// Open inner span
+			$output .= '<span class="theme-button-inner">';
+
+				// Left Icon
+				if ( $icon_left ) {
+					$output .='<span class="vcex-icon-wrap theme-button-icon-left"><span class="'. $icon_left .'"'. $icon_left_style .'></span></span>';
+				}
+
+				// Text
+				$output .= $content;
+
+				// Icon Right
+				if ( $icon_right ) {
+					$output .='<span class="vcex-icon-wrap theme-button-icon-right"><span class="'. $icon_right .'"'. $icon_right_style .'></span></span>';
+				}
+
+			// Close inner span
+			$output .= '</span>';
+
+		// Close link
+		$output .= '</a>';
+
+	// Close wrapper for specific button styles
+	if ( $wrap_classes ) {
+		$output .=  '</div>';
+	}
 
 // Close css wrap div
-if ( $css_wrap ) echo '</div>';
+if ( $css_wrap ) {
+	$output .= '</div>';
+}
+
+// Echo output
+echo $output .' '; // Add little space for inline buttons

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -23,6 +23,7 @@ if ( ! isset( $wpex_count ) ) {
 // Add Standard Classes
 $classes	= array();
 $classes[]	= 'portfolio-entry';
+$classes[]  = 'loop-'. $wpex_loop;
 $classes[]	= 'col';
 $classes[]	= wpex_portfolio_column_class( $wpex_loop );
 $classes[]	= 'col-'. $wpex_count;

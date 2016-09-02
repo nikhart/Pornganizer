@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 /**
@@ -28,6 +28,12 @@ if ( ! function_exists( 'wpex_overlay' ) ) {
 		// If style is defined lets locate and include the overlay template
 		if ( $style ) {
 
+			// Add position to args
+			$args['overlay_position'] = $position;
+
+			// Add new action for loading custom templates
+			do_action( 'wpex_pre_include_overlay_template', $style, $args );
+
 			// Load the overlay template
 			$overlays_dir = 'partials/overlays/';
 			$template = $overlays_dir . $style .'.php';
@@ -48,8 +54,8 @@ if ( ! function_exists( 'wpex_overlay' ) ) {
  *
  * @since 1.0.0
  */
-function wpex_overlay_styles_array( $style = NULL ) {
-	$array = array(
+function wpex_overlay_styles_array() {
+	return apply_filters( 'wpex_overlay_styles_array', array(
 		''                                => esc_html__( 'None', 'total' ),
 		'hover-button'                    => esc_html__( 'Hover Button', 'total' ),
 		'magnifying-hover'                => esc_html__( 'Magnifying Glass Hover', 'total' ),
@@ -58,21 +64,22 @@ function wpex_overlay_styles_array( $style = NULL ) {
 		'plus-three-hover'                => esc_html__( 'Plus Icon #3 Hover', 'total' ),
 		'view-lightbox-buttons-buttons'   => esc_html__( 'View/Lightbox Icons Hover', 'total' ),
 		'view-lightbox-buttons-text'      => esc_html__( 'View/Lightbox Text Hover', 'total' ),
+		'title-center'                    => esc_html__( 'Title Centered', 'total' ),
 		'title-bottom'                    => esc_html__( 'Title Bottom', 'total' ),
 		'title-bottom-see-through'        => esc_html__( 'Title Bottom See Through', 'total' ),
 		'title-push-up'                   => esc_html__( 'Title Push Up', 'total' ),
 		'title-excerpt-hover'             => esc_html__( 'Title + Excerpt Hover', 'total' ),
 		'title-category-hover'            => esc_html__( 'Title + Category Hover', 'total' ),
 		'title-category-visible'          => esc_html__( 'Title + Category Visible', 'total' ),
-		'categories-title-bottom-visible' => esc_html__( 'Categories + Title Bottom Visible', 'total' ),
 		'title-date-hover'                => esc_html__( 'Title + Date Hover', 'total' ),
 		'title-date-visible'              => esc_html__( 'Title + Date Visible', 'total' ),
+		'categories-title-bottom-visible' => esc_html__( 'Categories + Title Bottom Visible', 'total' ),
 		'slideup-title-white'             => esc_html__( 'Slide-Up Title White', 'total' ),
 		'slideup-title-black'             => esc_html__( 'Slide-Up Title Black', 'total' ),
 		'category-tag'                    => esc_html__( 'Category Tag', 'total' ),
 		'category-tag-two'                => esc_html__( 'Category Tag', 'total' ) .' 2',
-	);
-	return apply_filters( 'wpex_overlay_styles_array', $array );
+		'thumb-swap'                      => esc_html__( 'Secondary Image Swap', 'total' ),
+	) );
 }
 
 /**

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 /*-----------------------------------------------------------------------------------*/
@@ -31,8 +31,11 @@ function wpex_toggle_bar_active() {
 function wpex_toggle_bar_btn() {
 	return wpex_toggle_bar_button();
 }
+function wpex_post_layout() {
+	echo wpex_global_obj( 'post_layout' );
+}
 function wpex_get_post_layout_class() {
-	return wpex_post_layout();
+	return wpex_global_obj( 'post_layout' );
 }
 function wpex_overlay_classname() {
 	return wpex_overlay_classes();
@@ -151,10 +154,6 @@ function wpex_hook_wrap_after_default() {
 
 function wpex_theme_setup() {
 	_deprecated_function( 'wpex_theme_setup', '1.6.0' );
-}
-
-function wpex_get_template_part() {
-	_deprecated_function( 'wpex_get_template_part', '1.6.0', 'get_template_part' );
 }
 
 function wpex_active_post_types() {

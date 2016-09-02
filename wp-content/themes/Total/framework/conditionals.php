@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 /*-------------------------------------------------------------------------------*/
@@ -22,6 +22,7 @@
 	# Terms
 	# WooCommerce
 	# Authors
+	# Visual Composer
 
 /*-------------------------------------------------------------------------------*/
 /* [ Core ]
@@ -305,41 +306,54 @@ if ( ! function_exists( 'wpex_is_testimonials_tax' ) ) {
 if ( ! function_exists( 'wpex_post_has_terms' ) ) {
 	function wpex_post_has_terms( $post_id = '', $post_type = '' ) {
 
+		// Default false
+		$bool = false;
+
 		// Post data
 		$post_id    = $post_id ? $post_id : get_the_ID();
 		$post_type  = $post_type ? $post_type : get_post_type( $post_id );
 
 		// Standard Posts
 		if ( $post_type == 'post' ) {
-			$terms = get_the_terms( $post_id, 'category');
+			$terms = get_the_terms( $post_id, 'category' );
 			if ( $terms ) {
-				return true;
+				$bool =  true;
 			}
 		}
 
 		// Portfolio
 		elseif ( 'portfolio' == $post_type ) {
-			$terms = get_the_terms( $post_id, 'portfolio_category');
+			$terms = get_the_terms( $post_id, 'portfolio_category' );
 			if ( $terms ) {
-				return true;
+				$bool =  true;
 			}
 		}
 
 		// Staff
 		elseif ( 'staff' == $post_type ) {
-			$terms = get_the_terms( $post_id, 'staff_category');
+			$terms = get_the_terms( $post_id, 'staff_category' );
 			if ( $terms ) {
-				return true;
+				$bool =  true;
 			}
 		}
 
 		// Testimonials
 		elseif ( 'testimonials' == $post_type ) {
-			$terms = get_the_terms( $post_id, 'testimonials_category');
+			$terms = get_the_terms( $post_id, 'testimonials_category' );
 			if ( $terms ) {
-				return true;
+				$bool =  true;
 			}
 		}
+
+		// Product
+		elseif ( WPEX_WOOCOMMERCE_ACTIVE && 'product' == $post_type ) {
+			$terms = get_the_terms( $post_id, 'product_category' );
+			if ( $terms ) {
+				$bool = true;
+			}
+		}
+
+		return apply_filters( 'wpex_post_has_terms', $bool );
 
 	}
 }
@@ -457,4 +471,14 @@ function wpex_author_has_social() {
 		return false;
 	}
 
+}
+
+/*-------------------------------------------------------------------------------*/
+/* [ Visual Composer ]
+/*-------------------------------------------------------------------------------*/
+
+function wpex_vc_is_inline() {
+	if ( function_exists( 'vc_is_inline' ) ) {
+		return vc_is_inline();
+	}
 }

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 /**
@@ -25,7 +25,7 @@ function wpex_header_classes() {
 	$classes['header_style'] = 'header-'. $header_style;
 
 	// Full width header
-	if ( wpex_get_mod( 'full_width_header' ) ) {
+	if ( 'full-width' == wpex_global_obj( 'main_layout' ) && wpex_get_mod( 'full_width_header' ) ) {
 		$classes[] = 'wpex-full-width';
 	}
 
@@ -115,7 +115,7 @@ function wpex_header_logo_icon() {
 	$icon = wpex_get_mod( 'logo_icon' );
 
 	// Apply filter for child theming
-	$icon = apply_filters( 'wpex_header_logo_icon', $icon );
+	$icon = esc_html( apply_filters( 'wpex_header_logo_icon', $icon ) );
 
 	// Apply an empty icon in the customizer for postMessage support
 	if ( is_customize_preview() && 'none' == $icon ) {
@@ -124,7 +124,7 @@ function wpex_header_logo_icon() {
 
 	// Return icon
 	if ( $icon && 'none' != $icon ) {
-		return '<span id="site-logo-fa-icon" class="fa fa-'. $icon .'"></span>';
+		return '<span id="site-logo-fa-icon" class="fa fa-'. $icon .'" aria-hidden="true"></span>';
 	} else {
 		return NULL;
 	}
@@ -137,9 +137,7 @@ function wpex_header_logo_icon() {
  * @since 2.0.0
  */
 function wpex_header_logo_title() {
-	$title = get_bloginfo( 'name' );
-	$title = apply_filters( 'wpex_logo_title', $title );
-	return $title;
+	return apply_filters( 'wpex_logo_title', get_bloginfo( 'name' ) );
 }
 
 /**
@@ -148,9 +146,7 @@ function wpex_header_logo_title() {
  * @since 2.0.0
  */
 function wpex_header_logo_url() {
-	$url = esc_url( home_url( '/' ) );
-	$url = apply_filters( 'wpex_logo_url', $url );
-	return $url;
+	return apply_filters( 'wpex_logo_url', home_url( '/' ) );
 }
 
 /**
@@ -202,7 +198,6 @@ function wpex_get_header_logo_width() {
 	return $width ? intval( $width ) : '';
 }
 
-
 /**
  * Adds js for the retina logo
  *
@@ -210,46 +205,26 @@ function wpex_get_header_logo_width() {
  */
 function wpex_retina_logo() {
 
-	// Get theme options
-	$logo_url    = wpex_get_translated_theme_mod( 'retina_logo' );
-	$logo_height = wpex_get_translated_theme_mod( 'logo_height' );
-
-	// Header overlay Retina logo
-	if ( wpex_global_obj( 'header_overlay_logo' ) && wpex_global_obj( 'has_overlay_header' ) ) {
-		$post_id = wpex_global_obj( 'post_id' );
-		$overlay_retina_logo = get_post_meta( $post_id, 'wpex_overlay_header_logo_retina', true );
-		$overlay_retina_logo_height = get_post_meta( $post_id, 'wpex_overlay_header_logo_retina_height', true );
-		if ( $overlay_retina_logo ) {
-			if ( is_numeric( $overlay_retina_logo ) ) {
-				$overlay_retina_logo = wp_get_attachment_image_src( $overlay_retina_logo, 'full' );
-				$overlay_retina_logo = $overlay_retina_logo[0];
-			} else {
-				$overlay_retina_logo = esc_url( $overlay_retina_logo );
-			}
-			if ( $overlay_retina_logo ) {
-				$logo_url = $overlay_retina_logo;
-				$logo_height = $overlay_retina_logo_height ? $overlay_retina_logo_height : $logo_height;
-			}
-		}
+	// Not needed in admin
+	if ( is_admin() ) {
+		return;
 	}
 
-	// Apply filters
-	$logo_url    = apply_filters( 'wpex_retina_logo_url', $logo_url );
-	$logo_height = apply_filters( 'wpex_retina_logo_height', $logo_height );
+	// Get retina logo url and height
+	$logo_url    = wpex_global_obj( 'retina_header_logo' );
+	$logo_height = wpex_global_obj( 'retina_header_logo_height' );
 
 	// Output JS for retina logo
 	if ( $logo_url && $logo_height ) {
-		echo '<!-- Retina Logo -->
-		<script type="text/javascript">
-			var $wpexRetinaLogo = "'. $logo_url .'",
-				$wpexRetinaLogoHeight = "'. intval( $logo_height ) .'";
-			jQuery(function($){
-				if ( window.devicePixelRatio >= 2 ) {
-					$("#site-logo img").attr("src", "'. $logo_url .'");
-					$("#site-logo img").css("max-height", "'. intval( $logo_height ) .'px");
-				}
-			});
-		</script>';
+		$output = '<script type="text/javascript">';
+			$output .= 'jQuery(function($){';
+				$output .= 'if ( window.devicePixelRatio >= 2 ) {';
+					$output .= '$("#site-logo img").attr("src","'. $logo_url .'" );';
+					$output .= '$("#site-logo img").css("max-height","'. intval( $logo_height ) .'px");';
+				$output .= '}';
+			$output .= '});';
+		$output .= '</script>';
+		echo $output;
 	}
 }
 add_action( 'wp_head', 'wpex_retina_logo' );

@@ -16,4 +16,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 $arrow = wpex_get_mod( 'scroll_top_arrow' );
 $arrow = $arrow ? $arrow : 'chevron-up'; ?>
 
-<a href="#" id="site-scroll-top"><span class="fa fa-<?php echo esc_attr( $arrow ); ?>"></span></a>
+<a href="#" id="site-scroll-top" aria-hidden="true"><span class="fa fa-<?php echo esc_attr( $arrow ); ?>"></span></a>

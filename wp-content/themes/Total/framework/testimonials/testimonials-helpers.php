@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Testimonials Functions
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 /**
@@ -40,9 +40,12 @@ function wpex_get_testimonials_wrap_classes() {
 	$classes = array( 'wpex-row', 'clr' );
 
 	// Apply filters
-	apply_filters( 'wpex_testimonials_wrap_classes', $classes );
+	$classes = apply_filters( 'wpex_testimonials_wrap_classes', $classes );
 
-	// Turninto space seperated string
+	// Sanitize
+	$classes = array_map( 'esc_html', $classes );
+
+	// Turn array into string
 	$classes = implode( " ", $classes );
 
 	// Return

@@ -17,8 +17,17 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_callout', $atts ) );
+
+// Enqueue CSS
+wp_enqueue_style( 'vcex-callout', WPEX_VCEX_DIR_URI . 'shortcodes/callout/callout.css', array(), WPEX_THEME_VERSION );
 
 // Sanitize variables
 $button_target = vcex_html( 'target_attr', $button_target );
@@ -33,10 +42,10 @@ if ( $visibility ) {
 	$wrap_classes[] = $visibility;
 }
 if ( $css_animation ) {
-	$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $classes ) {
-	$wrap_classes[] = $this->getExtraClass( $classes );
+	$wrap_classes[] = vcex_get_extra_class( $classes );
 }
 $wrap_classes[] = vc_shortcode_custom_css_class( $css );
 $wrap_classes = implode( ' ', $wrap_classes );

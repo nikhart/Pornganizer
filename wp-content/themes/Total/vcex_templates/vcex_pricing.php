@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,11 +17,20 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_pricing', $atts ) );
+
+// Define output var
+$output = '';
 
 // Sanitize vars
-$inline_js = array();
+$inline_js  = array();
 $button_url = $custom_button ? false : $button_url;
 
 // Wrapper classes
@@ -31,10 +40,10 @@ if ( 'yes' == $featured ) {
 	$wrapper_classes[] = 'featured';
 }
 if ( $css_animation ) {
-	$wrapper_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrapper_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $el_class ) {
-	$wrapper_classes[] = $this->getExtraClass( $el_class );
+	$wrapper_classes[] = vcex_get_extra_class( $el_class );
 }
 if ( $visibility ) {
 	$wrapper_classes[] = $visibility;
@@ -154,7 +163,7 @@ if ( $button_url || $custom_button ) {
 		if ( $button_hover_color ) {
 			$button_data[] = 'data-hover-color="'. $button_hover_color .'"';
 		}
-		$button_data = implode( ' ', $button_data );
+		$button_data = $button_data ? ' '. implode( ' ', $button_data ) : '';
 
 		// Button Style
 		$border_color = ( 'outline' == $button_style ) ? $button_color : '';
@@ -176,73 +185,75 @@ if ( $button_url || $custom_button ) {
 // Load inline js for the front-end composer
 if ( ! empty( $inline_js ) ) {
 	vcex_inline_js( $inline_js );
-} ?>
+}
 
-<div class="<?php echo $wrapper_classes; ?>"<?php vcex_unique_id( $unique_id ); ?>>
+// Start output
+$output .='<div class="'. $wrapper_classes .'"'. vcex_get_unique_id( $unique_id ) .'>';
 
-	<?php
 	// Display plan
-	if ( $plan ) : ?>
+	if ( $plan ) :
 
-		<div class="vcex-pricing-header clr"<?php echo $plan_style; ?>>
-			<?php echo $plan; ?>
-		</div><!-- .vcex-pricing-header -->
+		$output .= '<div class="vcex-pricing-header clr"'. $plan_style .'>';
+			$output .= $plan;
+		$output .= '</div>';
 
-	<?php endif; ?>
+	endif;
 
-	<?php
 	// Display cost
-	if ( $cost ) : ?>
+	if ( $cost ) :
 
-		<div class="vcex-pricing-cost clr"<?php echo $cost_wrap_style; ?>>
-			<div class="vcex-pricing-ammount" <?php echo $cost_style; ?>>
-				<?php echo $cost; ?>
-			</div><!-- .vcex-pricing-ammount -->
-			<?php if ( $per ) { ?>
-				<div class="vcex-pricing-per"<?php echo $per_style; ?>>
-					<?php echo $per; ?>
-				</div><!-- .vcex-pricing-per -->
-			<?php } ?>
-		</div><!-- .vcex-pricing-cost -->
+		$output .= '<div class="vcex-pricing-cost clr"'. $cost_wrap_style .'>';
+			$output .= '<div class="vcex-pricing-ammount" '. $cost_style .'>';
+				$output .= $cost;
+			$output .= '</div>';
+			if ( $per ) {
+				$output .= '<div class="vcex-pricing-per"'. $per_style .'>';
+					$output .= $per;
+				$output .= '</div>';
+			}
+		$output .= '</div>';
 
-	<?php endif; ?>
+	endif;
 
-	<?php
 	// Display content
-	if ( $content ) : ?>
+	if ( $content ) :
 
-		<div class="vcex-pricing-content"<?php echo $features_style; ?>>
-			<?php echo do_shortcode( $content ); ?>
-		</div><!-- .vcex-pricing-content -->
+		$output .= '<div class="vcex-pricing-content"'. $features_style .'>';
+			$output .= do_shortcode( $content );
+		$output .= '</div>';
 
-	<?php endif; ?>
+	endif;
 	
-	<?php
 	// Display button
-	if ( $button_url || $custom_button ) : ?>
+	if ( $button_url || $custom_button ) :
 
-		<div class="vcex-pricing-button"<?php echo $button_wrap_style; ?>>
+		$output .= '<div class="vcex-pricing-button"'. $button_wrap_style .'>';
 
-			<?php if ( $custom_button = vcex_parse_textarea_html( $custom_button ) ) : ?>
+			if ( $custom_button = vcex_parse_textarea_html( $custom_button ) ) :
 
-				<?php echo do_shortcode( $custom_button ); ?>
+				$output .= do_shortcode( $custom_button );
 
-			<?php elseif ( $button_url ) : ?>
+			elseif ( $button_url ) :
 
-				<a href="<?php echo esc_url( $button_url ); ?>" title="<?php esc_attr( $button_title ); ?>" class="<?php echo $button_classes; ?>"<?php echo $button_target; ?><?php echo $button_style; ?><?php echo $button_data; ?>>
-					<?php if ( $button_icon_left ) { ?>
-						<span class="vcex-icon-wrap left"><span class="<?php echo $button_icon_left; ?>"></span></span>
-					<?php } ?>
-					<?php echo $button_text; ?>
-					<?php if ( $button_icon_right ) { ?>
-						<span class="vcex-icon-wrap right"><span class="<?php echo $button_icon_right; ?>"></span></span>
-					<?php } ?>
-				</a>
+				$output .= '<a href="'. esc_url( $button_url ) .'" title="'. esc_attr( $button_title ) .'" class="'. $button_classes .'"'. $button_target .''. $button_style .''. $button_data .'>';
+					
+					if ( $button_icon_left ) {
+						$output .= '<span class="vcex-icon-wrap left"><span class="'. $button_icon_left .'"></span></span>';
+					}
+
+					$output .= $button_text;
+
+					if ( $button_icon_right ) {
+						$output .= '<span class="vcex-icon-wrap right"><span class="'. $button_icon_right .'"></span></span>';
+					}
+				$output .= '</a>';
 				
-			<?php endif; ?>
+			endif;
 
-		</div><!-- .vcex-pricing-button -->
+		$output .= '</div>';
 
-	<?php endif; ?>
+	endif;
 
-</div><!-- .vcex-pricing -->
+$output .= '</div>';
+
+echo $output;

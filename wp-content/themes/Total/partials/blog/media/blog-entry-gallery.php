@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -57,11 +57,9 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_entry_image_light
 				foreach ( $attachments as $attachment ) : ?>
 					<?php
 					// Get attachment data
-					$lightbox_url       = $lightbox_enabled ? wpex_get_lightbox_image( $attachment ) : '';
-					$attachment_data    = wpex_get_attachment_data( $attachment );
-					$attachment_alt     = $attachment_data['alt'];
-					$attachment_video   = $attachment_data['video'];
-					$attachment_caption = $attachment_data['caption'];
+					$attachment_data  = wpex_get_attachment_data( $attachment );
+					$attachment_alt   = $attachment_data['alt'];
+					$attachment_video = $attachment_data['video'];
 
 					// Get image output
 					$attachment_html = wpex_get_blog_entry_thumbnail( array(
@@ -75,9 +73,7 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_entry_image_light
 						// Display attachment video
 						if ( $attachment_video && ! is_wp_error( $attachment_video = wp_oembed_get( $attachment_video ) ) ) : ?>
 
-							<div class="wpex-slider-video responsive-video-wrap">
-								<?php echo $attachment_video; ?>
-							</div><!-- .wpex-slider-video -->
+							<div class="wpex-slider-video responsive-video-wrap"><?php echo $attachment_video; ?></div>
 
 						<?php
 						// Display attachment image
@@ -87,9 +83,15 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_entry_image_light
 
 								<?php
 								// Display with lightbox
-								if ( $lightbox_enabled ) : ?>
+								if ( $lightbox_enabled ) :
 
-									<a href="<?php echo esc_url( $lightbox_url ); ?>" title="<?php echo esc_attr( $attachment_alt ); ?>" data-title="<?php echo esc_attr( $attachment_alt ); ?>" data-type="image" class="wpex-lightbox-group-item<?php wpex_entry_image_animation_classes(); ?>"><?php echo $attachment_html; ?></a>
+									if ( apply_filters( 'wpex_blog_gallery_lightbox_title', false ) ) {
+										$title_data_attr = ' data-title="'. esc_attr( $attachment_alt ) .'"';
+									} else {
+										$title_data_attr = ' data-show_title="false"';
+									} ?>
+
+									<a href="<?php echo wpex_get_lightbox_image( $attachment ); ?>" title="<?php echo esc_attr( $attachment_alt ); ?>" data-type="image" class="wpex-lightbox-group-item<?php wpex_entry_image_animation_classes(); ?>"<?php echo $title_data_attr; ?>><?php echo $attachment_html; ?></a>
 
 								<?php
 								// Display single image
@@ -97,12 +99,16 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_entry_image_light
 
 									<?php echo $attachment_html; ?>
 
-								<?php endif; ?>
+									<?php
+									// Display caption if defined
+									if ( ! empty( $attachment_data['caption'] ) ) : ?>
 
-								<?php if ( $attachment_caption ) : ?>
-									<div class="wpex-slider-caption sp-layer sp-black sp-padding clr" data-position="bottomCenter" data-show-transition="up" data-hide-transition="down" data-width="100%" data-show-delay="500">
-										<?php echo $attachment_caption; ?>
-									</div><!-- .wpex-slider-caption -->
+										<div class="wpex-slider-caption sp-layer sp-black sp-padding clr" data-position="bottomCenter" data-show-transition="up" data-hide-transition="down" data-width="100%" data-show-delay="500">
+											<?php echo wp_kses_post( $attachment_data['caption'] ); ?>
+										</div><!-- .wpex-slider-caption -->
+
+									<?php endif; ?>
+
 								<?php endif; ?>
 
 							</div><!-- .wpex-slider-media -->
@@ -117,7 +123,7 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_entry_image_light
 
 			<?php
 			// Display nav thumbnails
-			if ( 'large-image-entry-style' == wpex_blog_entry_style() ) : ?>
+			if ( 'large-image-entry-style' == wpex_blog_entry_style() && apply_filters( 'wpex_post_gallery_slider_has_thumbnails', true ) ) : ?>
 
 				<div class="wpex-slider-thumbnails sp-thumbnails">
 					<?php

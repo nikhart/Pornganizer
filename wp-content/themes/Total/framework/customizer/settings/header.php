@@ -43,7 +43,7 @@ $this->sections['wpex_header_general'] = array(
 			'control' => array(
 				'label' => esc_html__( 'Full-Width', 'total' ),
 				'type' => 'checkbox',
-				'active_callback' => 'wpex_cac_header_supports_full_width',
+				'active_callback' => 'wpex_cac_hasnt_boxed_layout',
 			),
 		),
 		array(
@@ -375,7 +375,7 @@ $this->sections['wpex_header_fixed'] = array(
 	'title' => esc_html__( 'Sticky Header', 'total' ),
 	'panel' => 'wpex_header',
 	'settings' => array(
-		array(
+		'fixed_header_style' => array(
 			'id' => 'fixed_header_style',
 			'transport' => 'refresh',
 			'default' => 'standard',
@@ -394,7 +394,7 @@ $this->sections['wpex_header_fixed'] = array(
 				'active_callback' => 'wpex_cac_header_supports_fixed_header',
 			),
 		),
-		array(
+		'fixed_header_shrink_start_height' => array(
 			'id' => 'fixed_header_shrink_start_height',
 			'sanitize_callback' => 'absint',
 			'default' => 60,
@@ -406,12 +406,13 @@ $this->sections['wpex_header_fixed'] = array(
 			),
 			'inline_css' => array(
 				'target' => '.shrink-sticky-header #site-logo img',
-				'alter' => 'height',
+				'alter' => 'max-height',
 				'sanitize' => 'px',
 				'obj_condition' => 'shrink_fixed_header',
+				'important' => true,
 			),
 		),
-		array(
+		'fixed_header_shrink_end_height' => array(
 			'id' => 'fixed_header_shrink_end_height',
 			'default' => 50,
 			'sanitize_callback' => 'absint',
@@ -419,26 +420,18 @@ $this->sections['wpex_header_fixed'] = array(
 				'label' => esc_html__( 'Logo Shrunk Height', 'total' ),
 				'type' => 'number',
 				'active_callback' => 'wpex_cac_has_fixed_header_shrink',
-				'description' => esc_html__( 'Your shrink header height will be set to your Logo Shrunk Height plus 20px for a top and bottom padding of 20px.', 'total' ),
-			),
-			'inline_css' => array(
-				'target'   => '.shrink-sticky-header.sticky-header-shrunk #site-logo img,
-							   .shrink-sticky-header.sticky-header-shrunk .navbar-style-five .dropdown-menu > li > a',
-				'alter'    => 'height',
-				'sanitize' => 'px',
-				'obj_condition' => 'shrink_fixed_header',
+				'description' => esc_html__( 'Your shrink header height will be set to your Logo Shrunk Height plus 20px for a top and bottom padding of 10px.', 'total' ),
 			),
 		),
-		array(
+		'fixed_header_mobile' => array(
 			'id' => 'fixed_header_mobile',
 			'sanitize_callback' => 'esc_html',
 			'control' => array(
 				'label' => esc_html__( 'Mobile Support', 'total' ),
 				'type' => 'checkbox',
-				'active_callback' => 'wpex_cac_supports_fixed_header_mobile',
 			),
 		),
-		array(
+		'fixed_header_opacity' => array(
 			'id' => 'fixed_header_opacity',
 			'transport' => 'postMessage',
 			'control' => array(
@@ -457,7 +450,7 @@ $this->sections['wpex_header_fixed'] = array(
 				'obj_condition' => 'has_fixed_header',
 			),
 		),
-		array(
+		'fixed_header_logo' => array(
 			'id' => 'fixed_header_logo',
 			'sanitize_callback' => 'esc_url',
 			'control' => array(
@@ -467,7 +460,7 @@ $this->sections['wpex_header_fixed'] = array(
 				'description' => esc_html__( 'If this custom logo is a different size, for best results go to the Logo section and apply a custom height to your logo.', 'total' ),
 			),
 		),
-		array(
+		'fixed_header_logo_retina' => array(
 			'id' => 'fixed_header_logo_retina',
 			'sanitize_callback' => 'esc_url',
 			'control' => array(
@@ -476,7 +469,7 @@ $this->sections['wpex_header_fixed'] = array(
 				'active_callback' => 'wpex_cac_has_fixed_header_logo',
 			),
 		),
-		array(
+		'fixed_header_logo_retina_height' => array(
 			'id' => 'fixed_header_logo_retina_height',
 			'sanitize_callback' => 'absint',
 			'control' => array(

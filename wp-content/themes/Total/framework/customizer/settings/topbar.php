@@ -44,6 +44,16 @@ $this->sections['wpex_topbar_general'] = array(
 			),
 		),
 		array(
+			'id' => 'top_bar_fullwidth',
+			'default' => false,
+			'transport' => 'postMessage',
+			'control' => array(
+				'label' => esc_html__( 'Full-Width', 'total' ),
+				'type' => 'checkbox',
+				'active_callback' => 'wpex_cac_hasnt_boxed_layout',
+			),
+		),
+		array(
 			'id' => 'top_bar_visibility',
 			'transport' => 'postMessage',
 			'default' => 'always-visible',

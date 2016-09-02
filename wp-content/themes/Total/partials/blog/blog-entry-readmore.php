@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -13,9 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Vars
-$format = get_post_format();
-$text   = wpex_get_translated_theme_mod( 'blog_entry_readmore_text' );
-$text   = $text ? $text : esc_html__( 'Read More', 'total' );
+$text = wpex_get_translated_theme_mod( 'blog_entry_readmore_text' );
+$text = $text ? $text : esc_html__( 'Read More', 'total' );
 
 // Apply filters for child theming
 $text = apply_filters( 'wpex_post_readmore_link_text', $text );

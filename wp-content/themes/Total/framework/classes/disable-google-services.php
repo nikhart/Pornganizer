@@ -3,7 +3,7 @@
  * Disable Google Searvices
  *
  * @package Total WordPress Theme
- * @subpackage 3.2.0
+ * @subpackage 3.5.0
  */
 
 // Exit if accessed directly
@@ -29,10 +29,10 @@ class WPEX_Disable_Google_Services {
 		add_filter( 'vc_google_fonts_get_fonts_filter', '__return_false' );
 
 		// Remove scripts
-		add_action( 'wp_print_scripts', array( $this, 'remove_scripts' ), 10 );
+		add_action( 'wp_print_scripts', array( 'WPEX_Disable_Google_Services', 'remove_scripts' ), 10 );
 
 		// Remove inline scripts
-		add_action( 'wp_footer', array( $this, 'remove_inline_scripts' ), 10 );
+		add_action( 'wp_footer', array( 'WPEX_Disable_Google_Services', 'remove_inline_scripts' ), 10 );
 
 	}
 
@@ -41,7 +41,7 @@ class WPEX_Disable_Google_Services {
 	 *
 	 * @since 2.1.0
 	 */
-	public function remove_scripts() {
+	public static function remove_scripts() {
 		wp_dequeue_script( 'webfont' );
 	}
 
@@ -50,7 +50,7 @@ class WPEX_Disable_Google_Services {
 	 *
 	 * @since 2.1.0
 	 */
-	public function remove_inline_scripts() {
+	public static function remove_inline_scripts() {
 
 		// Get global styles
 		global $wp_styles;

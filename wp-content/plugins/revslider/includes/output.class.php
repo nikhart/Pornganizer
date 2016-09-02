@@ -357,7 +357,8 @@ class RevSliderOutput {
 		}
 		
 		//check if mobile, if yes, then remove certain slides
-		$mobile = (strstr($_SERVER['HTTP_USER_AGENT'],'Android') || strstr($_SERVER['HTTP_USER_AGENT'],'webOS') || strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') ||strstr($_SERVER['HTTP_USER_AGENT'],'iPod') || strstr($_SERVER['HTTP_USER_AGENT'],'iPad') || strstr($_SERVER['HTTP_USER_AGENT'],'Windows Phone') || wp_is_mobile()) ? true : false;
+		$usragent = (isset($_SERVER['HTTP_USER_AGENT'])) ? $_SERVER['HTTP_USER_AGENT'] : '';
+		$mobile = (strstr($usragent,'Android') || strstr($usragent,'webOS') || strstr($usragent,'iPhone') ||strstr($usragent,'iPod') || strstr($usragent,'iPad') || strstr($usragent,'Windows Phone') || wp_is_mobile()) ? true : false;
 		if($mobile && !empty($slides)){
 			foreach($slides as $ss => $sv){
 				$hsom = $sv->getParam('hideslideonmobile', 'off');
@@ -2956,6 +2957,8 @@ class RevSliderOutput {
 					$st_hover['bg'] = array(RevSliderFunctions::hex2rgba($bg_color, $bg_trans), 'ALWAYS');
 				}
 				
+				$st_hover['zi'] = array(RevSliderFunctions::getVal($def_val, 'zindex', 'auto'), 'auto'); 
+
 				$my_padding = RevSliderFunctions::getVal($def_val, 'padding', array('0px','0px','0px','0px'));
 				if(!empty($my_padding)){
 					$my_padding = implode(' ', $my_padding);
@@ -2995,12 +2998,13 @@ class RevSliderOutput {
 					'bs' => 'border-style',
 					'bw' => 'border-width',
 					'br' => 'border-radius',
+					'zi' => 'zIndex'
 				);
 				
-				foreach($st_hover as $sk => $sv){ //do not write values for hover if idle is the same value
-					if(isset($st_idle[$st_trans[$sk]]) && $st_idle[$st_trans[$sk]][0] == $sv[0]) unset($st_hover[$sk]);
+				foreach($st_hover as $sk => $sv){ //do not write values for hover if idle is the same value					
+					if(isset($st_idle[$st_trans[$sk]]) && $st_idle[$st_trans[$sk]][0] == $sv[0]) 
+						unset($st_hover[$sk]);
 				}
-				
 				
 				//Advanced Styles here:
 				if(isset($adv_style['hover'])){
@@ -3177,12 +3181,14 @@ class RevSliderOutput {
 								$a_tooltip_event[$num] = (isset($a_tooltip_event[$num])) ? $a_tooltip_event[$num] : '';
 								$a_link_open_in[$num] = (isset($a_link_open_in[$num])) ? $a_link_open_in[$num] : '';
 								$a_image_link[$num] = (isset($a_image_link[$num])) ? $a_image_link[$num] : '';
+								$a_action_delay[$num] = (isset($a_action_delay[$num])) ? $a_action_delay[$num] : '';
 								
 								$a_events[] = array(
 									'event' => $a_tooltip_event[$num],
 									'action' => 'simplelink',
 									'target' => $a_link_open_in[$num],
-									'url' => $a_image_link[$num]
+									'url' => $a_image_link[$num],
+									'delay' => $a_action_delay[$num]
 								);
 							}else{
 								if($html_simple_link == ''){ //adds the link to the layer
@@ -3275,46 +3281,51 @@ class RevSliderOutput {
 						break;
 						case 'pause':
 							$a_tooltip_event[$num] = (isset($a_tooltip_event[$num])) ? $a_tooltip_event[$num] : '';
-							
+							$a_action_delay[$num] = (isset($a_action_delay[$num])) ? $a_action_delay[$num] : '';
 							$a_events[] = array(
 								'event' => $a_tooltip_event[$num],
-								'action' => 'pauseslider'
+								'action' => 'pauseslider',
+								'delay' => $a_action_delay[$num]
 							);
 						break;
 						case 'resume':
 							$a_tooltip_event[$num] = (isset($a_tooltip_event[$num])) ? $a_tooltip_event[$num] : '';
-							
+							$a_action_delay[$num] = (isset($a_action_delay[$num])) ? $a_action_delay[$num] : '';
 							$a_events[] = array(
 								'event' => $a_tooltip_event[$num],
-								'action' => 'playslider'
+								'action' => 'playslider',
+								'delay' => $a_action_delay[$num]
 							);
 						break;
 						case 'toggle_slider':
 							$a_tooltip_event[$num] = (isset($a_tooltip_event[$num])) ? $a_tooltip_event[$num] : '';
-							
+							$a_action_delay[$num] = (isset($a_action_delay[$num])) ? $a_action_delay[$num] : '';
 							$a_events[] = array(
 								'event' => $a_tooltip_event[$num],
-								'action' => 'toggleslider'
+								'action' => 'toggleslider',
+								'delay' => $a_action_delay[$num]
 							);
 						break;
 						case 'callback':
 							$a_tooltip_event[$num] = (isset($a_tooltip_event[$num])) ? $a_tooltip_event[$num] : '';
 							$a_actioncallback[$num] = (isset($a_actioncallback[$num])) ? $a_actioncallback[$num] : '';
-							
+							$a_action_delay[$num] = (isset($a_action_delay[$num])) ? $a_action_delay[$num] : '';
 							$a_events[] = array(
 								'event' => $a_tooltip_event[$num],
 								'action' => 'callback',
-								'callback' => $a_actioncallback[$num]
+								'callback' => $a_actioncallback[$num],
+								'delay' => $a_action_delay[$num]
 							);
 						break;
 						case 'scroll_under': //ok
 							$a_tooltip_event[$num] = (isset($a_tooltip_event[$num])) ? $a_tooltip_event[$num] : '';
 							$a_scrolloffset[$num] = (isset($a_scrolloffset[$num])) ? $a_scrolloffset[$num] : '';
-							
+							$a_action_delay[$num] = (isset($a_action_delay[$num])) ? $a_action_delay[$num] : '';
 							$a_events[] = array(
 								'event' => $a_tooltip_event[$num],
 								'action' => 'scrollbelow',
-								'offset' => RevSliderFunctions::add_missing_val($a_scrolloffset[$num], 'px')
+								'offset' => RevSliderFunctions::add_missing_val($a_scrolloffset[$num], 'px'),
+								'delay' => $a_action_delay[$num]
 							);
 						break;
 						case 'start_in':
@@ -3540,7 +3551,7 @@ class RevSliderOutput {
 			echo $a_html;
 			
 			// SVG OUTPUT
-			if (!empty($svg_val) && sizeof($svg_val)>0) {				
+			if (!empty($svg_val) && sizeof($svg_val)>0) {
 				echo '			data-svg_src="'.$svg_val->{'src'}.'"'." \n";
 				echo '			data-svg_idle="sc:'.$svg_val->{'svgstroke-color'}.';sw:'.$svg_val->{'svgstroke-width'}.';sda:'.$svg_val->{'svgstroke-dasharray'}.';sdo:'.$svg_val->{'svgstroke-dashoffset'}.';"'." \n";
 				if($is_hover_active){
@@ -3800,7 +3811,7 @@ class RevSliderOutput {
 <?php } ?>
 <?php $minHeight = ($this->slider->getParam('slider_type') !== 'fullscreen') ? $this->slider->getParam('min_height', '0') : $this->slider->getParam('fullscreen_min_height', '0');
 					if($minHeight > 0){ ?>
-					e.minHeight = <?php echo $minHeight; ?>;
+					e.minHeight = "<?php echo $minHeight; ?>";
 <?php } ?>
 					if(e.responsiveLevels&&(jQuery.each(e.responsiveLevels,function(e,f){f>i&&(t=r=f,l=e),i>f&&f>r&&(r=f,n=e)}),t>r&&(l=n)),f=e.gridheight[l]||e.gridheight[0]||e.gridheight,s=e.gridwidth[l]||e.gridwidth[0]||e.gridwidth,h=i/s,h=h>1?1:h,f=Math.round(h*f),"fullscreen"==e.sliderLayout){var u=(e.c.width(),jQuery(window).height());if(void 0!=e.fullScreenOffsetContainer){var c=e.fullScreenOffsetContainer.split(",");if (c) jQuery.each(c,function(e,i){u=jQuery(i).length>0?u-jQuery(i).outerHeight(!0):u}),e.fullScreenOffset.split("%").length>1&&void 0!=e.fullScreenOffset&&e.fullScreenOffset.length>0?u-=jQuery(window).height()*parseInt(e.fullScreenOffset,0)/100:void 0!=e.fullScreenOffset&&e.fullScreenOffset.length>0&&(u-=parseInt(e.fullScreenOffset,0))}f=u}else void 0!=e.minHeight&&f<e.minHeight&&(f=e.minHeight);e.c.closest(".rev_slider_wrapper").css({height:f})
 					
@@ -4222,7 +4233,7 @@ class RevSliderOutput {
 			
 			$minHeight = ($this->slider->getParam('slider_type') !== 'fullscreen') ? $this->slider->getParam('min_height', '0') : $this->slider->getParam('fullscreen_min_height', '0');
 			if($minHeight > 0){
-				echo '						minHeight:'. $minHeight.','."\n";
+				echo '						minHeight:"'. $minHeight.'",'."\n";
 			}
 			
 			if($use_parallax == 'on'){
@@ -4291,6 +4302,12 @@ class RevSliderOutput {
 				echo '						waitForInit:true,'."\n";
 			}
 			echo '						fallbacks: {'."\n";
+			
+			if($this->slider->getParam('ignore_height_changes', 'off') !== 'off'){
+				echo '							ignoreHeightChanges:"'. esc_attr($this->slider->getParam('ignore_height_changes', 'off')).'",'."\n";
+				echo '							ignoreHeightChangesSize:'. intval(esc_attr($this->slider->getParam('ignore_height_changes_px', '0'))).','."\n";
+			}
+			
 			echo '							simplifyAll:"'. esc_attr($this->slider->getParam('simplify_ie8_ios4', 'off')).'",'."\n";
 			
 			if($slider_type !== 'hero')
@@ -4324,7 +4341,7 @@ class RevSliderOutput {
 
 			$this->rev_inline_js = $js_content;
 
-			add_action('wp_footer', array($this, 'add_inline_js'));
+			add_action('wp_print_footer_scripts', array($this, 'add_inline_js'), 100);
 		}
 		
 		if($markup_export === true){

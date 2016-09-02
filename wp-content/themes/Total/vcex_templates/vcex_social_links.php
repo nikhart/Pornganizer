@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,34 +17,46 @@ if ( is_admin() ) {
 	return;
 }
 
-// Get array of social links to loop through
-$social_links = vcex_social_links_profiles();
+// Get and extract shortcode attributes
+extract( vc_map_get_attributes( 'vcex_social_links', $atts ) );
 
-// Return if $sociail_links is empty
-if ( empty ( $social_links ) ) {
+// Get social profiles array | Used for fallback method and to grab icon styles
+$social_profiles = (array) vcex_social_links_profiles();
+
+// Social profile array can't be empty
+if ( ! $social_profiles ) {
 	return;
 }
 
-// Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+// New method since 3.5.0 | must check $atts value due to fallback and default var
+if ( ! empty( $atts['social_links'] ) ) {
+	$social_links = (array) vc_param_group_parse_atts( $social_links );
+	$loop = array();
+	foreach ( $social_links as $key => $val ) {
+		$loop[$val['site']] = isset( $val['link'] ) ? $val['link'] : '';
+	}
+} else {
+	$loop = $social_profiles;
+}
 
 // Wrap classes
+$wrap_classes = array();
 if ( $style ) {
-	$wrap_classes = 'wpex-social-btns';
+	$wrap_classes[] = 'wpex-social-btns vcex-social-btns';
 } else {
-	$wrap_classes = 'vcex-social-links';
+	$wrap_classes[] = 'vcex-social-links';
 }
 if ( $align ) {
-	$wrap_classes .= ' text'. $align;
+	$wrap_classes[] = 'text'. $align;
 }
 if ( $visibility ) {
-	$wrap_classes .= ' '. $visibility;
+	$wrap_classes[] = $visibility;
 }
 if ( $css_animation ) {
-	$wrap_classes .= $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $classes ) {
-	$wrap_classes .= $this->getExtraClass( $classes );
+	$wrap_classes[] = vcex_get_extra_class( $classes );
 }
 
 // Wrap style
@@ -77,42 +89,56 @@ if ( $hover_color ) {
 }
 
 // Link Classes
+$a_classes = array();
 if ( $style ) {
-	$a_classes = wpex_get_social_button_class( $style );
+	$a_classes[] = wpex_get_social_button_class( $style );
 } else {
-	$a_classes = 'vcex-social-link';
+	$a_classes[] = 'vcex-social-link';
 }
 if ( $width || $height ) {
-	$a_classes .= ' no-padding';
+	$a_classes[] = 'no-padding';
 }
 if ( $hover_bg || $hover_color ) {
-   $a_classes .= ' wpex-data-hover';
+   $a_classes[] = ' wpex-data-hover';
    vcex_inline_js( array( 'data_hover' ) );
 }
 if ( $hover_animation ) {
-	$a_classes .= ' '. wpex_hover_animation_class( $hover_animation );
+	$a_classes[] = wpex_hover_animation_class( $hover_animation );
 	vcex_enque_style( 'hover-animations' );
 }
 if ( $css ) {
-	$a_classes .= ' '. vc_shortcode_custom_css_class( $css );
-} ?>
+	$a_classes[] = vc_shortcode_custom_css_class( $css );
+}
 
-<div class="<?php echo $wrap_classes; ?>"<?php echo $wrap_style; ?><?php vcex_unique_id( $unique_id ); ?>>
+// Define output var
+$output = '';
 
-	<?php
-	// Loop through social options and display if set
-	foreach ( $social_links as $key => $val ) : ?>
+$output .= '<div class="'. implode( ' ', $wrap_classes ) .'"'. $wrap_style . vcex_get_unique_id( $unique_id ) .'>';
 
-		<?php
-		// Sanitize classname
-		$profile_class = $key;
-		$profile_class = 'googleplus' == $key ? 'google-plus' : $key;
+	// Loop through social profiles
+	if ( $loop ) {
 
-		// If url field is empty check next profile
-		if ( empty( $atts[$key] ) ) continue; ?>
+		foreach ( $loop as $key => $val ) {
 
-		<a href="<?php echo esc_url( $atts[$key] ); ?>" class="<?php echo $a_classes; ?> wpex-<?php echo $profile_class; ?>"<?php echo $attributes; ?>><span class="<?php echo $val['icon_class']; ?>"></span></a>
+			// Sanitize classname
+			$profile_class = $key;
+			$profile_class = 'googleplus' == $key ? 'google-plus' : $key;
 
-	<?php endforeach; ?>
+			// Get URL
+			if ( empty( $atts['social_links'] ) ) {
+				$url = isset( $atts[$key] ) ? $atts[$key] : '';
+			} else {
+				$url = $val;
+			}
 
-</div><!-- .<?php echo $wrap_classes; ?> -->
+			// Link output
+			if ( $url ) {
+				$output .= '<a href="'. esc_url( $url ) .'" class="'. implode( ' ', $a_classes ) .' wpex-'. $profile_class .'"'. $attributes .'><span class="'. $social_profiles[$key]['icon_class'] .'"></span></a>';
+			}
+
+		}
+	}
+
+$output .= '</div>';
+
+echo $output;

@@ -6,13 +6,13 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 /**
  * Get or generate excerpts
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 function wpex_excerpt( $args ) {
 	echo wpex_get_excerpt( $args );
@@ -78,8 +78,8 @@ function wpex_get_excerpt( $args = array() ) {
 
 	// Custom Excerpts
 	if ( $post_excerpt ) :
-
-		$output = wpautop( do_shortcode( $post_excerpt ) );
+		
+		$output = do_shortcode( $post_excerpt );
 
 	// Create Excerpt
 	else :
@@ -115,7 +115,7 @@ function wpex_get_excerpt( $args = array() ) {
 
 		// Add excerpt to output
 		if ( $excerpt ) {
-			$output .= '<p>'. $excerpt .'</p>';
+			$output .= '<p>'. $excerpt .'</p>'; // Already sanitized via wp_trim_words
 		}
 
 	endif;
@@ -124,12 +124,17 @@ function wpex_get_excerpt( $args = array() ) {
 	if ( $readmore ) :
 
 		$read_more_text = isset( $args['read_more_text'] ) ? $args['read_more_text'] : esc_html__( 'Read more', 'total' );
-		$output .= '<a href="'. get_permalink( $post_id ) .'" title="'.$read_more_text .'" rel="bookmark" class="wpex-readmore theme-button">'. $read_more_text .' <span class="wpex-readmore-rarr">&rarr;</span></a>';
+		$output .= '<a href="'. get_permalink( $post_id ) .'" title="'. esc_attr( $read_more_text ) .'" rel="bookmark" class="wpex-readmore theme-button">'. esc_html( $read_more_text ) .' <span class="wpex-readmore-rarr">&rarr;</span></a>';
 
 	endif;
 
 	// Apply filters for easier customization
-	$output = apply_filters( 'wpex_excerpt_output', $output );
+	$custom_output = apply_filters( 'wpex_excerpt_output', null );
+
+	// Sanitize custom output and set to default output
+	if ( $custom_output ) {
+		$output = wp_kses_post( $custom_output );
+	}
 	
 	// Echo output
 	return $output;
@@ -139,7 +144,7 @@ function wpex_get_excerpt( $args = array() ) {
 /**
  * Custom excerpt length for posts
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 function wpex_excerpt_length() {
 
@@ -157,15 +162,15 @@ function wpex_excerpt_length() {
 		}
 	}
 
-	// Return length and add filter for quicker child theme editign
-	return apply_filters( 'wpex_excerpt_length', $length );
+	// Return length and add filter for child theme mods
+	return intval( apply_filters( 'wpex_excerpt_length', $length ) );
 
 }
 
 /**
  * Change default read more style
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 function wpex_excerpt_more( $more ) {
 	return '&hellip;';
@@ -175,7 +180,7 @@ add_filter( 'excerpt_more', 'wpex_excerpt_more', 10 );
 /**
  * Change default excerpt length
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 function wpex_custom_excerpt_length( $length ) {
 	return '40';
@@ -186,7 +191,7 @@ add_filter( 'excerpt_length', 'wpex_custom_excerpt_length', 999 );
  * Prevent Page Scroll When Clicking the More Link
  * http://codex.wordpress.org/Customizing_the_Read_More
  *
- * @since Total 1.0.0
+ * @since 1.0.0
  */
 function wpex_remove_more_link_scroll( $link ) {
 	$link = preg_replace( '|#more-[0-9]+|', '', $link );

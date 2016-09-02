@@ -4,6 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -13,7 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_Custom_Sidebars' ) ) {
+
 	class WPEX_Custom_Sidebars {
+
 		protected $widget_areas	= array();
 		protected $orig			= array();
 
@@ -274,5 +277,7 @@ if ( ! class_exists( 'WPEX_Custom_Sidebars' ) ) {
 		<?php }
 	
 	}
+
+	new WPEX_Custom_Sidebars();
+
 }
-$wpex_custom_sidebars = new WPEX_Custom_Sidebars();

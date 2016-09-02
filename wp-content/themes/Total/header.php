@@ -7,8 +7,8 @@
  * @package Total WordPress Theme
  * @subpackage Templates
  * @version 3.3.0
- */
-?><!DOCTYPE html>
+ */ ?>
+<!DOCTYPE html>
 <html <?php language_attributes(); ?><?php wpex_schema_markup( 'html' ); ?>>
 <head>
 <meta charset="<?php bloginfo( 'charset' ); ?>" />

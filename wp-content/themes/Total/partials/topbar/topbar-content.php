@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.3.5
+ * @version 3.5.0
  */
 
 // Exit if accessed directly

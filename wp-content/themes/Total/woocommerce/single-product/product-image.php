@@ -49,8 +49,8 @@ $show_slider = apply_filters( 'wpex_woo_product_slider', $show_slider ); ?>
 		$data_atributes['fade']                      = 'true';
 		$data_atributes['buttons']                   = 'false';
 		$data_atributes['loop']                      = 'false';
-		$data_atributes['thumbnails-height']         = '70';
-		$data_atributes['thumbnails-width']          = '70';
+		$data_atributes['thumbnail-height']          = '70';
+		$data_atributes['thumbnail-width']           = '70';
 		$data_atributes['height-animation-duration'] = '0.0';
 		$data_atributes                              = apply_filters( 'wpex_shop_single_slider_data', $data_atributes );
 		$data_atributes_html                         = '';
@@ -108,9 +108,9 @@ $show_slider = apply_filters( 'wpex_woo_product_slider', $show_slider ); ?>
 					foreach ( $attachments as $attachment ) :
 
 						wpex_post_thumbnail( array(
-							'attachment' => $attachment,
-							'size'       => 'shop_single_thumbnail',
-							'class'      => 'wpex-slider-thumbnail sp-thumbnail',
+							'attachment'  => $attachment,
+							'size'        => 'shop_single_thumbnail',
+							'class'       => 'wpex-slider-thumbnail sp-thumbnail',
 						) );
 
 					endforeach; ?>
@@ -145,7 +145,10 @@ $show_slider = apply_filters( 'wpex_woo_product_slider', $show_slider ); ?>
 
 			<div class="product-variation-thumbs clr lightbox-group">
 
-				<?php foreach ( $attachments as $attachment ) : ?>
+				<?php
+				$count = 0;
+				foreach ( $attachments as $attachment ) :
+					$count ++; ?>
 					
 					<?php
 					// Get attachment alt
@@ -154,13 +157,18 @@ $show_slider = apply_filters( 'wpex_woo_product_slider', $show_slider ); ?>
 					// Get thumbnail
 					$args = apply_filters( 'wpex_woo_variation_thumb_args', array(
 						'attachment' => $attachment,
-						'size'       => 'shop_single',
+						'size'       => 'shop_single_thumbnail',
 					) );
 					$thumbnail = wpex_get_post_thumbnail( $args ); ?>
 
 					<?php if ( $thumbnail ) : ?>
 
 						<a href="<?php echo wpex_get_lightbox_image( $attachment ); ?>" title="<?php echo esc_attr( $attachment_alt ); ?>" data-title="<?php echo esc_attr( $attachment_alt ); ?>" data-type="image" class="wpex-lightbox-group-item"><?php echo $thumbnail; ?></a>
+
+						<?php if ( 5 == $count ) : ?>
+							<div class="clear"></div>
+							<?php $count = 0; ?>
+						<?php endif; ?>
 
 					<?php endif; ?>
 

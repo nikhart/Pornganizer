@@ -54,6 +54,11 @@ h2.tribe-events-page-title { margin-top: 0; font-weight: 600; }
 .tribe-events-list-separator-month:after { border-color: #eee; }
 .tribe-events-list-separator-month { color: #777; font-weight: 600; }
 
+.tribe-events-list .tribe-events-event-image { width: 30%; }
+.tribe-events-list .tribe-events-content { padding-right: 0; }
+
+.tribe-events-list .tribe-events-venue-details { margin-bottom: 20px; }
+
 /*------------------------------------------------------------------
 [# Single Events]
 -------------------------------------------------------------------*/
@@ -101,3 +106,10 @@ h2.tribe-events-page-title { margin-top: 0; font-weight: 600; }
 .tribe-events-button:hover,
 .tribe-events-calendar td.tribe-events-present div[id*=tribe-events-daynum-],
 .tribe-events-calendar td.tribe-events-present div[id*=tribe-events-daynum-]>a { background-color: #3b86b0; }
+
+/*------------------------------------------------------------------
+[# Responsive]
+-------------------------------------------------------------------*/
+@media only screen and (max-width: 768px) {
+	.tribe-event-schedule-details { padding: 0 10px; }
+}

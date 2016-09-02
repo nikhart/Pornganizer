@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,28 +17,46 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_searchbar', $atts ) );
+
+// Define output var
+$output = '';
 
 // Sanitize
 $placeholder = $placeholder ? $placeholder : esc_html__( 'Keywords...', 'total' );
 $button_text = $button_text ? $button_text : esc_html__( 'Search', 'total' );
 
 // Wrap Classes
-$wrap_classes = 'vcex-searchbar clr';
+$wrap_classes = array( 'vcex-searchbar clr' );
+if ( 'true' == $fullwidth_mobile ) {
+	$wrap_classes[] = 'vcex-fullwidth-mobile';
+}
 if ( $visibility ) {
-	$wrap_classes .= ' '. $visibility;
+	$wrap_classes[] = $visibility;
 }
 if ( $classes ) {
-	$wrap_classes .= $this->getExtraClass( $classes );
+	$wrap_classes[] = vcex_get_extra_class( $classes );
 }
 if ( $css_animation ) {
-	$wrap_classes .= $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 
 // Form classes
 $input_classes = 'vcex-searchbar-input';
 $input_classes .= ' '. vc_shortcode_custom_css_class( $css );
+
+// Wrap style
+$wrap_style = vcex_inline_style( array(
+	'width' => $wrap_width,
+	'float' => $wrap_float,
+) );
 
 // Input style
 $input_style = vcex_inline_style( array(
@@ -73,15 +91,15 @@ if ( $button_color_hover ) {
 if ( $button_bg_hover || $button_color_hover ) {
 	$button_classes .= ' wpex-data-hover';
 	vcex_inline_js( 'data_hover' );
-} ?>
+}
 
-<div class="<?php echo $wrap_classes; ?>">
+$output .= '<div class="'. implode( ' ', $wrap_classes ) .'"'. vcex_get_unique_id( $unique_id ) . $wrap_style .'>';
 
-	<form method="get" class="vcex-searchbar-form" action="<?php echo esc_url( home_url( '/' ) ); ?>"<?php echo $input_style; ?>>
+	$output .= '<form method="get" class="vcex-searchbar-form" action="'. esc_url( home_url( '/' ) ) .'"'. $input_style .'>';
 
-		<input type="search" class="<?php echo $input_classes; ?>" name="s" placeholder="<?php echo $placeholder; ?>"<?php echo vcex_inline_style( array( 'width' => $input_width ) ); ?> />
+		$output .= '<input type="search" class="'. $input_classes .'" name="s" placeholder="'. $placeholder .'"'. vcex_inline_style( array( 'width' => $input_width ) ) .' />';
 		
-		<?php if ( $advanced_query ) {
+		if ( $advanced_query ) :
 
 			// Sanitize
 			$advanced_query = trim( $advanced_query );
@@ -91,22 +109,24 @@ if ( $button_bg_hover || $button_color_hover ) {
 			$advanced_query = parse_str( $advanced_query, $advanced_query_array );
 
 			// If array is valid loop through params
-			if ( $advanced_query_array ) { ?>
+			if ( $advanced_query_array ) :
 
-				<?php foreach( $advanced_query_array as $key => $val ) : ?>
+				foreach( $advanced_query_array as $key => $val ) :
 
-				   <input type="hidden" name="<?php echo $key; ?>" value="<?php echo $val; ?>">
+					$output .= '<input type="hidden" name="'. $key .'" value="'. $val .'">';
 
-				<?php endforeach; ?>
+				endforeach;
 
-			<?php } ?>
+			endif;
 
-		<?php } ?>
+		endif;
 
-		<button type="submit" class="<?php echo $button_classes; ?>"<?php echo $button_data;?><?php echo $button_style ?>>
-			<?php echo $button_text; ?>
-		</button>
+		$output .= '<button type="submit" class="'. $button_classes .'"'. $button_data . $button_style .'>';
+			$output .= str_replace( '``', '"', $button_text );
+		$output .= '</button>';
 
-	</form><!-- .searchform -->
+	$output .= '</form>';
 
-</div><!-- .vcex-searchbar-wrap -->
+$output .= '</div>';
+
+echo $output;

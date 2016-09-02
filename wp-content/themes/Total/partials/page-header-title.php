@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -22,7 +22,7 @@ if ( ( is_singular( 'post' ) && 'custom_text' == wpex_get_mod( 'blog_single_head
 }
 
 // Singular CPT
-elseif ( is_singular() && ( ! is_singular( 'page' ) && ! is_singular( 'attachment' ) ) ) {
+elseif ( is_singular() && ( ! is_singular( 'post' ) && ! is_singular( 'page' ) && ! is_singular( 'attachment' ) ) ) {
 	$args['html_tag'] = 'span';
 	$args['schema_markup'] = '';
 }
@@ -39,5 +39,5 @@ extract( wp_parse_args( $args, array(
 
 // Display title
 if ( ! empty( $string ) ) {
-	echo '<'. strip_tags( $html_tag ) .' class="page-header-title wpex-clr"'. $schema_markup .'>'. wpex_sanitize_data( $string, 'html' ) .'</'. strip_tags( $html_tag ) .'>';
+	echo '<'. strip_tags( $html_tag ) .' class="page-header-title wpex-clr"'. $schema_markup .'><span>'. wpex_sanitize_data( $string, 'html' ) .'</span></'. strip_tags( $html_tag ) .'>';
 }

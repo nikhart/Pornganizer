@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -89,6 +89,11 @@ class WPEX_Global_Theme_Object {
 			return $page_for_posts;
 		}
 
+		// 404 with custom redirect
+		elseif ( is_404() && $pageid = wpex_parse_obj_id( wpex_get_mod( 'error_page_content_id' ), 'page' ) ) {
+			return $pageid;
+		}
+
 		// Return nothing
 		else {
 			return NULL;
@@ -129,8 +134,10 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function vc_is_inline() {
-		if ( function_exists( 'vc_is_inline' ) ) {
-			return vc_is_inline();
+		if ( wpex_vc_is_inline() ) {
+			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -157,14 +164,22 @@ class WPEX_Global_Theme_Object {
 			return esc_html( $_GET['site_layout'] );
 		}
 
-		// Get layout
-		$layout = wpex_get_mod( 'main_layout_style' );
-		$layout = $layout ? $layout : 'full-width';
-		$meta   = get_post_meta( $this->post_id, 'wpex_main_layout', true );
-		$layout = $meta ? $meta : $layout;
+		// Get layout from theme mod
+		$layout = wpex_get_mod( 'main_layout_style', 'full-width' );
+		
+		// Check meta
+		if ( $meta = get_post_meta( $this->post_id, 'wpex_main_layout', true ) ) {
+			$layout = $meta;
+		}
 
-		// Apply filters and return
-		return apply_filters( 'wpex_main_layout', $layout );
+		// Apply filters
+		$layout = apply_filters( 'wpex_main_layout', $layout );
+
+		// Sanitize layout
+		$layout = $layout ? $layout : 'full-width';
+
+		// Return layout
+		return $layout;
 
 	}
 
@@ -284,6 +299,32 @@ class WPEX_Global_Theme_Object {
 	} // End post_layout
 
 	/**
+	 * Checks if header builder is enabled
+	 *
+	 * @since 3.0.0
+	 */
+	private function header_builder() {
+		if ( class_exists( 'WPEX_Header_Builder' ) && $id = WPEX_Header_Builder::header_builder_id() ) {
+			return $id;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Checks if footer builder is enabled
+	 *
+	 * @since 3.0.0
+	 */
+	private function footer_builder() {
+		if ( class_exists( 'WPEX_Footer_Builder' ) && $id = WPEX_Footer_Builder::footer_builder_id() ) {
+			return $id;
+		} else {
+			return false;
+		}
+	}
+
+	/**
 	 * Checks if header is enabled
 	 *
 	 * @since 3.0.0
@@ -385,7 +426,7 @@ class WPEX_Global_Theme_Object {
 		}
 
 		// Sanitize
-		$logo = $logo ? esc_url( $logo ) : false;
+		$logo = $logo ? wpex_url_ssl_sanitize( $logo ) : false;
 
 		// Return logo
 		return $logo;
@@ -407,6 +448,11 @@ class WPEX_Global_Theme_Object {
 		// Return if header is disabled
 		if ( ! $this->has_header ) {
 			return 'disabled';
+		}
+
+		// Check if builder is enabled
+		if ( $this->header_builder ) {
+			return 'builder';
 		}
 
 		// Get header style from customizer setting
@@ -436,9 +482,11 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function header_logo() {
-		$logo = wpex_get_translated_theme_mod( 'custom_logo' );
-		$logo = str_replace( 'http:', '', $logo );
-		$logo = apply_filters( 'wpex_header_logo_img_url', $logo );
+		if ( $this->header_builder ) {
+			return false;
+		}
+		$logo = wpex_url_ssl_sanitize( apply_filters( 'wpex_header_logo_img_url', wpex_get_translated_theme_mod( 'custom_logo' ) ) );
+		$logo = $logo ? $logo : false;
 		return $logo;
 	}
 
@@ -448,9 +496,71 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function retina_header_logo() {
+		if ( $this->header_builder ) {
+			return false;
+		}
+
+		// Get customizer setting
 		$logo = wpex_get_translated_theme_mod( 'retina_logo' );
+		
+		// Check header overlay settings
+		if ( $this->has_overlay_header && $this->header_overlay_logo ) {
+			$post_id = $this->post_id;
+			$ologo = get_post_meta( $post_id, 'wpex_overlay_header_logo_retina', true );
+			if ( $ologo ) {
+				if ( is_numeric( $ologo ) ) {
+					$ologo = wp_get_attachment_image_src( $ologo, 'full' );
+					$ologo = isset( $ologo[0] ) ? $ologo[0] : '';
+				} else {
+					$ologo = $ologo;
+				}
+				$logo = $ologo ?  $ologo : $logo;
+			}
+		}
+
+		// Apply filters
+		$logo = wpex_url_ssl_sanitize( apply_filters( 'wpex_retina_logo_url', $logo ) );
+
+		// Sanitize output
 		$logo = $logo ? $logo : false;
+		
+		// Return retina logo url
 		return $logo;
+	}
+
+	/**
+	 * Returns retina header logo height
+	 *
+	 * @since 3.5.3
+	 */
+	private function retina_header_logo_height() {
+		if ( $this->header_builder ) {
+			return false;
+		}
+
+		// Get default height from customizer setting
+		$height = wpex_get_translated_theme_mod( 'logo_height' );
+
+		// Get post id
+		$post_id = $this->post_id;
+
+		// Check overlay header
+		if ( $this->has_overlay_header
+			&& $this->header_overlay_logo
+			&& get_post_meta( $post_id, 'wpex_overlay_header_logo_retina', true )
+		) {
+			$oheight = get_post_meta( $post_id, 'wpex_overlay_header_logo_retina_height', true );
+			$height  = $oheight ? $oheight : $height;
+		}
+
+		// Apply filters
+		$height = apply_filters( 'wpex_retina_logo_height', $height );
+		
+		// Sanitize
+		$height = $height ? $height : false;
+
+		// Return logo height
+		return $height;
 	}
 
 	/**
@@ -459,6 +569,9 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.4.0
 	 */
 	private function fixed_header_style() {
+		if ( $this->header_builder ) {
+			return false;
+		}
 		$style = wpex_get_mod( 'fixed_header_style', 'standard' );
 		$style = $style ? $style : 'standard';
 		return $style;
@@ -471,6 +584,9 @@ class WPEX_Global_Theme_Object {
 	 */
 	private function has_fixed_header() {
 		$return = false;
+		if ( $this->header_builder ) {
+			return false; // disable always with Header builder enabled
+		}
 		if ( $this->vc_is_inline ) {
 			$return = false; // Disable in VC editor
 		} elseif (
@@ -492,6 +608,9 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function shrink_fixed_header() {
+		if ( $this->header_builder ) {
+			return false;
+		}
 		if ( ( 'shrink' == $this->fixed_header_style || 'shrink_animated' == $this->fixed_header_style )
 			&& ( 'one' == $this->header_style || 'five' == $this->header_style )
 		) {
@@ -507,6 +626,9 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function fixed_header_logo() {
+		if ( $this->header_builder ) {
+			return false;
+		}
 		$logo = wpex_get_mod( 'fixed_header_logo' );
 		if ( ! $logo
 			&& $this->has_overlay_header
@@ -516,7 +638,7 @@ class WPEX_Global_Theme_Object {
 		) {
 			$logo = $this->header_logo;
 		}
-		$logo = apply_filters( 'wpex_fixed_header_logo', $logo );
+		$logo = wpex_url_ssl_sanitize( apply_filters( 'wpex_fixed_header_logo', $logo ) );
 		$logo = $logo ? $logo : null;
 		return esc_url( $logo );
 	}
@@ -527,12 +649,15 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function fixed_header_logo_retina() {
+		if ( $this->header_builder ) {
+			return false;
+		}
 		if ( ! $this->fixed_header_logo ) {
 			$logo = false;
 		} else {
 			$logo = wpex_get_mod( 'fixed_header_logo_retina' );
 		}
-		$logo = apply_filters( 'wpex_fixed_header_logo_retina', $logo );
+		$logo = wpex_url_ssl_sanitize( apply_filters( 'wpex_fixed_header_logo_retina', $logo ) );
 		$logo = $logo ? $logo : false;
 		return $logo;
 	}
@@ -543,6 +668,9 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function fixed_header_logo_retina_height() {
+		if ( $this->header_builder ) {
+			return false;
+		}
 		if ( ! $this->fixed_header_logo || $this->shrink_fixed_header ) {
 			$height = false;
 		} else {
@@ -559,6 +687,9 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function header_aside_content() {
+		if ( $this->header_builder ) {
+			return false;
+		}
 
 		// Not needed here
 		if ( ! wpex_header_supports_aside( $this->header_style ) ) {
@@ -595,21 +726,150 @@ class WPEX_Global_Theme_Object {
 	}
 
 	/**
+	 * Get header menu location
+	 *
+	 * @since 3.4.0
+	 */
+	private function header_menu_location() {
+		if ( $this->header_builder ) {
+			return false;
+		}
+		$location = apply_filters( 'wpex_main_menu_location', 'main_menu' );
+		$location = $location ? $location : false;
+		return $location;
+	}
+
+	/**
+	 * Check if header has menu
+	 *
+	 * @since 3.4.0
+	 */
+	private function has_header_menu() {
+		if ( $this->header_builder ) {
+			return false;
+		}
+		if ( $this->has_header
+			&& $this->header_menu_location
+			&& has_nav_menu( $this->header_menu_location )
+		) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Check if search is enabled in the menu // Fallback setting
+	 *
+	 * @since 3.0.0
+	 */
+	private function has_menu_search() {
+		if ( $this->header_builder ) {
+			return false;
+		}
+		if ( $this->has_header) {
+			return apply_filters( 'wpex_has_menu_search', true ); // Return true always now since 3.0.0
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Returns menu search style
+	 *
+	 * @since 3.0.0
+	 */
+	private function menu_search_style() {
+
+		if ( $this->header_builder ) {
+			return false;
+		}
+
+		// Return if search disabled from the menu
+		if ( ! $this->has_menu_search ) {
+			return false;
+		}
+
+		// Get search style from Customizer
+		$style = wpex_get_mod( 'menu_search_style', 'drop_down' );
+
+		// Overlay header should use pop-up
+		if ( 'disabled' != $style && ( $this->has_overlay_header || 'six' == $this->header_style ) ) {
+			$style = 'overlay';
+		}
+
+		// Apply filters for advanced edits
+		$style = apply_filters( 'wpex_menu_search_style', $style );
+
+		// Sanitize output so it's not empty and return
+		$style = $style ? $style : 'drop_down';
+
+		// Return style
+		return $style;
+
+	}
+
+	/**
+	 * Returns header search style
+	 *
+	 * @since 3.0.0
+	 */
+	private function menu_cart_style() {
+
+		if ( $this->header_builder ) {
+			return false;
+		}
+
+		// Return if WooCommerce isn't enabled or icon is disabled
+		if ( ! WPEX_WOOCOMMERCE_ACTIVE || 'disabled' == wpex_get_mod( 'woo_menu_icon_display', 'icon_count' ) ) {
+			return false;
+		}
+
+		// Get Menu Icon Style
+		$style = wpex_get_mod( 'woo_menu_icon_style', 'drop_down' );
+
+		// Overlay header should use pop-up
+		if ( $this->has_overlay_header || 'six' == $this->header_style ) {
+			$style = 'overlay';
+		}
+
+		// Return click style for these pages
+		if ( is_cart() || is_checkout() ) {
+			$style = 'custom-link';
+		}
+
+		// Apply filters for advanced edits
+		$style = apply_filters( 'wpex_menu_cart_style', $style );
+
+		// Sanitize output so it's not empty
+		if ( 'drop-down' == $style || ! $style ) {
+			$style = 'drop_down';
+		}
+
+		// Return style
+		return $style;
+
+	}
+
+	/**
 	 * Returns mobile menu style
 	 *
 	 * @since 3.0.0
 	 */
 	private function mobile_menu_style() {
 
+		if ( $this->header_builder ) {
+			return false;
+		}
+
 		// Get and sanitize style
 		$style = wpex_esc_html( wpex_get_mod( 'mobile_menu_style' ), 'sidr' );
 
-		// Toggle style not supported when overlay header is enabled
-		// Maybe it should toggle at the top above the header? - is that weird?
-		// @todo: Update to allow toggle style
+		/* Toggle style not supported when overlay header is enabled
+		// Disabled in 3.5.0
 		if ( 'toggle' == $style && $this->has_overlay_header ) {
-			$style = 'sidr';
-		}
+			//$style = 'sidr';
+		}*/
 
 		// Disable if responsive is disabled
 		$style = $this->responsive ? $style : 'disabled';
@@ -626,18 +886,13 @@ class WPEX_Global_Theme_Object {
 	 */
 	private function mobile_menu_toggle_style() {
 
-		// Not needed if mobile menu style is disabled
-		if ( 'disabled' == $this->mobile_menu_style ) {
+		// Set to false if header builder is enabled or mobile menu is disabled
+		if ( $this->header_builder || 'disabled' == $this->mobile_menu_style ) {
 			return false;
 		}
 
 		// Get style
 		$style = wpex_get_mod( 'mobile_menu_toggle_style' );
-
-		// Overlay should NOT have navbar style - bad - set to Fixed Top Instead
-		if ( ( 'navbar' == $style || 'fixed_top' == $style ) && $this->has_overlay_header ) {
-			$style = 'icon_buttons'; //@todo: Update to allow other styles
-		}
 
 		// Sanitize
 		$style = $style ? $style : 'icon_buttons';
@@ -653,9 +908,18 @@ class WPEX_Global_Theme_Object {
 	 * @since 2.1.04
 	 */
 	private function has_mobile_menu() {
-		if ( $this->has_header && 'disabled' != $this->mobile_menu_style ) {
-			return true;
+		if ( $this->header_builder ) {
+			return false;
 		}
+		$bool = false;
+		if ( ! $this->responsive ) {
+			$bool = false;
+		} elseif ( 'disabled' == $this->mobile_menu_style ) {
+			$bool = false;
+		} elseif ( has_nav_menu( 'mobile_menu_alt' ) || $this->has_header_menu ) {
+			$bool = true;
+		}
+		return apply_filters( 'wpex_has_mobile_menu', $bool );
 	}
 
 	/**
@@ -700,120 +964,11 @@ class WPEX_Global_Theme_Object {
 	}
 
 	/**
-	 * Get header menu location
-	 *
-	 * @since 3.4.0
-	 */
-	private function header_menu_location() {
-		$location = apply_filters( 'wpex_main_menu_location', 'main_menu' );
-		$location = $location ? $location : false;
-		return $location;
-	}
-
-	/**
-	 * Check if header has menu
-	 *
-	 * @since 3.4.0
-	 */
-	private function has_header_menu() {
-		if ( $this->has_header
-			&& $this->header_menu_location
-			&& has_nav_menu( $this->header_menu_location )
-		) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Check if search is enabled in the menu // Fallback setting
-	 *
-	 * @since 3.0.0
-	 */
-	private function has_menu_search() {
-		if ( $this->has_header) {
-			return apply_filters( 'wpex_has_menu_search', true ); // Return true always now since 3.0.0
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Returns menu search style
-	 *
-	 * @since 3.0.0
-	 */
-	private function menu_search_style() {
-
-		// Return if search disabled from the menu
-		if ( ! $this->has_menu_search ) {
-			return false;
-		}
-
-		// Get search style from Customizer
-		$style = wpex_get_mod( 'menu_search_style', 'drop_down' );
-
-		// Overlay header should use pop-up
-		if ( 'disabled' != $style && ( $this->has_overlay_header || 'six' == $this->header_style ) ) {
-			$style = 'overlay';
-		}
-
-		// Apply filters for advanced edits
-		$style = apply_filters( 'wpex_menu_search_style', $style );
-
-		// Sanitize output so it's not empty and return
-		$style = $style ? $style : 'drop_down';
-
-		// Return style
-		return $style;
-
-	}
-
-	/**
-	 * Returns header search style
-	 *
-	 * @since 3.0.0
-	 */
-	private function menu_cart_style() {
-
-		// Return if WooCommerce isn't enabled or icon is disabled
-		if ( ! WPEX_WOOCOMMERCE_ACTIVE || 'disabled' == wpex_get_mod( 'woo_menu_icon_display', 'icon_count' ) ) {
-			return false;
-		}
-
-		// Get Menu Icon Style
-		$style = wpex_get_mod( 'woo_menu_icon_style', 'drop_down' );
-
-		// Overlay header should use pop-up
-		if ( $this->has_overlay_header || 'six' == $this->header_style ) {
-			$style = 'overlay';
-		}
-
-		// Return click style for these pages
-		if ( is_cart() || is_checkout() ) {
-			$style = 'custom-link';
-		}
-
-		// Apply filters for advanced edits
-		$style = apply_filters( 'wpex_menu_cart_style', $style );
-
-		// Sanitize output so it's not empty
-		if ( 'drop-down' == $style || ! $style ) {
-			$style = 'drop_down';
-		}
-
-		// Return style
-		return $style;
-
-	}
-
-	/**
 	 * Returns correct post slider shortcode
 	 *
 	 * @since 1.6.0
 	 */
-	function post_slider_shortcode() {
+	private function post_slider_shortcode() {
 
 		// Check for slider defined in custom fields
 		if ( $slider = get_post_meta( $this->post_id, 'wpex_post_slider_shortcode', true ) ) {
@@ -965,11 +1120,22 @@ class WPEX_Global_Theme_Object {
 	 * @since 3.0.0
 	 */
 	private function toggle_bar_content_id() {
-		if ( $post_id = wpex_get_mod( 'toggle_bar_page' ) ) {
+
+		// Get toggle bar content id
+		$post_id = wpex_get_mod( 'toggle_bar_page', false );
+
+		// If defined add filter, translate id, sanitize and add to VC css array
+		if ( $post_id ) {
 			$post_id = apply_filters( 'wpex_toggle_bar_content_id', $post_id );
-			$this->vc_css_ids[$post_id] = $post_id;
-			return $post_id;
+			$post_id = intval( wpex_parse_obj_id( $post_id ) );
+			if ( $post_id ) {
+				$this->vc_css_ids[$post_id] = $post_id;
+			}
 		}
+
+		// Return ID
+		return $post_id;
+
 	}
 
 	/**
@@ -1106,19 +1272,11 @@ class WPEX_Global_Theme_Object {
 			$return = $global;
 		}
 
-		// Dynamic
-		if ( wpex_get_mod( 'page_header_background_img_dynamic', false ) ) {
-			$args = array( 'size' => 'full' );
-			if ( $id = $this->post_id ) {
-				$args['attachment'] = get_post_thumbnail_id( $id );
-			} elseif ( ! is_search() && ( is_tax() || is_category() || is_tag() ) ) {
-				$args['attachment'] = wpex_get_term_thumbnail_id();
-			}
-			$args = apply_filters( 'wpex_page_header_background_img_dynamic_args', $args );
-			if ( isset( $args['attachment'] ) && $img = wpex_get_post_thumbnail_url( $args ) ) {
-				$return = $img;
-			}
-		}
+		// Apply filters
+		$return = apply_filters( 'wpex_page_header_background_img', $return );
+
+		// Sanitize
+		$return = $return ? $return : false;
 
 		// Return background
 		return $return;
@@ -1269,8 +1427,11 @@ class WPEX_Global_Theme_Object {
 	 */
 	private function has_footer_reveal() {
 
-		// Disable on boxed style - ALWAYS
-		if ( 'boxed' == $this->main_layout || 'six' == $this->header_style ) {
+		// Disable here always
+		if ( $this->vc_is_inline
+			|| 'boxed' == $this->main_layout
+			|| 'six' == $this->header_style
+		) {
 			return false;
 		}
 
@@ -1317,7 +1478,8 @@ class WPEX_Global_Theme_Object {
 		}
 
 		// Return true if custom callout text exists
-		if ( get_post_meta( $this->post_id, 'wpex_callout_text', true ) ) {
+		$meta = get_post_meta( $this->post_id, 'wpex_callout_text', true );
+		if ( $meta && '<p><br data-mce-bogus="1"></p>' != $meta  ) {
 			$return = true;
 		}
 
@@ -1346,12 +1508,18 @@ class WPEX_Global_Theme_Object {
 		if ( ! $this->has_footer_callout() ) {
 			return false;
 		}
+
+		// Default content var
+		$content = '';
 		
 		// Get post ID
 		$post_id = $this->post_id;
 
+		// Check meta
+		$meta = $post_id ? get_post_meta( $post_id, 'wpex_callout_text', true ) : '';
+
 		// Get Content
-		if ( $post_id && $meta = get_post_meta( $post_id, 'wpex_callout_text', true ) ) {
+		if ( $meta && '<p><br data-mce-bogus="1"></p>' != $meta  ) {
 
 			// Return content defined in meta
 			$content = $meta;
@@ -1403,14 +1571,9 @@ class WPEX_Global_Theme_Object {
 			
 		}
 
-		// Page check
-		if ( is_page() ) {
-			$return = wpex_get_mod( 'social_share_pages' );
-		}
-
-		// Check if enabled on single blog posts
-		elseif ( is_singular( 'post' ) ) {
-			$return = true; // It uses the builder so we should return true
+		// Page check ~ Uses the Customizer composer module so we should return true
+		if ( is_page() || is_singular( 'post' ) ) {
+			$return = true;
 		}
 
 		// Check post entries

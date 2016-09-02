@@ -15,8 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Only used for inside position
 if ( 'inside_link' != $position ) {
 	return;
-} ?>
+}
 
-<div class="overlay-title-bottom-see-through theme-overlay textcenter">
-	<span class="title"><?php the_title(); ?></span>
-</div>
+// Get post data
+$title = isset( $args['post_title'] ) ? $args['post_title'] : get_the_title();
+
+// Output overlay
+echo '<div class="overlay-title-bottom-see-through theme-overlay textcenter"><span class="title">'. $title .'</span></div>';

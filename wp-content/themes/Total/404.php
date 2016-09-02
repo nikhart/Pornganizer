@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Templates
- * @version 3.3.2
+ * @version 3.5.3
  */
 
 get_header(); ?>
@@ -24,26 +24,36 @@ get_header(); ?>
 				<article class="entry clr">
 
 					<?php
-					// Get error text
-					$error_text = wpex_get_translated_theme_mod( 'error_page_text' );
+					// Check custom page content
+					if ( wpex_get_mod( 'error_page_content_id' ) ) :
+						$id   = wpex_global_obj( 'post_id' );
+						$post = get_post( $id );
+						echo apply_filters( 'the_content', $post->post_content );
 
-					// Display custom text
-					if ( ! empty( $error_text ) )  : ?>
+					else :
 
-						<div class="custom-error404-content clr">
-							<?php echo apply_filters( 'the_content', $error_text ); ?>
-						</div><!-- .custom-error404-content -->
+						// Get error text
+						$error_text = wpex_get_translated_theme_mod( 'error_page_text' );
 
-					<?php
-					// Display default text
-					else : ?>
+						// Display custom text
+						if ( ! empty( $error_text ) )  : ?>
 
-						<div class="error404-content clr">
+							<div class="custom-error404-content clr">
+								<?php echo apply_filters( 'the_content', $error_text ); ?>
+							</div><!-- .custom-error404-content -->
 
-							<h1><?php esc_html_e( 'You Broke The Internet!', 'total' ); ?></h1>
-							<p><?php esc_html_e( 'We are just kidding...but sorry the page you were looking for can not be found.', 'total' ); ?></p>
+						<?php
+						// Display default text
+						else : ?>
 
-						</div><!-- .error404-content -->
+							<div class="error404-content clr">
+
+								<h1><?php esc_html_e( 'You Broke The Internet!', 'total' ); ?></h1>
+								<p><?php esc_html_e( 'We are just kidding...but sorry the page you were looking for can not be found.', 'total' ); ?></p>
+
+							</div><!-- .error404-content -->
+
+						<?php endif; ?>
 
 					<?php endif; ?>
 

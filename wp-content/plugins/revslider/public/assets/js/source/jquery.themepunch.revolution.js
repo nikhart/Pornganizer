@@ -1,6 +1,6 @@
 /**************************************************************************
  * jquery.themepunch.revolution.js - jQuery Plugin for Revolution Slider
- * @version: 5.2.5 (07.04.2016)
+ * @version: 5.2.5.3 (30.05.2016)
  * @requires jQuery v1.7 or later (tested on 1.9)
  * @author ThemePunch
 **************************************************************************/
@@ -53,7 +53,10 @@
 					panZoomDisableOnMobile:"off",
 					simplifyAll:"on",
 					nextSlideOnWindowFocus:"off",	
-					disableFocusListener:true						
+					disableFocusListener:true,
+					ignoreHeightChanges:"off",  // off, mobile, always
+					ignoreHeightChangesSize:0
+
 				},
 				
 				parallax : {
@@ -221,7 +224,7 @@
 				var c = jQuery(this);
 				
 				// Prepare maxHeight
-				options.maxHeight = options.maxHeight!=undefined ? parseInt(opt.maxHeight,0) : options.maxHeight;
+				options.minHeight = options.minHeight!=undefined ? parseInt(options.minHeight,0) : options.minHeight;
 
 				//REMOVE SLIDES IF SLIDER IS HERO
 				if (options.sliderType=="hero") {
@@ -288,7 +291,8 @@
 							opt.thumbs = removeArray(opt.thumbs,sindex);	
 							if (_R.updateNavIndexes) _R.updateNavIndexes(opt); 
 							if (nextslideafter) container.revnext();
-								
+							punchgs.TweenLite.set(opt.li,{minWidth:"99%"});														
+							punchgs.TweenLite.set(opt.li,{minWidth:"100%"});
 						}
 					}
 				}
@@ -698,7 +702,7 @@ jQuery.extend(true, _R, {
 		container.trigger("revolution.nextslide.waiting");
 				
 
-		if (nindex !== aindex && nindex!=-1)
+		if ((aindex===nindex && aindex === opt.last_shown_slide) || (nindex !== aindex && nindex!=-1))
 			swapSlide(container,opt);	
 		else
 			container.find('.next-revslide').removeClass("next-revslide");
@@ -939,14 +943,15 @@ var getNeededScripts = function(o,c) {
 		// LAYERANIM, VIDEOS, ACTIONS EXTENSIONS
 		c.find('.tp-caption, .tp-static-layer, .rs-background-video-layer').each(function(){
 			var _nc = jQuery(this);
-			if ((_nc.data('ytid')!=undefined  || _nc.find('iframe').length>0 && _nc.find('iframe').attr('src').toLowerCase().indexOf('youtube')>0))
-				n.videos = true;
+			if ((_nc.data('ytid')!=undefined  || _nc.find('iframe').length>0 && _nc.find('iframe').attr('src').toLowerCase().indexOf('youtube')>0))			
+				n.videos = true;			
 			if ((_nc.data('vimeoid')!=undefined || _nc.find('iframe').length>0 && _nc.find('iframe').attr('src').toLowerCase().indexOf('vimeo')>0))
 				n.videos = true;		
 			if (_nc.data('actions')!==undefined) 
 				n.actions = true;
 			n.layeranim = true;
 		});
+
 
 		c.find('li').each(function() {
 			if (jQuery(this).data('link') && jQuery(this).data('link')!=undefined) {
@@ -956,8 +961,9 @@ var getNeededScripts = function(o,c) {
 		})
 
 		// VIDEO EXTENSION
-		if (!n.videos && (c.find('.rs-background-video-layer').length>0 || c.find(".tp-videolayer").length>0 || c.find(".tp-audiolayer") || c.find('iframe').length>0 || c.find('video').length>0))
+		if (!n.videos && (c.find('.rs-background-video-layer').length>0 || c.find(".tp-videolayer").length>0 || c.find(".tp-audiolayer").length>0 || c.find('iframe').length>0 || c.find('video').length>0))						
 			n.videos = true;
+		
 
 		// VIDEO EXTENSION
 		if (o.sliderType =="carousel")
@@ -1176,6 +1182,15 @@ var initSlider = function (container,opt) {
     }
 
  }
+
+ var onFullScreenChange = function() {
+			 jQuery("body").data('rs-fullScreenMode',!jQuery("body").data('rs-fullScreenMode'));
+		     if (jQuery("body").data('rs-fullScreenMode')) {
+			     setTimeout(function() {
+			     	jQuery(window).trigger("resize");
+			     },200);
+		     }
+		}
 
  var runSlider = function(container,opt) {
 
@@ -1469,22 +1484,21 @@ var initSlider = function (container,opt) {
 				
 				
 		});
+		
+		container[0].addEventListener('mouseenter',function() {				
+			container.trigger('tp-mouseenter');										
+			opt.overcontainer=true;
+		},{passive:true});
 
-		container.hover(
-			function() {				
-					container.trigger('tp-mouseenter');		
-					opt.overcontainer=true;			
-			},
-			function() {
-					container.trigger('tp-mouseleft');												
-					opt.overcontainer=false;
-			});
-
-
-		container.on('mouseover',function() {
+		container[0].addEventListener('mouseover',function() {												
 			container.trigger('tp-mouseover');
 			opt.overcontainer=true;
-		})
+		},{passive:true});
+
+		container[0].addEventListener('mouseleave',function() {				
+			container.trigger('tp-mouseleft');												
+			opt.overcontainer=false;
+		},{passive:true});
 
 		// REMOVE ANY VIDEO JS SETTINGS OF THE VIDEO  IF NEEDED  (OLD FALL BACK, AND HELP FOR 3THD PARTY PLUGIN CONFLICTS)
 		container.find('.tp-caption video').each(function(i) {
@@ -1615,25 +1629,38 @@ var initSlider = function (container,opt) {
 		********************************/
 		// FULLSCREEN MODE TESTING
 		jQuery("body").data('rs-fullScreenMode',false);
-		jQuery(window).on ('mozfullscreenchange webkitfullscreenchange fullscreenchange',function(){
-		     jQuery("body").data('rs-fullScreenMode',!jQuery("body").data('rs-fullScreenMode'));
-		     if (jQuery("body").data('rs-fullScreenMode')) {
-			     setTimeout(function() {
-			     	jQuery(window).trigger("resize");
-			     },200);
-		     }
-		});
+
+		
+		window.addEventListener('fullscreenchange',onFullScreenChange,{passive:true});
+		window.addEventListener('mozfullscreenchange',onFullScreenChange,{passive:true});
+		window.addEventListener('webkitfullscreenchange',onFullScreenChange,{passive:true});
+
+		
 
 		var resizid = "resize.revslider-"+container.attr('id');
 
 		// IF RESIZED, NEED TO STOP ACTUAL TRANSITION AND RESIZE ACTUAL IMAGES
 		jQuery(window).on(resizid,function() {
+			console.log("happening")
 			if (container==undefined) return false;
 			
 			if (jQuery('body').find(container)!=0) 				
 				contWidthManager(opt);							
 				
-				if (container.outerWidth(true)!=opt.width || container.is(":hidden") || (opt.sliderLayout=="fullscreen" && jQuery(window).height()!=opt.lastwindowheight)) {
+				var hchange = false;
+
+				if (opt.sliderLayout=="fullscreen") {
+					var jwh = jQuery(window).height();
+					if ((opt.fallbacks.ignoreHeightChanges=="mobile" && _ISM) || opt.fallbacks.ignoreHeightChanges=="always") {
+						opt.fallbacks.ignoreHeightChangesSize = opt.fallbacks.ignoreHeightChangesSize == undefined ? 0 : opt.fallbacks.ignoreHeightChangesSize;
+						hchange = (jwh!=opt.lastwindowheight) && (Math.abs(jwh-opt.lastwindowheight) > opt.fallbacks.ignoreHeightChangesSize)							
+					} else {
+						hchange = (jwh!=opt.lastwindowheight) 
+					}
+				}
+				
+	
+				if (container.outerWidth(true)!=opt.width || container.is(":hidden") || (hchange)) {
 						opt.lastwindowheight = jQuery(window).height();
 						containerResized(container,opt);
 				}
@@ -2030,10 +2057,12 @@ var progressImageLoad = function(opt) {
 						var img = new Image();
 						
 						img.onload = function() {											
-						 	imgLoaded(this,opt,"loaded");					
+						 	imgLoaded(this,opt,"loaded");
+						 	queue.error = false;				
 						};
 						img.onerror = function() {
 							imgLoaded(this,opt,"failed");					
+							queue.error = true;
 						};		
 						
 						img.src=queue.src;
@@ -2069,6 +2098,7 @@ var addToLoadQueue = function(src,opt,prio,type,staticlayer) {
 	if (!alreadyexist) {		
 			var loadobj = new Object();			
 			loadobj.src = src;
+			loadobj.starttoload = jQuery.now();
 			loadobj.type = type || "img";
 			loadobj.prio = prio;
 			loadobj.progress = "prepared";
@@ -2162,11 +2192,14 @@ var waitForCurrentImages = function(nextli,opt,callback) {
 
 
 		if (loadobj && loadobj.progress && loadobj.progress.match(/inprogress|inload|prepared/g)) 
-			if (jQuery.now()-element.data('start-to-load')<5000) 
+			if (!loadobj.error && jQuery.now()-element.data('start-to-load')<5000) 
 					waitforload = true;			
 			else {
 				loadobj.progress="failed";
-				console.error(src+"  Could not be loaded !");
+				if (!loadobj.reported_img) {
+					loadobj.reported_img = true;
+					console.warn(src+"  Could not be loaded !");
+				}
 			}
 		
 		// WAIT FOR VIDEO API'S					
@@ -2202,9 +2235,26 @@ var waitForCurrentImages = function(nextli,opt,callback) {
 		});		
 	}
 	
-	jQuery.each(opt.loadqueue,function(i,o) {		
-		if (o.static===true && (o.progress!="loaded" || o.progress==="failed"))
-			waitforload = true;			
+	jQuery.each(opt.loadqueue,function(i,o) {				
+		if (o.static===true && (o.progress!="loaded" || o.progress==="failed")) {
+			if (o.progress=="failed") {
+				if (!o.reported) {
+					o.reported = true;
+					console.warn("Static Image "+o.src+"  Could not be loaded in time. Error Exists:"+o.error);
+				}
+			}
+			else
+			if (!o.error && jQuery.now()-o.starttoload<5000) {
+				waitforload = true;			
+			}
+			else {
+				if (!o.reported) {
+					o.reported = true;
+					console.warn("Static Image "+o.src+"  Could not be loaded within 5s! Error Exists:"+o.error);
+				}
+			}
+			
+		}
 	});
 		
 	if (waitforload) 
@@ -2754,7 +2804,7 @@ var vis = (function(){
 	        }
 	    }
 	    return function(c) {
-	        if (c) document.addEventListener(eventKey, c);
+	        if (c) document.addEventListener(eventKey, c,{pasive:true});
 	        return !document[stateKey];
 	    }
 	})();
@@ -2806,11 +2856,11 @@ var tabBlurringCheck = function(container,opt) {
 	        // bind focus event
 	        window.addEventListener("focus", function (event) {
 				restartOnFocus(opt);
-	        }, false);
+	        }, {capture:false,passive:true});
 	        // bind blur event
 	        window.addEventListener("blur", function (event) {
 				lastStatBlur(opt);	  
-	        }, false);
+	        }, {capture:false,passive:true});
 
 	    } else {
 	        // bind focus event

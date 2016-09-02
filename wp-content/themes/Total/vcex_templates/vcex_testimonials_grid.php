@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.4
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,13 +17,22 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output
+$output = '';
+
 // Deprecated Attributes
-if ( ! empty( $atts['term_slug'] ) && empty( $atts['include_categories']) ) {
+if ( ! empty( $atts['term_slug'] ) && empty( $atts['include_categories'] ) ) {
 	$atts['include_categories'] = $atts['term_slug'];
 }
 
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_testimonials_grid', $atts );
 extract( $atts );
 
 // Define user-generated attributes
@@ -49,7 +58,7 @@ if ( $wpex_query->have_posts() ) :
 	$wrap_classes  = array( 'vcex-testimonials-grid-wrap', 'clr' );
 	$grid_classes  = array( 'wpex-row', 'vcex-testimonials-grid', 'clr' );
 	$grid_data     = array();
-	$css_animation = $this->getCSSAnimation( $css_animation );
+	$css_animation = $css_animation ? vcex_get_css_animation( $css_animation ) : '';
 	$css_animation = ( 'true' == $filter ) ? false : $css_animation;
 	$title_tag     = $title_tag ? $title_tag : 'div';
 
@@ -94,7 +103,7 @@ if ( $wpex_query->have_posts() ) :
 			// Check url for filter cat
 			$filter_url_param = vcex_grid_filter_url_param();
 			if ( isset( $_GET[$filter_url_param] ) ) {
-				$filter_active_category = $_GET[$filter_url_param];
+				$filter_active_category = esc_html( $_GET[$filter_url_param] );
 				if ( ! is_numeric( $filter_active_category ) ) {
 					$get_term = get_term_by( 'name', $filter_active_category, $filter_taxonomy );
 					if ( $get_term ) {
@@ -199,15 +208,15 @@ if ( $wpex_query->have_posts() ) :
 	// Convert arrays into strings
 	$wrap_classes  = implode( ' ', $wrap_classes );
 	$grid_classes  = implode( ' ', $grid_classes );
-	$grid_data     = $grid_data ? ' '. implode( ' ', $grid_data ) : ''; ?>
+	$grid_data     = $grid_data ? ' '. implode( ' ', $grid_data ) : '';
 
-	<div class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?>>
-
-		<?php
+	// Begin shortcode output
+	$output .= '<div class="'. $wrap_classes .'"'. vcex_get_unique_id( $unique_id ) .'>';
+	
 		// Display filter links
-		if ( ! empty( $filter_terms ) ) {
+		if ( 'true' == $filter && ! empty( $filter_terms ) ) {
 
-			// Sanitize vars
+			// Sanitize all text
 			$all_text = $all_text ? $all_text : esc_html__( 'All', 'total' );
 
 			// Filter button classes
@@ -216,29 +225,53 @@ if ( $wpex_query->have_posts() ) :
 			// Filter font size
 			$filter_style = vcex_inline_style( array(
 				'font_size' => $filter_font_size,
-			) ); ?>
+			) );
 
-			<ul class="vcex-testimonials-filter vcex-filter-links clr<?php if ( 'yes' == $center_filter ) echo ' center'; ?>"<?php echo $filter_style; ?>>
+			$filter_classes = 'vcex-testimonials-filter vcex-filter-links clr';
+			if ( 'yes' == $center_filter ) {
+				$filter_classes .= ' center';
+			}
 
-				<?php if ( 'true' == $filter_all_link ) { ?>
-
-					<li <?php if ( ! $filter_has_active_cat ) echo 'class="active"'; ?>><a href="#" data-filter="*" class="<?php echo $filter_button_classes; ?>"><span><?php echo $all_text; ?></span></a></li>
-
-				<?php } ?>
-
-				<?php foreach ( $filter_terms as $term ) : ?>
-
-					<li class="filter-cat-<?php echo $term->term_id; ?><?php if ( $filter_active_category == $term->term_id ) echo ' active'; ?>"><a href="#" data-filter=".cat-<?php echo $term->term_id; ?>" class="<?php echo $filter_button_classes; ?>"><?php echo $term->name; ?></a></li>
-
-				<?php endforeach; ?>
+			$output .= '<ul class="'. $filter_classes .'"'. $filter_style .'>';
 				
-			</ul><!-- .vcex-testimonials-filter -->
+				if ( 'true' == $filter_all_link ) {
 
-		<?php } ?>
+					$output .= '<li';
+						if ( ! $filter_has_active_cat ) {
+							$output .= ' class="active"';
+						}
+					$output .= '>';
 
-		<div class="<?php echo $grid_classes; ?>"<?php echo $grid_data; ?>>
+						$output .= '<a href="#" data-filter="*" class="'. $filter_button_classes .'"><span>'. $all_text .'</span></a>';
 
-			<?php
+					$output .= '</li>';
+
+				}
+
+				foreach ( $filter_terms as $term ) :
+
+					$output .= '<li class="filter-cat-'. $term->term_id;
+						if ( $filter_active_category == $term->term_id ) {
+							$output .= ' active';
+						}
+					$output .= '">';
+
+					$output .= '<a href="#" data-filter=".cat-'. $term->term_id .'" class="'. $filter_button_classes .'">';
+						$output .= $term->name;
+					$output .= '</a></li>';
+
+				endforeach;
+
+				if ( $vcex_after_grid_filter = apply_filters( 'vcex_after_grid_filter', '', $atts ) ) { 
+					$output .= $vcex_after_grid_filter;
+				}
+
+			$output .= '</ul>';
+
+		}
+
+		$output .= '<div class="'. $grid_classes .'"'. $grid_data .'>';
+
 			// Define counter var to clear floats
 			$count = 0;
 
@@ -251,14 +284,12 @@ if ( $wpex_query->have_posts() ) :
 				// Add to the counter var
 				$count++;
 
-				// Create new post object
-				$testimonial = new stdClass();
-
 				// Get post data
-				$testimonial->ID      = get_the_ID();
-				$testimonial->author  = get_post_meta( get_the_ID(), 'wpex_testimonial_author', true );
-				$testimonial->company = get_post_meta( get_the_ID(), 'wpex_testimonial_company', true );
-				$testimonial->url     = get_post_meta( get_the_ID(), 'wpex_testimonial_url', true );
+				$atts['post_id']           = get_the_ID();
+				$atts['post_title']        = get_the_title();
+				$atts['post_meta_author']  = get_post_meta( $atts['post_id'], 'wpex_testimonial_author', true );
+				$atts['post_meta_company'] = get_post_meta( $atts['post_id'], 'wpex_testimonial_company', true );
+				$atts['post_meta_url']     = get_post_meta( $atts['post_id'], 'wpex_testimonial_url', true );
 
 				// Add classes to the entries
 				$entry_classes = array( 'testimonial-entry' );
@@ -275,31 +306,27 @@ if ( $wpex_query->have_posts() ) :
 				if ( $is_isotope ) {
 					$entry_classes[] = 'vcex-isotope-entry';
 				}
-				if ( $filter_taxonomy ) {
-					if ( $post_terms = get_the_terms( $testimonial->ID, 'testimonials_category' ) ) {
-						foreach ( $post_terms as $post_term ) {
-							$entry_classes[] = 'cat-'. $post_term->term_id;
-						}
-					}
-				} ?>
 
-				<div <?php post_class( $entry_classes ); ?>>
+				// Begin entry output
+				$output .= '<div '. vcex_grid_get_post_class( $entry_classes, $atts['post_id'] ) .'>';
 
-					<div class="testimonial-entry-content clr">
+					$output .= '<div class="testimonial-entry-content clr">';
 
-						<span class="testimonial-caret"></span>
+						$output .= '<span class="testimonial-caret"></span>';
 
-						<?php
 						// Display title
-						if ( 'true' == $title ) : ?>
+						if ( 'true' == $title ) :
 
-							<<?php echo $title_tag; ?> class="testimonial-entry-title entry-title"<?php echo $title_style; ?>><?php the_title(); ?></<?php echo $title_tag; ?>>
+							$output .= '<'. esc_attr( $title_tag ) .' class="testimonial-entry-title entry-title"'. $title_style .'>';
 
-						<?php endif; ?>
+								$output .= esc_html( $atts['post_title'] );
 
-						<div class="testimonial-entry-details clr"<?php echo $content_style; ?>>
+							$output .= '</'. esc_attr( $title_tag ) .'>';
 
-							<?php
+						endif;
+
+						$output .= '<div class="testimonial-entry-details clr"'. $content_style .'>';
+
 							// Display excerpt if enabled (default dispays full content )
 							if ( 'true' == $excerpt ) :
 
@@ -308,16 +335,20 @@ if ( $wpex_query->have_posts() ) :
 
 									// Add arrow
 									if ( 'false' != $read_more_rarr ) {
+
 										$read_more_rarr_html = '<span>&rarr;</span>';
+
 									} else {
+
 										$read_more_rarr_html = '';
+
 									}
 
 									// Read more text
 									if ( is_rtl() ) {
 										$read_more_link = '...<a href="'. wpex_get_permalink() .'" title="'. esc_attr( $read_more_text ) .'">'. $read_more_text .'</a>';
 									} else {
-										$read_more_link = '...<a href="'. wpex_get_permalink() .'" title="'. esc_attr( $read_more_text ) .'">'. $read_more_text . $read_more_rarr_html .'</a>';
+										$read_more_link = '...<a href="'. wpex_get_permalink() .'" title="'. esc_attr( $read_more_text ) .'">'. esc_html( $read_more_text ) . $read_more_rarr_html .'</a>';
 									}
 
 								else :
@@ -327,8 +358,8 @@ if ( $wpex_query->have_posts() ) :
 								endif;
 
 								// Custom Excerpt function
-								wpex_excerpt( array(
-									'post_id' => $testimonial->ID,
+								$output .= wpex_get_excerpt( array(
+									'post_id' => $atts['post_id'],
 									'length'  => intval( $excerpt_length ),
 									'more'    => $read_more_link,
 								) );
@@ -336,111 +367,117 @@ if ( $wpex_query->have_posts() ) :
 							// Display full post content
 							else :
 
-								the_content();
+								$output .= apply_filters( 'the_content', get_the_content() );
 							
-							endif; ?>
+							// End excerpt check
+							endif;
 
-						</div><!-- .entry -->
+						$output .= '</div>';
 
-					</div><!-- .home-testimonial-entry-content-->
+					$output .= '</div>';
 
-					<div class="testimonial-entry-bottom">
+					$output .= '<div class="testimonial-entry-bottom">';
 
-						<?php
 						// Check if post thumbnail is defined
-						if ( has_post_thumbnail( $testimonial->ID ) && 'true' == $entry_media ) : ?>
+						if ( has_post_thumbnail( $atts['post_id'] ) && 'true' == $entry_media ) {
 
-							<div class="testimonial-entry-thumb">
+							$output .= '<div class="testimonial-entry-thumb">';
 
-								<?php
 								// Display post thumbnail
-								wpex_post_thumbnail( array(
-									'attachment' => get_post_thumbnail_id( $testimonial->ID ),
+								$output .= wpex_get_post_thumbnail( array(
+									'attachment' => get_post_thumbnail_id( $atts['post_id'] ),
 									'size'       => $img_size,
 									'width'      => $img_width,
 									'height'     => $img_height,
 									'class'      => $img_classes,
 									'style'      => $img_style,
 									'crop'       => $img_crop,
-								) ); ?>
+								) );
 
-							</div><!-- /testimonial-thumb -->
+							$output .= '</div>';
 
-						<?php endif; ?>
+						}
 
-						<div class="testimonial-entry-meta">
+						$output .= '<div class="testimonial-entry-meta">';
 
-							<?php
 							// Display testimonial author
-							if ( 'true' == $author && $testimonial->author ) : ?>
+							if ( 'true' == $author && $atts['post_meta_author'] ) :
 
-								<span class="testimonial-entry-author entry-title">
-									<?php echo $testimonial->author; ?>
-								</span>
+								$output .= '<span class="testimonial-entry-author entry-title">';
 
-							<?php endif; ?>
+									$output .= esc_html( $atts['post_meta_author'] );
 
-							<?php
+								$output .= '</span>';
+
+							endif;
+
 							// Display testimonial company
-							if ( 'true' == $company && $testimonial->company ) : ?>
+							if ( 'true' == $company && $atts['post_meta_company'] ) {
 
-								<?php
 								// Display testimonial company with URL
-								if ( $testimonial->url ) : ?>
+								if ( $atts['post_meta_url'] ) {
 
-									<a href="<?php echo esc_url( $testimonial->url ); ?>" class="testimonial-entry-company" title="<?php echo $testimonial->company; ?>" target="_blank">
-										<?php echo $testimonial->company; ?>
-									</a>
+									$output .= '<a href="'. esc_url( $atts['post_meta_url'] ) .'" class="testimonial-entry-company" title="'. $atts['post_meta_company'] .'" target="_blank">';
+									
+										$output .= esc_html( $atts['post_meta_company'] );
 
-								<?php
+									$output .= '</a>';
+
 								// Display testimonial company without URL since it's not defined
-								else : ?>
+								} else {
 
-									<span class="testimonial-entry-company">
-										<?php echo $testimonial->company; ?>
-									</span>
+									$output .= '<span class="testimonial-entry-company">';
 
-								<?php endif; ?>
+										$output .= esc_html( $atts['post_meta_company'] );
 
-							<?php endif; ?>
+									$output .= '</span>';
 
-						</div><!-- .testimonial-entry-meta -->
+								}
 
-					</div><!-- .home-testimonial-entry-bottom -->
+							}
 
-				</div><!-- .testimonials-entry -->
+							// Display rating
+							if ( 'true' == $rating && $atts['post_rating'] = gds_get_star_rating( '', $atts['post_id'] ) ) {
 
-				<?php
+								$output .= '<div class="testimonial-entry-rating clr">'. $atts['post_rating'] .'</div>';
+
+							}
+
+						$output .= '</div>';
+
+					$output .= '</div>';
+
+				$output .= '</div>';
+
 				// Reset post loop counter
-				if ( $count == $columns ) $count = ''; ?>
+				if ( $count == $columns ) {
+					$count = '';
+				}
 
-			<?php endwhile; ?>
+			endwhile; // End loop
 
-		</div><!-- .vcex-testimonials-grid -->
+		$output .= '</div>';
 		
-		 <?php
 		// Display pagination if enabled
-		if ( 'true' == $pagination ) : ?>
-			<?php wpex_pagination( $wpex_query ); ?>
-		<?php endif; ?>
+		if ( 'true' == $pagination ) :
 
-	</div><!-- <?php echo $wrap_classes; ?> -->
+			$output .= wpex_pagination( $wpex_query, false );
+		
+		endif;
 
-	<?php
-	// Remove post object from memory
-	$testimonial = null;
+	$output .= '</div>';
 
 	// Reset the post data to prevent conflicts with WP globals
-	wp_reset_postdata(); ?>
+	wp_reset_postdata();
 
-<?php
+	// Output shortcode
+	echo $output;
+
 // If no posts are found display message
-else : ?>
+else :
 
-	<?php
 	// Display no posts found error if function exists
-	echo vcex_no_posts_found_message( $atts ); ?>
+	echo vcex_no_posts_found_message( $atts );
 
-<?php
 // End post check
-endif; ?>
+endif;

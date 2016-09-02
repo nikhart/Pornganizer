@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -23,7 +23,7 @@ if ( ! class_exists( 'WPEX_Theme_Border_Color' ) ) {
 		 * @since 2.0.0
 		 */
 		public function __construct() {
-			add_filter( 'wpex_head_css', array( $this, 'generate' ), 1 );
+			add_filter( 'wpex_head_css', array( 'WPEX_Theme_Border_Color', 'generate' ), 1 );
 		}
 
 		/**
@@ -96,7 +96,7 @@ if ( ! class_exists( 'WPEX_Theme_Border_Color' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function generate( $output ) {
+		public static function generate( $output ) {
 
 			// Get border color
 			$color = wpex_get_mod( 'main_border_color', '#eee' );
@@ -111,7 +111,7 @@ if ( ! class_exists( 'WPEX_Theme_Border_Color' ) ) {
 				$css = '';
 
 				// Get array to loop through
-				$borders = $this->border_targets();
+				$borders = self::border_targets();
 
 				// Borders
 				if ( ! empty( $borders ) ) {

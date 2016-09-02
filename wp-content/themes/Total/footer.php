@@ -8,7 +8,7 @@
 
             <?php wpex_hook_main_bottom(); ?>
 
-        </main><!-- #main-content --><?php // main-content opens in header.php ?>
+        </main><!-- #main-content -->
                 
         <?php wpex_hook_main_after(); ?>
 

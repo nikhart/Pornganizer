@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -13,17 +13,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Start Class
-if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
+if ( ! class_exists( 'WPEX_404_PAGE' ) ) {
 
-	class WPEX_Custom_Error_page {
+	class WPEX_404_PAGE {
 
 		/**
 		 * Start things up
 		 */
 		public function __construct() {
-			add_action( 'admin_menu', array( $this, 'add_page' ) );
-			add_action( 'admin_init', array( $this,'register_page_options' ) );
-			add_filter( 'template_redirect', array( $this, 'redirect' ) );
+			add_action( 'admin_menu', array( 'WPEX_404_PAGE', 'add_page' ) );
+			add_action( 'admin_init', array( 'WPEX_404_PAGE','register_page_options' ) );
+			if ( wpex_get_mod( 'error_page_redirect', false ) ) {
+				add_filter( 'template_redirect', array( 'WPEX_404_PAGE', 'redirect' ) );
+			}
+			if ( wpex_get_mod( 'error_page_content_id' ) ) {
+				add_filter( 'wpex_vc_css_ids', array( 'WPEX_404_PAGE', 'vc_css_ids' ) );
+			}
 		}
 
 		/**
@@ -31,14 +36,14 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		 *
 		 * @link http://codex.wordpress.org/Function_Reference/add_theme_page
 		 */
-		public function add_page() {
+		public static function add_page() {
 			add_submenu_page(
 				WPEX_THEME_PANEL_SLUG,
 				esc_html__( 'Custom 404', 'total' ),
 				esc_html__( 'Custom 404', 'total' ),
 				'administrator',
 				WPEX_THEME_PANEL_SLUG .'-404',
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_404_PAGE', 'create_admin_page' )
 			);
 		}
 
@@ -49,19 +54,19 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		 * @link http://codex.wordpress.org/Function_Reference/add_settings_section
 		 * @link http://codex.wordpress.org/Function_Reference/add_settings_field
 		 */
-		public function register_page_options() {
+		public static function register_page_options() {
 
 			// Register settings
-			register_setting( 'wpex_error_page', 'error_page', array( $this, 'sanitize' ) );
+			register_setting( 'wpex_error_page', 'error_page', array( 'WPEX_404_PAGE', 'sanitize' ) );
 
 			// Add main section to our options page
-			add_settings_section( 'wpex_error_page_main', false, array( $this, 'section_main_callback' ), 'wpex-custom-error-page-admin' );
+			add_settings_section( 'wpex_error_page_main', false, array( 'WPEX_404_PAGE', 'section_main_callback' ), 'wpex-custom-error-page-admin' );
 
 			// Redirect field
 			add_settings_field(
 				'redirect',
 				esc_html__( 'Redirect 404\'s', 'total' ),
-				array( $this, 'redirect_field_callback' ),
+				array( 'WPEX_404_PAGE', 'redirect_field_callback' ),
 				'wpex-custom-error-page-admin',
 				'wpex_error_page_main'
 			);
@@ -70,7 +75,7 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 			add_settings_field(
 				'error_page_id',
 				esc_html__( 'Custom 404 Redirect', 'total' ),
-				array( $this, 'content_id_field_callback' ),
+				array( 'WPEX_404_PAGE', 'content_id_field_callback' ),
 				'wpex-custom-error-page-admin',
 				'wpex_error_page_main'
 			);
@@ -79,7 +84,7 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 			add_settings_field(
 				'error_page_title',
 				esc_html__( '404 Page Title', 'total' ),
-				array( $this, 'title_field_callback' ),
+				array( 'WPEX_404_PAGE', 'title_field_callback' ),
 				'wpex-custom-error-page-admin',
 				'wpex_error_page_main'
 			);
@@ -88,7 +93,7 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 			add_settings_field(
 				'error_page_text',
 				esc_html__( '404 Page Content', 'total' ),
-				array( $this, 'content_field_callback' ),
+				array( 'WPEX_404_PAGE', 'content_field_callback' ),
 				'wpex-custom-error-page-admin',
 				'wpex_error_page_main'
 			);
@@ -98,7 +103,7 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		/**
 		 * Sanitization callback
 		 */
-		public function sanitize( $options ) {
+		public static function sanitize( $options ) {
 
 			// Set theme mods
 			if ( isset( $options['redirect'] ) ) {
@@ -133,7 +138,7 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		/**
 		 * Main Settings section callback
 		 */
-		public function section_main_callback( $options ) {
+		public static function section_main_callback( $options ) {
 			// Leave blank
 		}
 
@@ -142,14 +147,14 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		 */
 
 		// Redirect field
-		public function redirect_field_callback() {
+		public static function redirect_field_callback() {
 			$val = wpex_get_mod( 'error_page_redirect' );
 			echo '<input type="checkbox" name="error_page[redirect]" id="error-page-redirect" value="'. esc_attr( $val ) .'" '. checked( $val, true, false ) .'> ';
 			echo '<span class="description">'. esc_html__( 'Automatically 301 redirect all 404 errors to your homepage.', 'total' ) .'</span>';
 		}
 
 		// Custom Error Page ID
-		public function content_id_field_callback() {
+		public static function content_id_field_callback() {
 			wp_dropdown_pages( array(
 				'echo'             => true,
 				'selected'         => wpex_get_mod( 'error_page_content_id' ),
@@ -162,13 +167,13 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		<?php }
 
 		// Title field
-		public function title_field_callback() { ?>
+		public static function title_field_callback() { ?>
 			<input type="text" name="error_page[title]" id="error-page-title" value="<?php echo wpex_get_mod( 'error_page_title' ); ?>">
 			<p class="description"><?php esc_html_e( 'Enter a custom title for your 404 page.', 'total' ) ?></p>
 		<?php }
 
 		// Content field
-		public function content_field_callback() {
+		public static function content_field_callback() {
 			wp_editor( wpex_get_mod( 'error_page_text' ), 'error_page_text', array(
 				'textarea_name' => 'error_page[text]'
 			) );
@@ -177,7 +182,7 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		/**
 		 * Settings page output
 		 */
-		public function create_admin_page() { ?>
+		public static function create_admin_page() { ?>
 			<div class="wrap">
 				<h2 style="padding-right:0;">
 					<?php esc_html_e( 'Custom 404', 'total' ); ?>
@@ -240,33 +245,25 @@ if ( ! class_exists( 'WPEX_Custom_Error_page' ) ) {
 		 * @link  http://codex.wordpress.org/Plugin_API/Action_Reference/template_redirect
 		 * @since 1.6.0
 		 */
-		public function redirect() {
-
-			// Only redirect if it's a 404 page
+		public static function redirect() {
 			if ( is_404() ) {
-
-				// Redirect home
-				if ( wpex_get_mod( 'error_page_redirect', false ) ) {
-					wp_redirect( home_url( '/' ), 301 );
-					exit();
-				}
-
-				// Custom redirect
-				if ( $error_page_id = wpex_get_mod( 'error_page_content_id', null ) ) {
-					if ( function_exists( 'icl_object_id' ) ) {
-						$error_page_id = icl_object_id( $error_page_id, 'page' );
-					}
-					$permalink = get_permalink( $error_page_id );
-					if ( $permalink ) {
-						wp_redirect( $permalink, 301 );
-						exit();
-					}
-				}
-
+				wp_redirect( home_url( '/' ), 301 );
+				exit();
 			}
-
 		}
+
+		/**
+		 * Custom VC CSS for 404 custom page design
+		 */
+		public static function vc_css_ids( $ids ) {
+			if ( is_404() ) {
+				$ids[] = wpex_global_obj( 'post_id' );
+			}
+			return $ids;
+		}
+		
 	}
 
+	new WPEX_404_PAGE();
+
 }
-new WPEX_Custom_Error_page();

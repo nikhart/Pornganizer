@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.0.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -34,9 +34,9 @@ if ( 'one' == $topbar_style ) {
 // Display Social alternative
 if ( $social_alt = wpex_global_obj( 'top_bar_social_alt' ) ) : ?>
 
-	<div id="top-bar-social-alt" class="clr <?php echo $classes; ?>">
-		<?php echo do_shortcode( $social_alt ); ?>
-	</div><!-- #top-bar-social-alt -->
+	<div id="top-bar-social-alt" class="clr <?php echo $classes; ?>"><?php
+		echo do_shortcode( $social_alt );
+	?></div><!-- #top-bar-social-alt -->
 
 <?php return; endif; ?>
 
@@ -67,6 +67,9 @@ if ( $style == 'colored-icons' ) {
 		// Display if there is a value defined
 		if ( $url ) :
 
+			// Sanitize key
+			$key = esc_html( $key );
+
 			// Escape URL except for the following keys
 			if ( ! in_array( $key, array( 'skype', 'email' ) ) ) {
 				$url = esc_url( $url );
@@ -75,20 +78,15 @@ if ( $style == 'colored-icons' ) {
 			// Display link
 			echo '<a href="'. $url .'" title="'. $val['label'] .'" class="wpex-'. $key .' '. wpex_get_social_button_class( $style ) .'"'. $link_target .'>';
 
-				// Simple Font Icons
-				if ( ! $style ) {
-
-					echo '<span class="'. $val['icon_class'] .'"></span>';
-				
 				// Image Icons
-				} elseif ( $style == 'colored-icons' ) {
+				if ( $style == 'colored-icons' ) {
 
-					echo '<img src="'. $colored_icons_url .'/'. $key .'.png" alt="'. $val['label'] .'" />';
+					echo '<img src="'. esc_url( $colored_icons_url ) .'/'. $key .'.png" alt="'. esc_attr( $val['label'] ) .'" />';
 				
-				// New 3.0.0+ styles
+				// Font Awesome Icons
 				} else {
 
-					echo '<span class="'. $val['icon_class'] .'"></span>';
+					echo '<span class="'. esc_attr( $val['icon_class'] ) .'" aria-hidden="true"></span><span class="screen-reader-text">'. esc_attr( $val['label'] ) .' '. esc_html__( 'Profile', 'total' ) .'</span>';
 
 				}
 

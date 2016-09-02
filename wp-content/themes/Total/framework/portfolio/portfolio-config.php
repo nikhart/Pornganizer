@@ -4,11 +4,8 @@
  *
  * @package Total WordPress Theme
  * @subpackage Portfolio Functions
- * @version 3.3.3
+ * @version 3.5.3
  */
-
-// Set global var
-global $wpex_portfolio_config;
 
 // The class
 class WPEX_Portfolio_Config {
@@ -24,28 +21,31 @@ class WPEX_Portfolio_Config {
 		require_once( WPEX_FRAMEWORK_DIR .'portfolio/portfolio-helpers.php' );
 
 		// Adds the portfolio post type
-		add_action( 'init', array( $this, 'register_post_type' ), 0 );
+		add_action( 'init', array( 'WPEX_Portfolio_Config', 'register_post_type' ), 0 );
 
 		// Register portfolio tags if enabled
 		if ( wpex_is_mod_enabled( wpex_get_mod( 'portfolio_tags', true ) ) ) {
-			add_action( 'init', array( $this, 'register_tags' ), 0 );
+			add_action( 'init', array( 'WPEX_Portfolio_Config', 'register_tags' ), 0 );
 		}
 
 		// Register portfolio categories if enabled
 		if ( wpex_is_mod_enabled( wpex_get_mod( 'portfolio_categories', true ) ) ) {
-			add_action( 'init', array( $this, 'register_categories' ), 0 );
+			add_action( 'init', array( 'WPEX_Portfolio_Config', 'register_categories' ), 0 );
 		}
 
 		// Adds the portfolio custom sidebar
 		if ( wpex_get_mod( 'portfolio_custom_sidebar', true ) ) {
-			add_filter( 'widgets_init', array( $this, 'register_sidebar' ), 10 );
+			add_filter( 'widgets_init', array( 'WPEX_Portfolio_Config', 'register_sidebar' ), 10 );
 		}
 
 		// Add image sizes
-		add_filter( 'wpex_image_sizes', array( $this, 'add_image_sizes' ), 10 );
+		add_filter( 'wpex_image_sizes', array( 'WPEX_Portfolio_Config', 'add_image_sizes' ), 10 );
 
 		// Register translation strings
-		add_filter( 'wpex_register_theme_mod_strings', array( $this, 'register_theme_mod_strings' ) );
+		add_filter( 'wpex_register_theme_mod_strings', array( 'WPEX_Portfolio_Config', 'register_theme_mod_strings' ) );
+
+		// Add portfolio VC modules
+		add_filter( 'vcex_builder_modules', array( 'WPEX_Portfolio_Config', 'vc_modules' ) );
 
 		/*-------------------------------------------------------------------------------*/
 		/* -  Admin only actions/filters
@@ -53,23 +53,23 @@ class WPEX_Portfolio_Config {
 		if ( is_admin() ) {
 
 			// Adds columns in the admin view for taxonomies
-			add_filter( 'manage_edit-portfolio_columns', array( $this, 'edit_columns' ) );
-			add_action( 'manage_portfolio_posts_custom_column', array( $this, 'column_display' ), 10, 2 );
+			add_filter( 'manage_edit-portfolio_columns', array( 'WPEX_Portfolio_Config', 'edit_columns' ) );
+			add_action( 'manage_portfolio_posts_custom_column', array( 'WPEX_Portfolio_Config', 'column_display' ), 10, 2 );
 
 			// Allows filtering of posts by taxonomy in the admin view
-			add_action( 'restrict_manage_posts', array( $this, 'tax_filters' ) );
+			add_action( 'restrict_manage_posts', array( 'WPEX_Portfolio_Config', 'tax_filters' ) );
 
 			// Create Editor for altering the post type arguments
-			add_action( 'admin_menu', array( $this, 'add_page' ) );
-			add_action( 'admin_init', array( $this,'register_page_options' ) );
-			add_action( 'admin_notices', array( $this, 'setting_notice' ) );
-			add_action( 'admin_print_styles-portfolio_page_wpex-portfolio-editor', array( $this,'css' ) );
+			add_action( 'admin_menu', array( 'WPEX_Portfolio_Config', 'add_page' ) );
+			add_action( 'admin_init', array( 'WPEX_Portfolio_Config','register_page_options' ) );
+			add_action( 'admin_notices', array( 'WPEX_Portfolio_Config', 'setting_notice' ) );
+			add_action( 'admin_print_styles-portfolio_page_wpex-portfolio-editor', array( 'WPEX_Portfolio_Config','css' ) );
 
 			// Add new image sizes tab
-			add_filter( 'wpex_image_sizes_tabs', array( $this, 'image_sizes_tabs' ), 10 );
+			add_filter( 'wpex_image_sizes_tabs', array( 'WPEX_Portfolio_Config', 'image_sizes_tabs' ), 10 );
 
 			// Add gallery metabox to portfolio
-			add_filter( 'wpex_gallery_metabox_post_types', array( $this, 'add_gallery_metabox' ), 20 );
+			add_filter( 'wpex_gallery_metabox_post_types', array( 'WPEX_Portfolio_Config', 'add_gallery_metabox' ), 20 );
 
 		}
 
@@ -80,23 +80,23 @@ class WPEX_Portfolio_Config {
 
 			// Display correct sidebar for portfolio items
 			if ( wpex_get_mod( 'portfolio_custom_sidebar', true ) ) {
-				add_filter( 'wpex_get_sidebar', array( $this, 'display_sidebar' ) );
+				add_filter( 'wpex_get_sidebar', array( 'WPEX_Portfolio_Config', 'display_sidebar' ) );
 			}
 
 			// Alter the post layouts for portfolio posts and archives
-			add_filter( 'wpex_post_layout_class', array( $this, 'layouts' ) );
+			add_filter( 'wpex_post_layout_class', array( 'WPEX_Portfolio_Config', 'layouts' ) );
 
 			// Posts per page & Exclude from search
-			add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
+			add_action( 'pre_get_posts', array( 'WPEX_Portfolio_Config', 'pre_get_posts' ) );
 
 			// Single next/prev visibility
-			add_filter( 'wpex_has_next_prev', array( $this, 'next_prev' ) );
+			add_filter( 'wpex_has_next_prev', array( 'WPEX_Portfolio_Config', 'next_prev' ) );
 
 			// Tweak page header title
-			add_filter( 'wpex_page_header_title_args', array( $this, 'alter_title' ) );
+			add_filter( 'wpex_page_header_title_args', array( 'WPEX_Portfolio_Config', 'alter_title' ) );
 
 			// Return true for social share check so it can use the builder
-			add_filter( 'wpex_has_social_share', array( $this, 'social_share' ) );
+			add_filter( 'wpex_has_social_share', array( 'WPEX_Portfolio_Config', 'social_share' ) );
 
 		}
 		
@@ -111,7 +111,7 @@ class WPEX_Portfolio_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_post_type() {
+	public static function register_post_type() {
 
 		// Get values and sanitize
 		$name          = wpex_get_portfolio_name();
@@ -318,7 +318,7 @@ class WPEX_Portfolio_Config {
 				if ( ! taxonomy_exists( $tax_slug ) ) {
 					continue;
 				}
-				$current_tax_slug = isset( $_GET[$tax_slug] ) ? $_GET[$tax_slug] : false;
+				$current_tax_slug = isset( $_GET[$tax_slug] ) ? esc_html( $_GET[$tax_slug] ) : false;
 				$tax_obj = get_taxonomy( $tax_slug );
 				$tax_name = $tax_obj->labels->name;
 				$terms = get_terms($tax_slug);
@@ -339,16 +339,16 @@ class WPEX_Portfolio_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function add_page() {
+	public static function add_page() {
 		$wpex_portfolio_editor = add_submenu_page(
 			'edit.php?post_type=portfolio',
 			esc_html__( 'Post Type Editor', 'total' ),
 			esc_html__( 'Post Type Editor', 'total' ),
 			'administrator',
 			'wpex-portfolio-editor',
-			array( $this, 'create_admin_page' )
+			array( 'WPEX_Portfolio_Config', 'create_admin_page' )
 		);
-		add_action( 'load-'. $wpex_portfolio_editor, array( $this, 'flush_rewrite_rules' ) );
+		add_action( 'load-'. $wpex_portfolio_editor, array( 'WPEX_Portfolio_Config', 'flush_rewrite_rules' ) );
 	}
 
 	/**
@@ -369,8 +369,8 @@ class WPEX_Portfolio_Config {
 	 *
 	 * @since 2.0.0
 	 */
-	public function register_page_options() {
-		register_setting( 'wpex_portfolio_options', 'wpex_portfolio_editor', array( $this, 'sanitize' ) );
+	public static function register_page_options() {
+		register_setting( 'wpex_portfolio_options', 'wpex_portfolio_editor', array( 'WPEX_Portfolio_Config', 'sanitize' ) );
 	}
 
 	/**
@@ -802,5 +802,16 @@ class WPEX_Portfolio_Config {
 		return $strings;
 	}
 
+	/**
+	 * Add custom VC modules
+	 *
+	 * @since 3.5.3
+	 */
+	public static function vc_modules( $modules ) {
+		$modules[] = 'portfolio_grid';
+		$modules[] = 'portfolio_carousel';
+		return $modules;
+	}
+
 }
-$wpex_portfolio_config = new WPEX_Portfolio_Config;
+new WPEX_Portfolio_Config;

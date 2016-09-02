@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.5
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,8 +17,14 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_icon_element_fonts_enqueue' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_divider', $atts ) );
 
 // Define output var
 $output = '';
@@ -36,10 +42,10 @@ if ( $style ) {
 	$wrap_classes[] = 'vcex-divider-'. $style;
 }
 if ( $css_animation ) {
-	$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $el_class ) {
-	$wrap_classes[] = $this->getExtraClass( $el_class );
+	$wrap_classes[] = vcex_get_extra_class( $el_class );
 }
 if ( $align ) {
 	$wrap_classes[] = 'vcex-divider-'. $align;
@@ -117,24 +123,32 @@ $wrap_classes = implode( ' ', $wrap_classes );
 
 // Open divider wrapper
 $output .= '<div class="'. esc_attr( $wrap_classes ) .'"'. $wrap_style .'>';
+
 	// Display icon if defined
 	if ( $icon ) {
+
 		$output .= '<div class="vcex-divider-icon">';
+
 			// Icon before span
 			if ( 'dotted' != $style ) {
 				$output .= '<span class="vcex-divider-icon-before"'. $vcex_inner_border_style .'></span>';
 			}
+
 			// Icon output
 			$output .= '<span class="vcex-icon-wrap"'. $icon_style .'>';
 				$output .= '<span class="'. esc_attr( $icon ) .'"></span>';
 			$output .= '</span>';
+
 			// Icon after span
 			if ( 'dotted' != $style ) {
 				$output .= '<span class="vcex-divider-icon-after"'. $vcex_inner_border_style .'></span>';
 			}
+
 		// Close icon wrap
 		$output .= '</div>';
+
 	}
+
 // Close main wrapper
 $output .= '</div>';
 

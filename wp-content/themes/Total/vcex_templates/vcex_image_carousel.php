@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,8 +17,20 @@ if ( is_admin() ) {
     return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output var
+$output = '';
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_image_carousel', $atts ) );
+
+// Output var
+$output = '';
 
 // Set image ids
 $image_ids = ( 'true' == $post_gallery ) ? wpex_get_gallery_ids() : $image_ids;
@@ -95,18 +107,16 @@ if ( 'true' == $randomize_images ) {
 }
 
 // Lets create a new Query so the image grid can be paginated
-$my_query = new WP_Query(
-	array(
-		'post_type'      => 'attachment',
-		//'post_mime_type'    => 'image/jpeg,image/gif,image/jpg,image/png',
-		'post_status'    => 'any',
-		'posts_per_page' => -1,
-		'paged'          => NULL,
-		'no_found_rows'  => true,
-		'post__in'       => $attachment_ids,
-		'orderby'        => $orderby,
-	)
-);
+$my_query = new WP_Query( array(
+	'post_type'      => 'attachment',
+	//'post_mime_type'    => 'image/jpeg,image/gif,image/jpg,image/png',
+	'post_status'    => 'any',
+	'posts_per_page' => -1,
+	'paged'          => NULL,
+	'no_found_rows'  => true,
+	'post__in'       => $attachment_ids,
+	'orderby'        => $orderby,
+) );
 
 
 // Display carousel if there are images
@@ -119,20 +129,39 @@ if ( $my_query->have_posts() ) :
 	$wrap_classes = array( 'wpex-carousel', 'wpex-carousel-images', 'clr', 'owl-carousel' );
 
 	// Carousel style
-	if ( $style ) {
+	if ( $style && 'default' != $style ) {
 		$wrap_classes[] = $style;
+		$arrows_position = ( 'no-margins' == $style && 'default' == $arrows_position ) ? 'abs' : $arrows_position;
+	}
+
+	// Arrow style
+	if ( $arrows_style ) {
+		$wrap_classes[] = 'arrwstyle-'. $arrows_style;
+	}
+
+	// Arrow position
+	if ( $arrows_position && 'default' != $arrows_position ) {
+		$wrap_classes[] = 'arrwpos-'. $arrows_position;
+	}
+
+	// Rounded
+	if ( 'yes' == $rounded_image ) {
+		$wrap_classes[] = 'wpex-rounded-images';
 	}
 
 	// Custom classes
 	if ( $classes ) {
-		$wrap_classes[] = $this->getExtraClass( $classes );
+		$wrap_classes[] = vcex_get_extra_class( $classes );
+	}
+
+	// Entry classes
+	$entry_classes = 'wpex-carousel-slide';
+	if ( $entry_css ) {
+		$entry_classes .= ' '. vc_shortcode_custom_css_class( $entry_css );
 	}
 
 	// Image Classes
 	$img_classes = array( 'wpex-carousel-entry-media', 'clr' );
-	if ( 'yes' == $rounded_image ) {
-		$img_classes[] = ' wpex-rounded-images';
-	}
 	if ( $overlay_style ) {
 		$img_classes[] = wpex_overlay_classes( $overlay_style );
 	}
@@ -168,16 +197,40 @@ if ( $my_query->have_posts() ) :
 
 	// Content Design
 	if ( 'yes' == $title || 'yes' == $caption ) {
-		$content_style = vcex_inline_style( array(
-			'background' => $content_background,
-			'padding'    => $content_padding,
-			'margin'     => $content_margin,
-			'border'     => $content_border,
-			'font_size'  => $content_font_size,
-			'color'      => $content_color,
-			//'opacity'    => $content_opacity,
-			'text_align' => $content_alignment,
-		) );
+
+		// Defined var
+		$content_style = '';
+
+		// Non css_editor fields
+		if ( $content_alignment ) {
+			$content_style = array(
+				'text_align' => $content_alignment,
+			);
+		}
+
+		// Deprecated fields
+		if ( ! $content_css ) {
+			if ( isset( $content_background ) ) {
+				$content_style['background'] = $content_background;
+			}
+			if ( isset( $content_padding ) ) {
+				$content_style['padding'] = $content_padding;
+			}
+			if ( isset( $content_margin ) ) {
+				$content_style['margin'] = $content_margin;
+			}
+			if ( isset( $content_border ) ) {
+				$content_style['border'] = $content_border;
+			}
+		} else {
+			$content_css = vc_shortcode_custom_css_class( $content_css ); // Custom CSS class
+		}
+
+		// Generate inline style
+		if ( $content_style ) {
+			$content_style = vcex_inline_style( $content_style );
+		}
+		
 	}
 
 	// Sanitize carousel data to prevent errors
@@ -185,6 +238,7 @@ if ( $my_query->have_posts() ) :
 	$dots                   = wpex_esc_attr( $dots, 'false' );
 	$auto_play              = wpex_esc_attr( $auto_play, 'false' );
 	$infinite_loop          = wpex_esc_attr( $infinite_loop, 'true' );
+	$auto_height            = wpex_esc_attr( $auto_height, 'false' );
 	$center                 = wpex_esc_attr( $center, 'false' );
 	$items                  = wpex_intval( $items, 4 );
 	$items_scroll           = wpex_intval( $items_scroll, 1 );
@@ -206,11 +260,16 @@ if ( $my_query->have_posts() ) :
 	$img_classes  = implode( ' ', $img_classes );
 
 	// Load inline js
-	vcex_inline_js( $inline_js ); ?>
+	vcex_inline_js( $inline_js );
 
-	<div<?php echo vcex_html( 'id_attr', $unique_id ); ?> class="<?php echo esc_attr( $wrap_classes ); ?>" data-items="<?php echo $items; ?>" data-slideby="<?php echo $items_scroll; ?>" data-nav="<?php echo $arrows; ?>" data-dots="<?php echo $dots; ?>" data-autoplay="<?php echo $auto_play; ?>" data-loop="<?php echo $infinite_loop; ?>" data-autoplay-timeout="<?php echo $timeout_duration ?>" data-center="<?php echo $center; ?>" data-margin="<?php echo intval( $items_margin ); ?>" data-items-tablet="<?php echo $tablet_items; ?>" data-items-mobile-landscape="<?php echo $mobile_landscape_items; ?>" data-items-mobile-portrait="<?php echo $mobile_portrait_items; ?>" data-smart-speed="<?php echo $animation_speed; ?>">
+	// Open wrapper for auto height
+	if ( 'true' == $auto_height ) {
+		$output .= '<div class="owl-wrapper-outer">';
+	}
+
+	// Begin output
+	$output .= '<div'. vcex_html( 'id_attr', $unique_id ) .' class="'. esc_attr( $wrap_classes ) .'" data-items="'. $items .'" data-slideby="'. $items_scroll .'" data-nav="'. $arrows .'" data-dots="'. $dots .'" data-autoplay="'. $auto_play .'" data-loop="'. $infinite_loop .'" data-autoplay-timeout="'. $timeout_duration .'" data-center="'. $center .'" data-margin="'. intval( $items_margin ) .'" data-items-tablet="'. $tablet_items .'" data-items-mobile-landscape="'. $mobile_landscape_items .'" data-items-mobile-portrait="'. $mobile_portrait_items .'" data-smart-speed="'. $animation_speed .'" data-auto-height="'. $auto_height .'">';
 		
-		<?php
 		// Loop through images
 		$count=0;
 		while ( $my_query->have_posts() ) :
@@ -219,153 +278,174 @@ if ( $my_query->have_posts() ) :
 			// Get post from query
 			$my_query->the_post();
 
-			// Create new post object.
-			$post = new stdClass();
-
-			// Get attachment ID
-			$post->id = get_the_ID();
-
 			// Attachment VARS
-			$post->data    = wpex_get_attachment_data( $post->id );
-			$post->link    = $post->data['url'];
-			$post->alt     = esc_attr( $post->data['alt'] );
-			$post->caption = $post->data['caption'];
+			$atts['post_id']      = get_the_ID();
+			$atts['post_data']    = wpex_get_attachment_data( $atts['post_id'] );
+			$atts['post_link']    = $atts['post_data']['url'];
+			$atts['post_alt']     = esc_attr( $atts['post_data']['alt'] );
+			$atts['post_caption'] = $atts['post_data']['caption'];
 
 			// Pluck array to see if item has custom link
-			$post->url = $images_links_array[$post->id];
+			$atts['post_url'] = $images_links_array[$atts['post_id']];
 
 			// Validate URl
-			$post->url = ( '#' !== $post->url ) ? esc_url( $post->url ) : '';
+			$atts['post_url'] = ( '#' !== $atts['post_url'] ) ? esc_url( $atts['post_url'] ) : '';
 
 			// Get correct title
 			if ( 'title' == $title_type ) {
 				$attachment_title = get_the_title();
 			} elseif ( 'alt' == $title_type ) {
-				$attachment_title = esc_attr( $post->data['alt'] );
+				$attachment_title = esc_attr( $atts['post_data']['alt'] );
 			} else {
 				$attachment_title = get_the_title();
 			}
 			
 			// Image output
 			$image_output = wpex_get_post_thumbnail( array(
-				'attachment' => $post->id,
+				'attachment' => $atts['post_id'],
 				'crop'       => $img_crop,
 				'size'       => $img_size,
 				'width'      => $img_width,
 				'height'     => $img_height,
-				'alt'        => $post->alt,
-			) ); ?>
+				'alt'        => $atts['post_alt'],
+			) );
 
-			<div class="wpex-carousel-slide">
+			$output .= '<div class="'. $entry_classes .'">';
 
-				<div class="<?php echo $img_classes; ?>">
+				$output .= '<figure class="'. $img_classes .'">';
 
-					<?php
 					// Add custom links to attributes for use with the overlay styles
-					if ( 'custom_link' == $thumbnail_link && $post->url ) {
-						$atts['overlay_link'] = $post->url;
+					if ( 'custom_link' == $thumbnail_link && $atts['post_url'] ) {
+						$atts['overlay_link'] = $atts['post_url'];
 					}
 
 					// Lightbox
-					if ( 'lightbox' == $thumbnail_link ) {
+					if ( 'lightbox' == $thumbnail_link ) :
 
 						// Main link attributes
 						$link_attrs = array(
-							'href'  => wpex_get_lightbox_image( $post->id ),
-							'title' => $post->alt,
+							'href'  => wpex_get_lightbox_image( $atts['post_id'] ),
+							'title' => $atts['post_alt'],
 							'class' => 'wpex-carousel-entry-img',
 						);
 
 						// Main link lightbox attributes
 						if ( 'lightbox' == $thumbnail_link ) {
 							$link_attrs['class']     .= ' wpex-carousel-lightbox-item';
-							$link_attrs['data-title'] = $post->alt;
+							$link_attrs['data-title'] = $atts['post_alt'];
 							$link_attrs['data-count'] = $count;
 							$link_attrs['data-type']  = 'image';
 							if ( $lightbox_skin ) {
-								$link_attrs['skin'] = $lightbox_skin;
+								$link_attrs['data-skin'] = $lightbox_skin;
 							}
-						} ?>
 
-						<a <?php echo wpex_parse_attrs( $link_attrs ); ?>>
+							if ( 'false' != $lightbox_title ) {
+								if ( 'title' == $lightbox_title ) {
+									$link_attrs['data-title'] = strip_tags( get_the_title( $atts['post_id'] ) );
+								} elseif ( 'alt' == $lightbox_title ) {
+									$link_attrs['data-title'] = $atts['post_alt'];
+								}
+							} else {
+								$link_attrs['data-show_title']  = 'false';
+							}
 
-							<?php
-							// Output image
-							echo $image_output;
+							// Caption data
+							if ( 'false' != $lightbox_caption && $attachment_caption = get_post_field( 'post_excerpt', $atts['post_id'] ) ) {
+								$link_attrs['data-caption'] = str_replace( '"',"'", $attachment_caption );
+							}
 
-							// Inner link overlay html
-							wpex_overlay( 'inside_link', $overlay_style, $atts ); ?>
+						}
 
-						</a><!-- .wpex-carousel-entry-img -->
+						$output .= '<a '. wpex_parse_attrs( $link_attrs ) .'>';
 
-					<?php }
+							$output .= $image_output;
+
+							ob_start();
+							wpex_overlay( 'inside_link', $overlay_style, $atts );
+							$output .= ob_get_clean();
+
+						$output .= '</a>';
+
 
 					// Custom Link
-					elseif ( 'custom_link' == $thumbnail_link && $post->url ) { ?>
+					elseif ( 'custom_link' == $thumbnail_link && $atts['post_url'] ) :
 
-						<a href="<?php echo esc_url( $post->url ); ?>" title="<?php echo esc_attr( $post->alt ); ?>" class="wpex-carousel-entry-img"<?php echo vcex_html( 'target_attr', $custom_links_target ); ?>>
-							<?php echo $image_output; ?>
-							<?php
-							// Inner link overlay html
-							wpex_overlay( 'inside_link', $overlay_style, $atts ); ?>
-						</a>
+						$output .= '<a href="'. esc_url( $atts['post_url'] ) .'" title="'. esc_attr( $atts['post_alt'] ) .'" class="wpex-carousel-entry-img"'. vcex_html( 'target_attr', $custom_links_target ) .'>';
 
-					<?php }
+							$output .= $image_output;
+
+							ob_start();
+							wpex_overlay( 'inside_link', $overlay_style, $atts );
+							$output .= ob_get_clean();
+
+						$output .= '</a>';
 
 					// No link
-					else {
-						echo $image_output;
-					} ?>
+					else :
 
-					<?php
+						$output .= $image_output;
+
+						ob_start();
+						wpex_overlay( 'inside_link', $overlay_style, $atts );
+						$output .= ob_get_clean();
+
+					endif;
+
 					// Outside link overlay html
-					wpex_overlay( 'outside_link', $overlay_style, $atts ); ?>
+					ob_start();
+					wpex_overlay( 'outside_link', $overlay_style, $atts );
+					$output .= ob_get_clean();
 
-				</div><!-- .wpex-carousel-entry-media -->
+				$output .= '</figure>';
 
-				<?php
 				// Display details
-				if ( ( 'yes' == $title && $attachment_title ) || (  'yes' == $caption && $post->caption ) ) : ?>
+				if ( ( 'yes' == $title && $attachment_title ) || (  'yes' == $caption && $atts['post_caption'] ) ) :
 
-					<div class="wpex-carousel-entry-details clr"<?php echo $content_style; ?>>
+					$classes = 'wpex-carousel-entry-details clr';
+					if ( $content_css ) {
+						$classes .= ' '. $content_css;
+					}
 
-						<?php
+					$output .= '<div class="'. $classes .'"'. $content_style .'>';
+
 						// Display title
-						if ( 'yes' == $title && $attachment_title ) : ?>
+						if ( 'yes' == $title && $attachment_title ) :
 
-							<div class="wpex-carousel-entry-title entry-title"<?php echo $heading_style; ?>>
-								<?php echo $attachment_title; ?>
-							</div><!-- .wpex-carousel-entry-title -->
+							$output .= '<div class="wpex-carousel-entry-title entry-title"'. $heading_style .'>';
+								$output .= esc_html( $attachment_title );
+							$output .= '</div>';
 
-						<?php endif; ?>
+						endif;
 
-						<?php
 						// Display caption
-						if ( 'yes' == $caption && $post->caption ) : ?>
+						if ( 'yes' == $caption && $atts['post_caption'] ) :
 
-							<div class="wpex-carousel-entry-excerpt clr">
-								<?php echo $post->caption; ?>
-							</div><!-- .wpex-carousel-entry-excerpt -->
+							$output .= '<div class="wpex-carousel-entry-excerpt clr">';
+								$output .= wp_kses_post( $atts["post_caption"] );
+							$output .= '</div>';
 
-						<?php endif; ?>
+						endif;
 					
-					</div><!-- .wpex-carousel-entry-details -->
+					$output .= '</div>';
 
-				<?php endif; ?>
+				endif;
 
-			</div><!-- .wpex-carousel-slide -->
+			$output .= '</div>';
 
-		<?php endwhile; ?>
+		endwhile;
 
-	</div><!-- .wpex-carousel -->
+	$output .= '</div>';
 
-<?php
-// Remove post object from memory
-$post = null;
+	// Close wrap for single item auto height
+	if ( 'true' == $auto_height ) {
+		$output .= '</div>';
+	}
 
-// Reset the post data to prevent conflicts with WP globals
-wp_reset_postdata(); ?>
+	// Reset the post data to prevent conflicts with WP globals
+	wp_reset_postdata();
 
-<?php
+	// Output shortcode html
+	echo $output;
+
 // End Query
-endif; ?>
+endif;

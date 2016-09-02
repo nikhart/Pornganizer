@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -23,11 +23,17 @@ $taxonomy = wpex_get_post_type_cat_tax();
 // Get terms
 if ( $taxonomy ) {
 	$terms = wpex_list_post_terms( $taxonomy, $show_links = true, $echo = false );
-} ?>
+}
 
-<div class="overlay-cats-title-btm-v theme-overlay">
-	<?php if ( ! empty( $terms ) ) : ?>
-		<div class="overlay-cats-title-btm-v-cats clr"><?php echo $terms; ?></div>
-	<?php endif; ?>
-	<a href="<?php the_permalink(); ?>" title="<?php wpex_esc_title(); ?>" class="overlay-cats-title-btm-v-title entry-title"><?php the_title(); ?></a>
-</div>
+// Get post title
+$title = isset( $args['post_title'] ) ? $args['post_title'] : get_the_title();
+
+// Output overlay
+$output = '<div class="overlay-cats-title-btm-v theme-overlay">';
+	if ( ! empty( $terms ) ) {
+		$output .= '<div class="overlay-cats-title-btm-v-cats clr">'. $terms .'</div>';
+	}
+	$output .= '<a href="'. get_permalink() .'" title="'. esc_attr( $title ) .'" class="overlay-cats-title-btm-v-title entry-title">'. esc_html( $title ) .'</a>';
+$output .= '</div>';
+
+echo $output;

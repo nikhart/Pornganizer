@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Functions
- * @version 3.4.0
+ * @since 3.5.3
  */
 
 /**
@@ -37,6 +37,123 @@ if ( is_admin() ) {
 require_once( WPEX_FRAMEWORK_DIR .'visual-composer/helpers/build-query.php' );
 require_once( WPEX_FRAMEWORK_DIR .'visual-composer/helpers/inline-js.php' );
 require_once( WPEX_FRAMEWORK_DIR .'visual-composer/helpers/inline-style.php' );
+
+
+/**
+ * Displays notice when functions aren't found
+ *
+ * @since 3.5.0
+ */
+function vcex_function_needed_notice() {
+	echo '<div class="vcex-function-needed">This module can not work without the required functions. Please make sure all your plugins and WordPress is up to date. If you still have issues contact the developer for assistance.</div>';
+}
+
+/**
+ * Returns animation class and loads animation js
+ *
+ * @since 3.5.0
+ */
+function vcex_grid_get_post_class( $classes, $post_id ) {
+
+	// Get post
+	$post_id = $post_id ? $post_id : get_the_ID();
+
+	// Get post type
+	$type = get_post_type( $post_id );
+
+	// Add entry class
+	$classes[] = 'entry';
+
+	// Add type class
+	$classes[] = 'type-'. $type;
+
+	// Add has media class
+	if ( has_post_thumbnail()
+		|| get_post_meta( $post_id, 'wpex_post_oembed', true )
+		|| get_post_meta( $post_id, 'wpex_post_self_hosted_media', true )
+		|| get_post_meta( $post_id, 'wpex_post_video_embed', true )
+		|| wpex_post_has_gallery( $post_id )
+	) {
+		$classes[] = 'has-media';
+	}
+
+	// Add terms
+	if ( $terms = vcex_get_post_term_classes( $post_id, $type ) ) {
+		$classes[] = $terms;
+	}
+
+	// Apply filters
+	$classes = apply_filters( 'vcex_grid_get_post_class', $classes );
+
+	// Turn into string
+	$classes = implode( ' ', $classes );
+
+	// Sanitize and return
+	return 'class="'. esc_attr( $classes ) .'"';
+
+}
+
+/**
+ * Returns entry classes for vcex module entries
+ *
+ * @since 3.5.3
+ */
+function vcex_get_post_term_classes( $post_id, $post_type ) {
+
+	// Define vars
+	$classes = array();
+
+	// Loop through tax objects and save in taxonomies var
+	$taxonomies = get_object_taxonomies( $post_type, 'names' );
+	if ( is_wp_error( $taxonomies ) || ! $taxonomies ) {
+		return;
+	}
+	foreach ( $taxonomies as $tax ) {
+		if ( $terms = get_the_terms( $post_id, $tax ) ) {
+			foreach ( $terms as $term ) {
+				$prefix = esc_html( $term->taxonomy );
+				if ( $prefix ) {
+					$parse_types   = wpex_theme_post_types();
+					$parse_types[] = 'post';
+					if ( in_array( $post_type, $parse_types ) ) {
+						$search  = array( $post_type .'_category', 'category', $post_type .'_tag' );
+						$replace = array( 'cat', 'cat', 'tag' );
+						$prefix  = str_replace( $search, $replace, $prefix );
+					}
+					$classes[] = $prefix .'-'. $term->term_id;
+				}
+			}
+		}
+	}
+
+	// Return classes
+	return $classes ? implode( ' ', $classes ) : '';
+
+}
+
+/**
+ * Returns animation class and loads animation js
+ *
+ * @since 3.5.0
+ */
+function vcex_get_css_animation( $css_animation = '' ) {
+	if ( $css_animation ) {
+		wp_enqueue_script( 'waypoints' );
+		return ' wpb_animate_when_almost_visible wpb_' . $css_animation;
+	}
+}
+
+/**
+ * Get Extra class
+ *
+ * @since 2.0.0
+ */
+function vcex_get_extra_class( $classes = '' ) {
+	if ( $classes ) {
+		return str_replace( '.', '', $classes );
+	}
+}
+
 
 /**
  * Returns list of post types
@@ -373,26 +490,23 @@ function vcex_no_posts_found_message( $atts ) {
 }
 
 /**
- * Get Extra class
- *
- * @since 2.0.0
- */
-function vcex_get_extra_class( $classes ) {
-	if ( $classes ) {
-		return str_replace( '.', '', $classes );
-	}
-}
-
-/**
  * Echos unique ID html for VC modules
  *
  * @since 2.0.0
  */
-function vcex_unique_id( $id ) {
-	if ( ! $id ) {
-		return;
+function vcex_unique_id( $id = '' ) {
+	echo vcex_get_unique_id( $id );
+}
+
+/**
+ * Returns unique ID html for VC modules
+ *
+ * @since 2.0.0
+ */
+function vcex_get_unique_id( $id = '' ) {
+	if ( $id ) {
+		return vcex_html( 'id_attr', $id );
 	}
-	echo vcex_html( 'id_attr', $id );
 }
 
 /**
@@ -669,6 +783,12 @@ function vcex_offset_vc( $atts ) {
 		return $classes;
 	}
 
+	// Overlays
+	$overlay = isset( $atts['wpex_bg_overlay'] ) ? $atts['wpex_bg_overlay'] : '';
+	if ( $overlay ) {
+		return $classes;
+	}
+
 	// Check for custom CSS
 	if ( ! empty( $atts['css'] ) ) {
 		if ( strpos( $atts['css'], 'background' )
@@ -687,12 +807,15 @@ function vcex_offset_vc( $atts ) {
 }
 
 /**
- * Outputs video row background
+ * Returns video row background
  *
  * @since 2.0.0
  */
 if ( ! function_exists( 'vcex_row_video' ) ) {
 	function vcex_row_video( $atts ) {
+
+		// Define output
+		$output = '';
 
 		// Extract attributes
 		extract( $atts );
@@ -712,36 +835,36 @@ if ( ! function_exists( 'vcex_row_video' ) ) {
 
 		// Check sound
 		$sound = apply_filters( 'vcex_self_hosted_row_video_sound', false );
-		$sound = $sound ? '' : 'muted volume="0"'; ?>
+		$sound = $sound ? '' : 'muted volume="0"';
 
-		<div class="wpex-video-bg-wrap">
-			<video class="wpex-video-bg" poster="<?php echo $bg_image; ?>" preload="auto" autoplay="true" loop="loop" <?php echo $sound; ?>>
-				<?php if ( $video_bg_webm ) { ?>
-					<source src="<?php echo $video_bg_webm; ?>" type="video/webm" />
-				<?php } ?>
-				<?php if ( $video_bg_ogv ) { ?>
-					<source src="<?php echo $video_bg_ogv; ?>" type="video/ogg ogv" />
-				<?php } ?>
-				<?php if ( $video_bg_mp4 ) { ?>
-					<source src="<?php echo $video_bg_mp4; ?>" type="video/mp4" />
-				<?php } ?>
-			</video><!-- .wpex-video-bg -->
-		</div><!-- .wpex-video-bg-wrap -->
+		$output .= '<div class="wpex-video-bg-wrap">';
+			$output .= '<video class="wpex-video-bg" poster="'. esc_url( $bg_image ) .'" preload="auto" autoplay="true" loop="loop" '. $sound .'>';
+				if ( $video_bg_webm ) {
+					$output .= '<source src="'. $video_bg_webm .'" type="video/webm" />';
+				}
+				if ( $video_bg_ogv ) {
+					$output .= '<source src="'. $video_bg_ogv .'" type="video/ogg ogv" />';
+				}
+				if ( $video_bg_mp4 ) {
+					$output .= '<source src="'. $video_bg_mp4 .'" type="video/mp4" />';
+				}
+			$output .= '</video>';
+		$output .= '</div>';
 
-		<?php
-		// Video overlay
-		if ( ! empty( $video_bg_overlay ) && 'none' != $video_bg_overlay ) { ?>
+		// Video overlay fallack
+		if ( ! empty( $video_bg_overlay ) && 'none' != $video_bg_overlay ) {
 
-			<span class="wpex-video-bg-overlay <?php echo $video_bg_overlay; ?>"></span>
+			$output .= '<span class="wpex-video-bg-overlay '. $video_bg_overlay .'"></span>';
 
-		<?php } ?>
+		}
 
-	<?php
+		return $output;
+
 	}
 }
 
 /**
- * Outputs row parallax background
+ * Returns row parallax background
  *
  * @since 2.0.0
  */
@@ -788,16 +911,31 @@ if ( ! function_exists( 'vcex_parallax_bg' ) ) {
 		$classes = implode( ' ', $classes );
 
 		// Add style
-		$style = 'style="background-image: url('. $bg_image .');"';
+		$style = ' style="background-image: url('. $bg_image .');"';
 
 		// Attributes
-		$attributes = 'data-direction="'. $parallax_direction .'" data-velocity="-'. $parallax_speed .'"'; ?>
+		$attributes = ' data-direction="'. $parallax_direction .'" data-velocity="-'. $parallax_speed .'"';
 
-		<div class="<?php echo $classes; ?>" <?php echo $style; ?> <?php echo $attributes; ?>></div>
+		return '<div class="'. $classes .'"'. $style . $attributes .'></div>';
 
-	<?php
 	}
 
+}
+
+/**
+ * Returns row overlay span
+ *
+ * @since 3.5.0
+ */
+function vcex_row_overlay( $atts ) {
+	$overlay = isset( $atts['wpex_bg_overlay'] ) ? $atts['wpex_bg_overlay'] : '';
+	if ( $overlay && 'none' != $overlay ) {
+		$style = vcex_inline_style( array(
+			'background_color' => isset( $atts['wpex_bg_overlay_color'] ) ? $atts['wpex_bg_overlay_color'] : '',
+			'opacity' => isset( $atts['wpex_bg_overlay_opacity'] ) ? $atts['wpex_bg_overlay_opacity'] : '',
+		) );
+		return '<span class="wpex-bg-overlay '. $overlay.'"'. $style .'></span>';
+	}
 }
 
 /**
@@ -806,93 +944,10 @@ if ( ! function_exists( 'vcex_parallax_bg' ) ) {
  * @since 2.0.0
  */
 function vcex_social_links_profiles() {
-
-	// Create array of social profiles
-	$profiles = array(
-		'twitter'       => array(
-			'label'         => 'Twitter',
-			'icon_class'    => 'fa fa-twitter',
-		),
-		'facebook'      => array(
-			'label'         => 'Facebook',
-			'icon_class'    => 'fa fa-facebook',
-		),
-		'googleplus'    => array(
-			'label'         => 'Google Plus',
-			'icon_class'    => 'fa fa-google-plus',
-		),
-		'pinterest'     => array(
-			'label'         => 'Pinterest',
-			'icon_class'    => 'fa fa-pinterest',
-		),
-		'dribbble'      => array(
-			'label'         => 'Dribbble',
-			'icon_class'    => 'fa fa-dribbble',
-		),
-		'vk'            => array(
-			'label'         => 'VK',
-			'icon_class'    => 'fa fa-vk',
-		),
-		'instagram'     => array(
-			'label'         => 'Instagram',
-			'icon_class'    => 'fa fa-instagram',
-		),
-		'linkedin'      => array(
-			'label'         => 'LinkedIn',
-			'icon_class'    => 'fa fa-linkedin',
-		),
-		'tumblr'        => array(
-			'label'         => 'Tumblr',
-			'icon_class'    => 'fa fa-tumblr',
-		),
-		'github'        => array(
-			'label'         => 'Github',
-			'icon_class'    => 'fa fa-github-alt',
-		),
-		'flickr'        => array(
-			'label'         => 'Flickr',
-			'icon_class'    => 'fa fa-flickr',
-		),
-		'skype'         => array(
-			'label'         => 'Skype',
-			'icon_class'    => 'fa fa-skype',
-		),
-		'youtube'       => array(
-			'label'         => 'YouTube',
-			'icon_class'    => 'fa fa-youtube',
-		),
-		'vimeo'         => array(
-			'label'         => 'Vimeo',
-			'icon_class'    => 'fa fa-vimeo-square',
-		),
-		'vine'          => array(
-			'label'         => 'Vine',
-			'icon_class'    => 'fa fa-vine',
-		),
-		'xing'          => array(
-			'label'         => 'Xing',
-			'icon_class'    => 'fa fa-xing',
-		),
-		'yelp'          => array(
-			'label'         => 'Yelp',
-			'icon_class'    => 'fa fa-yelp',
-		),
-		'email'         => array(
-			'label'         => esc_html__( 'Email', 'total' ),
-			'icon_class'    => 'fa fa-envelope',
-		),
-		'rss'           => array(
-			'label'         => esc_html__( 'RSS', 'total' ),
-			'icon_class'    => 'fa fa-rss',
-		),
-	);
-
-	// Apply filters
-	$profiles = apply_filters( 'vcex_social_links_profiles', $profiles );
-
-	// Return profiles array
-	return $profiles;
-
+	if ( function_exists( 'wpex_topbar_social_options' ) ) {
+		$profiles = wpex_topbar_social_options();
+	}
+	return apply_filters( 'vcex_social_links_profiles', $profiles );
 }
 
 /**

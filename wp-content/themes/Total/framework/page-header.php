@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.3
+ * @version 3.5.3
  *
  */
 
@@ -41,7 +41,7 @@ function wpex_page_header_classes() {
 	}
 
 	// Apply filters
-	apply_filters( 'wpex_page_header_classes', $classes );
+	$classes = apply_filters( 'wpex_page_header_classes', $classes );
 
 	// Turn into comma seperated list
 	$classes = implode( ' ', $classes );
@@ -87,7 +87,7 @@ function wpex_page_header_background_image( $post_id = '' ) {
 	}
 
 	// Return URL
-	return $image;
+	return esc_url( $image );
 }
 
 /**

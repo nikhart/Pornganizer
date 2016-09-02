@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Widgets
- * @version 3.3.3
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -108,13 +108,17 @@ if ( ! class_exists( 'WPEX_Fontawesome_Social_Widget' ) ) {
 					'name' => 'Youtube',
 					'url'  => '',
 				),
+				'twitch' => array(
+					'name' => 'Twitch',
+					'url'  => '',
+				),
 				'rss' => array(
 					'name' => 'RSS',
 					'url'  => '',
 				),
 			) );
 
-			// Start up widget
+			// Define widget
 			$branding = wpex_get_theme_branding();
 			$branding = $branding ? $branding . ' - ' : '';
 			parent::__construct(
@@ -122,6 +126,10 @@ if ( ! class_exists( 'WPEX_Fontawesome_Social_Widget' ) ) {
 				$branding . esc_attr__( 'Font Awesome Social Widget', 'total' )
 			);
 
+			// Load scripts for drag and drop
+			if ( is_admin() ) {
+				add_action( 'admin_enqueue_scripts', array( 'WPEX_Fontawesome_Social_Widget', 'scripts' ) );
+			}
 
 		}
 
@@ -397,57 +405,26 @@ if ( ! class_exists( 'WPEX_Fontawesome_Social_Widget' ) ) {
 		<?php
 		}
 
+		/**
+		 * Load scripts for this widget
+		 *
+		 */
+		public static function scripts( $hook ) {
+
+			if ( $hook != 'widgets.php' ) {
+				return;
+			}
+
+			$dir = get_template_directory_uri() .'/framework/classes/widgets/assets/';
+
+			wp_enqueue_style( 'total-social-widget', $dir .'total-social-widget.css' );
+			wp_enqueue_script( 'total-social-widget', $dir .'total-social-widget.js', array( 'jquery' ), false, true );
+
+		}
+
 	}
+
 }
 
 // Register the widget
 register_widget( 'WPEX_Fontawesome_Social_Widget' );
-
-// Widget Styles
-if ( ! function_exists( 'wpex_social_widget_style' ) ) {
-	function wpex_social_widget_style() { ?>
-		<style>
-		.wpex-social-widget-services-list { padding-top: 10px; }
-		.wpex-social-widget-services-list li { cursor: move; background: #fafafa; padding: 10px; border: 1px solid #e5e5e5; margin-bottom: 10px; }
-		.wpex-social-widget-services-list li p { margin: 0 }
-		.wpex-social-widget-services-list li label { margin-bottom: 3px; display: block; color: #222; }
-		.wpex-social-widget-services-list li label span.fa { margin-right: 10px }
-		.wpex-social-widget-services-list .placeholder { border: 1px dashed #e3e3e3 }
-		.wpex-widget-select { width: 100% }
-		</style>
-	<?php
-	}
-}
-
-// Widget AJAX functions
-function wpex_fontawesome_social_widget_scripts() {
-	global $pagenow;
-	if ( is_admin() && $pagenow == "widgets.php" ) {
-		add_action( 'admin_head', 'wpex_social_widget_style' );
-		add_action( 'admin_footer', 'add_new_wpex_fontawesome_social_ajax_trigger' );
-		function add_new_wpex_fontawesome_social_ajax_trigger() { ?>
-			<script type="text/javascript" >
-				jQuery(document).ready(function($) {
-					jQuery(document).ajaxSuccess(function(e, xhr, settings) {
-						var widget_id_base = 'wpex_fontawesome_social_widget';
-						if ( settings.data.search( 'action=save-widget' ) != -1 && settings.data.search( 'id_base=' + widget_id_base) != -1 ) {
-							wpexSortServices();
-						}
-					} );
-					function wpexSortServices() {
-						jQuery( '.wpex-social-widget-services-list' ).each( function() {
-							var id = jQuery(this).attr( 'id' );
-							$( '#'+ id ).sortable( {
-								placeholder : "placeholder",
-								opacity     : 0.6
-							} );
-						} );
-					}
-					wpexSortServices();
-				} );
-			</script>
-		<?php
-		}
-	}
-}
-add_action( 'admin_init', 'wpex_fontawesome_social_widget_scripts' );

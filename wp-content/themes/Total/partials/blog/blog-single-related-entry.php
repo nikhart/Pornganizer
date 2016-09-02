@@ -71,7 +71,7 @@ $classes[]	= 'col-'. $wpex_count; ?>
 	// Display post excerpt
 	if ( $has_excerpt ) : ?>
 
-		<div class="related-post-content equal-height-content clr">
+		<div class="related-post-content clr">
 			<h4 class="related-post-title">
 				<a href="<?php wpex_permalink(); ?>" title="<?php wpex_esc_title(); ?>" rel="bookmark"><?php the_title(); ?></a>
 			</h4><!-- .related-post-title -->

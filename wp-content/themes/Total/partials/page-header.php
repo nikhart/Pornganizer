@@ -7,7 +7,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -16,19 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 } ?>
 
 <?php wpex_hook_page_header_before(); ?>
-
 <header class="<?php echo wpex_page_header_classes(); ?>">
-
 	<?php wpex_hook_page_header_top(); ?>
-
 	<div class="page-header-inner container clr">
-
 		<?php wpex_hook_page_header_inner(); // All default content added via this hook ?>
-
 	</div><!-- .page-header-inner -->
-
 	<?php wpex_hook_page_header_bottom(); ?>
-
 </header><!-- .page-header -->
-
 <?php wpex_hook_page_header_after(); ?>

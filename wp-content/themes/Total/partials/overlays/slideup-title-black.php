@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -15,14 +15,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Only used for inside position
 if ( 'inside_link' != $position ) {
 	return;
-} ?>
+}
 
-<div class="overlay-slideup-title overlay-hide black clr theme-overlay">
-	<span class="title">
-		<?php if ( 'staff' == get_post_type() ) {
-			echo get_post_meta( get_the_ID(), 'wpex_staff_position', true );
+// Get post data
+$title = isset( $args['post_title'] ) ? $args['post_title'] : get_the_title();
+
+// Output overlay
+$output = '<div class="overlay-slideup-title overlay-hide black clr theme-overlay">';
+	$output .= '<span class="title">';
+		if ( 'staff' == get_post_type() ) {
+			$output .= get_post_meta( get_the_ID(), 'wpex_staff_position', true );
 		} else {
-			the_title();
-		} ?>
-	</span>
-</div>
+			$output .= $title;
+		}
+	$output .= '</span>';
+$output .= '</div>';
+
+echo $output;

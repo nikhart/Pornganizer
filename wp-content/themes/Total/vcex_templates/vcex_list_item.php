@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,9 +17,18 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_list_item', $atts );
 extract( $atts );
+
+// Output var
+$output = '';
 
 // Get icon classes
 $icon = vcex_get_icon_class( $atts, 'icon' );
@@ -40,12 +49,12 @@ if ( $link ) {
 	$link_url_temp  = $link;
 	$link_url       = vcex_get_link_data( 'url', $link_url_temp );
 	if ( $link_url ) {
-		$url        = $link_url;
-		$link_title = isset( $atts['link_title'] ) ? $atts['link_title'] : '';
+		$url         = $link_url;
+		$link_title  = isset( $atts['link_title'] ) ? $atts['link_title'] : '';
 		$link_target = isset( $atts['link_target'] ) ? $atts['link_target'] : '';
-		$url_title  = vcex_get_link_data( 'title', $link_url_temp, $link_title );
-		$url_target = vcex_get_link_data( 'target', $link_url_temp, $link_target );
-		$url_target = vcex_html( 'target_attr', $url_target );
+		$url_title   = vcex_get_link_data( 'title', $link_url_temp, $link_title );
+		$url_target  = vcex_get_link_data( 'target', $link_url_temp, $link_target );
+		$url_target  = vcex_html( 'target_attr', $url_target );
 	}
 }
 
@@ -53,10 +62,10 @@ if ( $link ) {
 $wrap_classes = array( 'vcex-list_item' );
 $wrap_data    = array();
 if ( $classes ) {
-	$wrap_classes[] = $this->getExtraClass( $classes );
+	$wrap_classes[] = vcex_get_extra_class( $classes );
 }
 if ( $css_animation ) {
-	$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $visibility ) {
 	$wrap_classes[] = $visibility;
@@ -72,27 +81,21 @@ $wrap_style = vcex_inline_style( array(
 	'font_size'   => $font_size,
 	'color'       => $font_color,
 	'text_align'  => $text_align
-) ); ?>
+) );
 
-<div class="<?php echo $wrap_classes; ?>"<?php echo $wrap_style; ?><?php vcex_unique_id( $unique_id ); ?>>
+$output .= '<div class="'. $wrap_classes .'"'. $wrap_style . vcex_get_unique_id( $unique_id ) .'>';
 
-	<?php
 	// Open link tag
-	if ( $url ) : ?>
+	if ( $url ) :
 
-		<?php
 		// Inline sytle for the link
 		$link_style = vcex_inline_style( array(
 			'color' => $font_color,
-		) ); ?>
+		) );
 
-		<a href="<?php echo $url; ?>"<?php echo vcex_html( 'title_attr', $url_title ); ?><?php echo $url_target; ?><?php echo $link_style; ?>>
+		$output .= '<a href="'. esc_url( $url ) .'"'. vcex_html( 'title_attr', $url_title ) .''. $url_target .''. $link_style .'>';
 
-	<?php endif; ?>
-
-	<?php
-	// define inner output
-	$inner_output = '';
+	endif; // End link check
 
 	// Add icon if defined
 	if ( $icon ) {
@@ -113,19 +116,20 @@ $wrap_style = vcex_inline_style( array(
 		) );
 		
 		// Add icon to output
-		$inner_output .= '<div class="'. $icon_wrap_classes .'"'. $icon_style .'><span class="'. $icon .'"></span></div>';
+		$output .= '<div class="'. $icon_wrap_classes .'"'. $icon_style .'><span class="'. $icon .'"></span></div>';
 
 	}
 
 	// Add content to output
 	if ( $content ) {
-		$inner_output .= do_shortcode( $content );
+		$output .= do_shortcode( $content );
 	}
-
-	// Echo inner content (icon_content)
-	echo $inner_output;
 	
 	// Close link tag
-	if ( $url ) echo '</a>'; ?>
+	if ( $url ) {
+		$output .= '</a>';
+	}
 
-</div><!-- .vcex-list_item -->
+$output .= '</div>';
+
+echo $output;

@@ -1,28 +1,9 @@
 <?php
-/**
- * Shortcode attributes
- * @var $atts
- * @var $title
- * @var $source
- * @var $image
- * @var $custom_src
- * @var $onclick
- * @var $img_size
- * @var $external_img_size
- * @var $caption
- * @var $img_link_large
- * @var $link
- * @var $img_link_target
- * @var $alignment
- * @var $el_class
- * @var $css_animation
- * @var $style
- * @var $external_style
- * @var $border_color
- * @var $css
- * Shortcode class
- * @var $this WPBakeryShortCode_VC_Single_image
- */
+if ( ! defined( 'ABSPATH' ) ) {
+	die( '-1' );
+}
+
+$html_output = $output = ''; // Output vars
 
 $atts = vc_map_get_attributes( $this->getShortcode(), $atts );
 extract( $atts );
@@ -217,14 +198,13 @@ if ( ! empty( $lightbox_gallery ) ) {
 	$a_attrs['class'] = 'wpex-lightbox-gallery';
 
 	// Create gallery
-	$gallery_ids = explode( ",",$lightbox_gallery );
+	$gallery_ids = explode( ',', $lightbox_gallery );
 	if ( $gallery_ids && is_array( $gallery_ids ) ) {
-		$gallery_images = '';
+		$gimages = '';
 		foreach ( $gallery_ids as $id ) {
-			$gallery_images .= wpex_get_lightbox_image( $id ) . ',';
+			$gimages .= wpex_get_lightbox_image( $id ) . ',';
 		}
-		$gallery_images = rtrim( $gallery_images, ',' );
-		$a_attrs['data-gallery'] = $gallery_images;
+		$a_attrs['data-gallery'] = rtrim( $gimages, ',' );
 	}
 
 	// Link to nothing = IMPORTANT!
@@ -360,24 +340,22 @@ if ( in_array( $source, array( 'media_library', 'featured_image' ) ) && 'yes' ==
 }
 
 if ( 'yes' === $add_caption && '' !== $caption ) {
-	$html = '
-		<figure class="vc_figure">
-			' . $html . '
-			<figcaption class="vc_figure-caption">' . esc_html( $caption ) . '</figcaption>
-		</figure>
-	';
+	$html_output .='<figure class="vc_figure">';
+		$html_output .= $html;
+		$html_output .='<figcaption class="vc_figure-caption">' . esc_html( $caption ) . '</figcaption>';
+	$html_output .='</figure>';
+} else {
+	$html_output = $html;
 }
 
-$output = '
-	<div class="' . esc_attr( trim( $css_class ) ) . '">
-		<div class="wpb_wrapper">
-			' . wpb_widget_title( array(
-					'title' => $title,
-					'extraclass' => 'wpb_singleimage_heading'
-				) ) . '
-			' . $html . '
-		</div>
-	</div>
-';
+$output .='<div class="' . esc_attr( trim( $css_class ) ) . '">';
+	$output .='<div class="wpb_wrapper">';
+		$output .= wpb_widget_title( array(
+				'title'      => $title,
+				'extraclass' => 'wpb_singleimage_heading'
+			) );
+		$output .= $html_output;
+	$output .='</div>';
+$output .='</div>';
 
 echo $output;

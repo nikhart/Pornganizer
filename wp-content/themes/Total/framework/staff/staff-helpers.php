@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Staff Functions
- * @version 3.3.2
+ * @version 3.5.3
  */
 
 /**
@@ -66,6 +66,29 @@ function wpex_staff_post_blocks() {
 }
 
 /**
+ * Returns staff single meta sections
+ *
+ * @since 3.5.0
+ */
+function wpex_staff_single_meta_sections() {
+
+	// Default sections
+	$sections = array( 'date', 'categories' );
+
+	// Apply filters for easy modification
+	$sections = apply_filters( 'wpex_staff_single_meta_sections', $sections );
+
+	// Turn into array if string
+	if ( $sections && ! is_array( $sections ) ) {
+		$sections = explode( ',', $sections );
+	}
+
+	// Return sections
+	return $sections;
+
+}
+
+/**
  * Returns correct thumbnail HTML for the staff entries
  *
  * @since 2.0.0
@@ -84,13 +107,22 @@ function wpex_get_staff_entry_thumbnail( $loop = 'archive' ) {
  *
  * @since 2.0.0
  */
-function wpex_get_staff_post_thumbnail() {
-	return wpex_get_post_thumbnail( apply_filters( 'wpex_get_staff_post_thumbnail_args', array(
+function wpex_get_staff_post_thumbnail( $args = '' ) {
+
+	// Define thumbnail args
+	$defaults = array(
 		'size'          => 'staff_post',
 		'class'         => 'staff-single-media-img',
 		'alt'           => wpex_get_esc_title(),
 		'schema_markup' => true,
-	) ) );
+	);
+
+	// Parse arguments
+	$args = wp_parse_args( $args, $defaults );
+
+	// Return thumbanil
+	return wpex_get_post_thumbnail( apply_filters( 'wpex_get_staff_post_thumbnail_args', $args ) );
+
 }
 
 /**
@@ -165,6 +197,8 @@ if ( ! function_exists( 'wpex_staff_match_height' ) ) {
 /**
  * Staff Overlay
  *
+ * Function is deprecated and no longer used => Keep for fallback
+ *
  * @since 1.0.0
  */
 if ( ! function_exists( 'wpex_get_staff_overlay' ) ) {
@@ -174,9 +208,7 @@ if ( ! function_exists( 'wpex_get_staff_overlay' ) ) {
 		if ( ! $position ) {
 			return;
 		} ?>
-		<div class="staff-entry-position">
-			<span><?php echo $position; ?></span>
-		</div><!-- .staff-entry-position -->
+		<div class="staff-entry-position"><span><?php echo esc_html( $position ); ?></span></div>
 		<?php
 	}
 }
@@ -199,7 +231,8 @@ if ( ! function_exists( 'wpex_get_staff_social' ) ) {
 		),
 		$atts ) );
 
-		ob_start();
+		// Define output
+		$output = '';
 
 		// Get social profiles array
 		$profiles = wpex_staff_social_array();
@@ -209,6 +242,7 @@ if ( ! function_exists( 'wpex_get_staff_social' ) ) {
 
 		// Parse style to return correct classname
 		$style = wpex_get_social_button_class( $style );
+		$style = $style ? ' '. $style : '';
 
 		// Wrap classes
 		$wrap_classes = 'staff-social wpex-social-btns clr';
@@ -224,18 +258,19 @@ if ( ! function_exists( 'wpex_get_staff_social' ) ) {
 		$tooltip = $tooltip ? ' tooltip-up' : '';
 
 		// Link target
-		$link_target = 'blank' == $link_target ? ' target="_blank"' : ''; ?>
+		$link_target = 'blank' == $link_target ? ' target="_blank"' : '';
 
-		<div class="<?php echo esc_attr( $wrap_classes ); ?>"<?php echo $font_size; ?>>
-			<?php
+		// Start output
+		$output .= '<div class="'. esc_attr( $wrap_classes ) .'"'. $font_size .'>';
+
 			// Loop through social options
-			foreach ( $profiles as $profile ) {
+			foreach ( $profiles as $profile ) :
 
 				// Get meta
 				$meta = $profile['meta'];
 
 				// Display link if one exists
-				if ( $url = get_post_meta( $post_id, $meta, true ) ) {
+				if ( $url = get_post_meta( $post_id, $meta, true ) ) :
 
 					// Add "mailto" for emails
 					if ( 'wpex_staff_email' == $meta && is_email( $url ) ) {
@@ -261,17 +296,25 @@ if ( ! function_exists( 'wpex_get_staff_social' ) ) {
 					}
 
 					// Target
-					$link_target_attr = ( 'wpex_staff_email' == $meta ) ? '' : $link_target; ?>
+					$link_target_attr = ( 'wpex_staff_email' == $meta ) ? '' : $link_target;
 
-					<a href="<?php echo $url; ?>" title="<?php echo esc_attr( $profile['label'] ); ?>" class="wpex-<?php echo esc_attr( str_replace( '_', '-', $profile['key'] ) ); ?> <?php echo $style; ?><?php echo $tooltip; ?>"<?php echo $link_target_attr; ?>>
-						<span class="<?php echo $profile['icon_class']; ?>"></span>
-					</a>
+					$output .= '<a href="'. $url .'" title="'. esc_attr( $profile['label'] ) .'" class="wpex-'. esc_attr( str_replace( '_', '-', $profile['key'] ) ) . $style . $tooltip .'"'. $link_target_attr .'>';
 
-				<?php }
-			} ?>
-		</div><!-- .staff-social -->
+						$output .= '<span class="'. $profile['icon_class'] .'"></span>';
 
-		<?php return ob_get_clean();
+					$output .= '</a>';
+
+				endif; // URL check
+			
+			endforeach; // End profiles loop
+
+		// End output
+		$output .= '</div>';
+
+		// Return output
+		return $output;
+
 	}
+
 }
 add_shortcode( 'staff_social', 'wpex_get_staff_social' );

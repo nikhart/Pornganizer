@@ -4,7 +4,7 @@
  * 
  * @package Total WordPress Theme
  * @subpackage Customizer
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -12,12 +12,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Set global var so class can be editable
-global $wpex_typography;
-
 // Start class
-if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
-	class WPEX_Theme_Customizer_Typography {
+if ( ! class_exists( 'WPEX_Typography' ) ) {
+
+	class WPEX_Typography {
 
 		/**
 		 * Main constructor
@@ -31,26 +29,36 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 
 			// Customizer actions
 			if ( isset( $enabled_panels['typography'] ) ) {
-				add_action( 'customize_register', array( $this , 'register' ), 40 );
+				add_action( 'customize_register', array( 'WPEX_Typography' , 'register' ), 40 );
 			}
 
-			// Add fonts to the mce editor
-			add_action( 'admin_init', array( $this, 'mce_scripts' ) );
-			add_filter( 'tiny_mce_before_init', array( $this, 'mce_fonts' ) );
+			// Admin functions
+			if ( is_admin() ) {
 
-			// Load Google Font scripts
-			if ( wpex_get_mod( 'google_fonts_in_footer' ) ) {
-				add_action( 'wp_footer', array( $this, 'load_fonts' ) );
-			} else {
-				add_action( 'wp_enqueue_scripts', array( $this, 'load_fonts' ) );
+				// Add fonts to the mce editor
+				add_action( 'admin_init', array( 'WPEX_Typography', 'mce_scripts' ) );
+				add_filter( 'tiny_mce_before_init', array( 'WPEX_Typography', 'mce_fonts' ) );
+
+			}
+
+			// Front end functions
+			else {
+
+				// Load Google Font scripts
+				if ( wpex_get_mod( 'google_fonts_in_footer' ) ) {
+					add_action( 'wp_footer', array( 'WPEX_Typography', 'load_fonts' ) );
+				} else {
+					add_action( 'wp_enqueue_scripts', array( 'WPEX_Typography', 'load_fonts' ) );
+				}
+
 			}
 		
 			// CSS output
 			if ( is_customize_preview() && isset( $enabled_panels['typography'] ) ) {
-				add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
-				add_action( 'wp_head', array( $this, 'live_preview_styles' ), 999 );
+				add_action( 'customize_preview_init', array( 'WPEX_Typography', 'customize_preview_init' ) );
+				add_action( 'wp_head', array( 'WPEX_Typography', 'live_preview_styles' ), 999 );
 			} else {
-				add_filter( 'wpex_head_css', array( $this, 'head_css' ), 99 );
+				add_filter( 'wpex_head_css', array( 'WPEX_Typography', 'head_css' ), 99 );
 			}
 
 		}
@@ -60,13 +68,13 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function elements() {
+		public static function elements() {
 
 			// Set default font to Open Sans unless Google Services are disabled
 			$body_default = wpex_disable_google_services() ? '' : 'Open Sans';
 
 			// Return settings
-			return apply_filters( 'wpex_typography_settings', array(
+			$array = apply_filters( 'wpex_typography_settings', array(
 				'body' => array(
 					'label' => esc_html__( 'Body', 'total' ),
 					'target' => 'body',
@@ -98,7 +106,7 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 				),
 				'mobile_menu' => array(
 					'label' => esc_html__( 'Mobile Menu', 'total' ),
-					'target' => '.wpex-mobile-menu',
+					'target' => '.wpex-mobile-menu, #sidr-main',
 					'exclude' => array( 'font-color' ),
 				),
 				'page_title' => array(
@@ -130,6 +138,20 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 					'label' => esc_html__( 'Headings', 'total' ),
 					'target' => 'h1,h2,h3,h4,h5,h6,.theme-heading,.page-header-title,.heading-typography,.widget-title,.wpex-widget-recent-posts-title,.comment-reply-title,.vcex-heading,.entry-title,.sidebar-box .widget-title,.search-entry h2',
 					'exclude' => array( 'font-size' ),
+				),
+				'theme_heading' => array(
+					'label' => esc_html__( 'Theme Heading', 'total' ),
+					'target' => '.theme-heading',
+					'description' =>  esc_html__( 'Heading used in various places such as the related and comments heading.', 'total' ),
+					'margin' => true,
+					'extras' => array(
+						'style' => array(
+							'type' => 'dropdown',
+							'choices' => array(
+
+							),
+						),
+					),
 				),
 				'sidebar_widget_title' => array(
 					'label' => esc_html__( 'Sidebar Widget Heading', 'total' ),
@@ -179,11 +201,17 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 					'exclude' => array( 'font-color' ),
 					'active_callback' => 'wpex_cac_has_footer_bottom',
 				),
-				'load_custom_font_1' => array(
-					'label' => esc_html__( 'Load Custom Font', 'total' ),
-					'attributes' => array( 'font-family' ),
-				),
 			) );
+		
+			// Add after filter
+			$array['load_custom_font_1'] = array(
+				'label' => esc_html__( 'Load Custom Font', 'total' ),
+				'attributes' => array( 'font-family' ),
+			);
+
+			// Return array
+			return $array;
+	
 		}
 
 		/**
@@ -191,7 +219,7 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 3.3.0
 		 */
-		public function customize_preview_init() {
+		public static function customize_preview_init() {
 			wp_enqueue_script( 'wpex-typography-customize-preview',
 				WPEX_FRAMEWORK_DIR_URI .'addons/assets/typography-customize-preview.js',
 				array( 'customize-preview' ),
@@ -208,10 +236,10 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function register ( $wp_customize ) {
+		public static function register ( $wp_customize ) {
 
 			// Get elements
-			$elements = $this->elements();
+			$elements = self::elements();
 
 			// Return if elements are empty. This check is needed due to the filter added above
 			if ( empty( $elements ) ) {
@@ -289,8 +317,9 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 				// Get label
 				$label              = ! empty( $array['label'] ) ? $array['label'] : null;
 				$exclude_attributes = ! empty( $array['exclude'] ) ? $array['exclude'] : false;
-				$active_callback    = isset( $array['active_callback'] ) ? $array['active_callback'] : null;
-				$transport          = 'postMessage'; // all settings should use AJAX
+				$active_callback    = ! empty( $array['active_callback'] ) ? $array['active_callback'] : null;
+				$description        = ! empty( $array['description'] ) ? $array['description'] : '';
+				$transport          = ! empty( $array['transport'] ) ? $array['transport'] : 'postMessage';
 
 				// Get attributes
 				if ( ! empty ( $array['attributes'] ) ) {
@@ -331,6 +360,7 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 						'title' => $label,
 						'priority' => $count,
 						'panel' => 'wpex_typography',
+						'description' => $description
 					) );
 
 					// Font Family
@@ -531,12 +561,12 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function loop( $return = 'css' ) {
+		public static function loop( $return = 'css' ) {
 
 			// Define Vars
 			$css            = '';
 			$fonts          = array();
-			$elements       = $this->elements();
+			$elements       = self::elements();
 			$preview_styles = '';
 
 			// Loop through each elements that need typography styling applied to them
@@ -637,8 +667,8 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function head_css( $output ) {
-			$typography_css = $this->loop( 'css' );
+		public static function head_css( $output ) {
+			$typography_css = self::loop( 'css' );
 			if ( $typography_css ) {
 				$output .= $typography_css;
 			}
@@ -650,8 +680,8 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 2.1.3
 		 */
-		public function live_preview_styles() {
-			$live_preview_styles = $this->loop( 'preview_styles' );
+		public static function live_preview_styles() {
+			$live_preview_styles = self::loop( 'preview_styles' );
 			if ( $live_preview_styles ) {
 				foreach ( $live_preview_styles as $key => $val ) {
 					if ( ! empty( $val ) ) {
@@ -666,10 +696,10 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function load_fonts() {
+		public static function load_fonts() {
 
 			// Get fonts
-			$fonts = $this->loop( 'fonts' );
+			$fonts = self::loop( 'fonts' );
 
 			// Loop through and enqueue fonts
 			if ( ! empty( $fonts ) && is_array( $fonts ) ) {
@@ -685,10 +715,10 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function mce_fonts( $initArray ) {
+		public static function mce_fonts( $initArray ) {
 
 			// Get fonts
-			$fonts       = $this->loop( 'fonts' );
+			$fonts       = self::loop( 'fonts' );
 			$fonts       = apply_filters( 'wpex_mce_fonts', $fonts );
 			$fonts_array = array();
 
@@ -730,7 +760,7 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function mce_scripts() {
+		public static function mce_scripts() {
 
 			// Get Google fonts
 			$google_fonts = wpex_google_fonts_array();
@@ -741,7 +771,7 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 			}
 
 			// Get fonts
-			$fonts = $this->loop( 'fonts' );
+			$fonts = self::loop( 'fonts' );
 
 			// Apply filters
 			$fonts = apply_filters( 'wpex_mce_fonts', $fonts );
@@ -766,15 +796,15 @@ if ( ! class_exists( 'WPEX_Theme_Customizer_Typography' ) ) {
 		}
 
 	}
+
+	new WPEX_Typography();
+
 }
-$wpex_typography = new WPEX_Theme_Customizer_Typography();
 
-
-// Helper function generates customizer live preview js
+/* Helper function generates customizer live preview js
 // Better then looping through on every page load...same some time and allows for manually minifying
 function wpex_generate_typography_customizer_live_preview_js() {
-	$typo = new WPEX_Theme_Customizer_Typography();
-	$elements = $typo->elements();
+	$elements = WPEX_Typography::elements();
 	$output = '';
 	foreach( $elements as $element => $array ) {
 
@@ -858,4 +888,5 @@ function wpex_generate_typography_customizer_live_preview_js() {
 	echo $output;
 	exit;
 }
-//wpex_generate_typography_customizer_live_preview_js();
+add_action( 'init', 'wpex_generate_typography_customizer_live_preview_js' ); // Needed for filters
+*/

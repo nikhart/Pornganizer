@@ -4,6 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -20,8 +21,8 @@ class WPEX_Media_Fields {
 	 * @since 2.0.0
 	 */
 	public function __construct() {
-		add_filter( 'attachment_fields_to_edit', array( $this, 'edit_fields' ), null, 2 );
-		add_filter( 'attachment_fields_to_save', array( $this, 'save_fields' ), null , 2 );
+		add_filter( 'attachment_fields_to_edit', array( 'WPEX_Media_Fields', 'edit_fields' ), null, 2 );
+		add_filter( 'attachment_fields_to_save', array( 'WPEX_Media_Fields', 'save_fields' ), null , 2 );
 	}
 
 	/**
@@ -29,7 +30,7 @@ class WPEX_Media_Fields {
 	 *
 	 * @since 2.0.0
 	 */
-	public function edit_fields( $form_fields, $post ) {
+	public static function edit_fields( $form_fields, $post ) {
 		$form_fields['wpex_video_url'] = array(
 			'label'	=> esc_html__( 'Video URL', 'total' ),
 			'input'	=> 'text',
@@ -43,7 +44,7 @@ class WPEX_Media_Fields {
 	 *
 	 * @since 2.0.0
 	 */
-	public function save_fields( $post, $attachment ) {
+	public static function save_fields( $post, $attachment ) {
 		if ( isset( $attachment['wpex_video_url'] ) ) {
 			update_post_meta( $post['ID'], '_video_url', $attachment['wpex_video_url'] );
 		}

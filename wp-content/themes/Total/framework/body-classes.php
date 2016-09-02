@@ -4,16 +4,16 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.5
+ * @version 3.5.0
  */
 
 function wpex_body_classes( $classes ) {
 
 	// Save some vars
-	$main_layout  = wpex_global_obj( 'main_layout' );
-	$header_style = wpex_global_obj( 'header_style' );
-	$post_layout  = wpex_global_obj( 'post_layout' );
 	$post_id      = wpex_global_obj( 'post_id' );
+	$main_layout  = wpex_global_obj( 'main_layout' );
+	$post_layout  = wpex_global_obj( 'post_layout' );
+	$header_style = wpex_global_obj( 'header_style' );
 
 	// RTL
 	if ( is_RTL() ) {
@@ -37,14 +37,8 @@ function wpex_body_classes( $classes ) {
 	$classes[] = $main_layout .'-main-layout';
 	
 	// Add skin to body classes
-	$classes[] = 'skin-'. wpex_global_obj( 'skin' );
-
-	// Vertical header style
-	if ( 'six' == $header_style) {
-		$classes[] = 'wpex-has-vertical-header';
-		if ( 'fixed' == wpex_get_mod( 'vertical_header_style' ) ) {
-			$classes[] = 'wpex-fixed-vertical-header';
-		}
+	if ( 'base' != wpex_global_obj( 'skin' ) ) {
+		$classes[] = 'skin-'. wpex_global_obj( 'skin' );
 	}
 
 	// Check if the Visual Composer is being used on this page
@@ -88,7 +82,6 @@ function wpex_body_classes( $classes ) {
 	// Breadcrumbs
 	if ( wpex_global_obj( 'has_breadcrumbs' ) ) {
 		$classes[] = 'has-breadcrumbs';
-		$classes[] = 'breadcrumbs-position-'. wpex_get_mod( 'breadcrumbs_position', 'default' );
 	}
 
 	// Topbar
@@ -104,6 +97,8 @@ function wpex_body_classes( $classes ) {
 	// Overlay header style
 	if ( wpex_global_obj( 'has_overlay_header' ) ) {
 		$classes[] = 'has-overlay-header';
+	} else {
+		$classes[] = 'hasnt-overlay-header';
 	}
 
 	// Footer reveal
@@ -150,14 +145,27 @@ function wpex_body_classes( $classes ) {
 		$classes[] = 'smooth-fonts';
 	}
 
-	// Mobile menu toggle style
-	$classes[] = 'wpex-mobile-toggle-menu-'. wpex_global_obj( 'mobile_menu_toggle_style' );
+	// Vertical header style
+	if ( 'six' == $header_style ) {
+		$classes[] = 'wpex-has-vertical-header';
+		if ( 'fixed' == wpex_get_mod( 'vertical_header_style' ) ) {
+			$classes[] = 'wpex-fixed-vertical-header';
+		}
+	}
 
-	// Mobile menu style
-	if ( 'disabled' == wpex_global_obj( 'mobile_menu_style' ) ) {
-		$classes[] = 'mobile-menu-disabled';
-	} else {
-		$classes[] = 'has-mobile-menu';
+	// Mobile menu toggle style
+	if ( wpex_global_obj( 'has_mobile_menu' ) ) {
+		
+		// Mobile menu toggle style
+		$classes[] = 'wpex-mobile-toggle-menu-'. wpex_global_obj( 'mobile_menu_toggle_style' );
+
+		// Mobile menu style
+		if ( 'disabled' == wpex_global_obj( 'mobile_menu_style' ) ) {
+			$classes[] = 'mobile-menu-disabled';
+		} else {
+			$classes[] = 'has-mobile-menu';
+		}
+
 	}
 
 	// Fixed Footer - adds min-height to main wraper

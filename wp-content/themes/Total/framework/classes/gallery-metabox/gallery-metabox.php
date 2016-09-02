@@ -310,6 +310,26 @@ function wpex_get_gallery_ids( $post_id = '' ) {
 }
 
 /**
+ * Get array of gallery image urls
+ *
+ * @since 3.5.0
+ */
+function wpex_get_gallery_images( $post_id = '', $size = 'full' ) {
+	$ids = wpex_get_gallery_ids( $post_id );
+	if ( $ids ) {
+		$images = array();
+		foreach ( $ids as $id ) {
+			$image = wp_get_attachment_image_src( $id, $size );
+			$image = isset( $image[0] ) ? $image[0] : '';
+			if ( $image ) {
+				$images[] = $image;
+			}
+		}
+		return $images;
+	}
+}
+
+/**
  * Retrieve attachment data
  *
  * @since 1.0.0

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Functions
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 /**
@@ -180,8 +180,14 @@ function vcex_suggest_portfolio_categories( $search_string ) {
 	) );
 	if ( $get_terms ) {
 		foreach ( $get_terms as $term ) {
+			if ( $term->parent ) {
+				$parent = get_term( $term->parent, 'portfolio_category' );
+				$label = $term->name .' ('. $parent->name .')';
+			} else {
+				$label = $term->name;
+			}
 			$portfolio_categories[] = array(
-				'label' => $term->name,
+				'label' => $label,
 				'value' => $term->term_id,
 			);
 		}
@@ -196,10 +202,16 @@ function vcex_suggest_portfolio_categories( $search_string ) {
  */
 function vcex_render_portfolio_categories( $data ) {
 	$value = $data['value'];
-	$category = get_term_by( 'term_id', intval( $value ), 'portfolio_category' );
-	if ( is_object( $category ) ) {
+	$term = get_term_by( 'term_id', intval( $value ), 'portfolio_category' );
+	if ( is_object( $term ) ) {
+		if ( $term->parent ) {
+			$parent = get_term( $term->parent, 'portfolio_category' );
+			$label = $term->name .' ('. $parent->name .')';
+		} else {
+			$label = $term->name;
+		}
 		return array(
-			'label' => $category->name,
+			'label' => $label,
 			'value' => $value,
 		);
 	}
@@ -221,8 +233,14 @@ function vcex_suggest_staff_categories( $search_string ) {
 	) );
 	if ( $get_terms ) {
 		foreach ( $get_terms as $term ) {
+			if ( $term->parent ) {
+				$parent = get_term( $term->parent, 'staff_category' );
+				$label = $term->name .' ('. $parent->name .')';
+			} else {
+				$label = $term->name;
+			}
 			$staff_categories[] = array(
-				'label' => $term->name,
+				'label' => $label,
 				'value' => $term->term_id,
 			);
 		}
@@ -237,10 +255,16 @@ function vcex_suggest_staff_categories( $search_string ) {
  */
 function vcex_render_staff_categories( $data ) {
 	$value = $data['value'];
-	$category = get_term_by( 'term_id', intval( $value ), 'staff_category' );
-	if ( is_object( $category ) ) {
+	$term = get_term_by( 'term_id', intval( $value ), 'staff_category' );
+	if ( is_object( $term ) ) {
+		if ( $term->parent ) {
+			$parent = get_term( $term->parent, 'staff_category' );
+			$label = $term->name .' ('. $parent->name .')';
+		} else {
+			$label = $term->name;
+		}
 		return array(
-			'label' => $category->name,
+			'label' => $label,
 			'value' => $value,
 		);
 	}
@@ -262,8 +286,14 @@ function vcex_suggest_testimonials_categories( $search_string ) {
 	) );
 	if ( $get_terms ) {
 		foreach ( $get_terms as $term ) {
+			if ( $term->parent ) {
+				$parent = get_term( $term->parent, 'testimonials_category' );
+				$label = $term->name .' ('. $parent->name .')';
+			} else {
+				$label = $term->name;
+			}
 			$testimonials_categories[] = array(
-				'label' => $term->name,
+				'label' => $label,
 				'value' => $term->term_id,
 			);
 		}
@@ -278,10 +308,16 @@ function vcex_suggest_testimonials_categories( $search_string ) {
  */
 function vcex_render_testimonials_categories( $data ) {
 	$value = $data['value'];
-	$category = get_term_by( 'term_id', intval( $value ), 'testimonials_category' );
-	if ( is_object( $category ) ) {
+	$term = get_term_by( 'term_id', intval( $value ), 'testimonials_category' );
+	if ( is_object( $term ) ) {
+		if ( $term->parent ) {
+			$parent = get_term( $term->parent, 'testimonials_category' );
+			$label = $term->name .' ('. $parent->name .')';
+		} else {
+			$label = $term->name;
+		}
 		return array(
-			'label' => $category->name,
+			'label' => $label,
 			'value' => $value,
 		);
 	}
@@ -303,8 +339,14 @@ function vcex_suggest_product_categories( $search_string ) {
 	) );
 	if ( $get_terms ) {
 		foreach ( $get_terms as $term ) {
+			if ( $term->parent ) {
+				$parent = get_term( $term->parent, 'product_cat' );
+				$label = $term->name .' ('. $parent->name .')';
+			} else {
+				$label = $term->name;
+			}
 			$product_categories[] = array(
-				'label' => $term->name,
+				'label' => $label,
 				'value' => $term->term_id,
 			);
 		}
@@ -321,8 +363,14 @@ function vcex_render_product_categories( $data ) {
 	$value = $data['value'];
 	$term = get_term_by( 'term_id', intval( $value ), 'product_cat' );
 	if ( is_object( $term ) ) {
+		if ( $term->parent ) {
+			$parent = get_term( $term->parent, 'product_cat' );
+			$label = $term->name .' ('. $parent->name .')';
+		} else {
+			$label = $term->name;
+		}
 		return array(
-			'label' => $term->name,
+			'label' => $label,
 			'value' => $value,
 		);
 	}

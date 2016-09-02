@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,11 +17,20 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output var
+$output = '';
+
 // Deprecated Attributes
 $term_slug = isset( $atts['term_slug'] ) ? $atts['term_slug'] : '';
 
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_recent_news', $atts );
 
 // Define non-vc attributes
 $atts['tax_query']  = '';
@@ -62,19 +71,22 @@ if ( $wpex_query->have_posts() ) :
 	$inline_js = array();
 	$grid_columns = $grid_columns ? $grid_columns : '1';
 	
-	// Wrapper Classes
-	$wrap_classes = 'vcex-recent-news clr';
+	// Wrap Classes
+	$wrap_classes = array( 'vcex-recent-news', 'clr' );
 	if ( $classes ) {
-		$wrap_classes .= $this->getExtraClass( $classes );
+		$wrap_classes[] = vcex_get_extra_class( $classes );
 	}
 	if ( $visibility ) {
-		$wrap_classes .= ' '. $visibility;
+		$wrap_classes[] = $visibility;
 	}
 	if ( '1' != $grid_columns ) {
-		$wrap_classes .= ' wpex-row';
+		$wrap_classes[] = 'wpex-row';
+		if ( $columns_gap ) {
+			$wrap_classes[] = 'gap-'. $columns_gap;
+		}
 	}
 	if ( $css ) {
-		$wrap_classes .= ' '. vc_shortcode_custom_css_class( $css );
+		$wrap_classes[] = vc_shortcode_custom_css_class( $css );
 	}
 
 	// Entry Classes
@@ -83,7 +95,7 @@ if ( $wpex_query->have_posts() ) :
 		$entry_classes[] = 'no-left-padding';
 	}
 	if ( $css_animation ) {
-		$entry_classes[] = $this->getCSSAnimation( $css_animation );
+		$entry_classes[] = vcex_get_css_animation( $css_animation );
 	}
 
 	// Entry Style
@@ -161,21 +173,26 @@ if ( $wpex_query->have_posts() ) :
 	// Load inline js
 	if ( ! empty( $inline_js ) ) {
 		vcex_inline_js( $inline_js );
-	} ?>
+	}
+
+	// Convert arrays to strings
+	$wrap_classes = implode( ' ', $wrap_classes );
 	
-	<div class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?>>
+	// Output module
+	$output .= '<div class="'. $wrap_classes .'"'. vcex_get_unique_id( $unique_id ) .'>';
 	
-		<?php
 		// Display header if enabled
 		if ( $header ) :
-			wpex_heading( array(
+
+			$output .= wpex_heading( array(
+				'echo'    => false,
 				'content' => $header,
 				'tag'     => 'h2',
 				'classes' => array( 'vcex-recent-news-header' ),
 			) );
-		endif; ?>
 
-		<?php
+		endif;
+
 		// Loop through posts
 		$count = '0';
 		while ( $wpex_query->have_posts() ) :
@@ -189,164 +206,190 @@ if ( $wpex_query->have_posts() ) :
 			// Create new post object.
 			$post = new stdClass();
 		
-			// Post VARS
-			$post->ID = get_the_ID();
-			$post->permalink = wpex_get_permalink( $post->ID );
-			$post->the_title = get_the_title( $post->ID );
+			// Post vars
+			$post->ID            = get_the_ID();
+			$post->permalink     = wpex_get_permalink( $post->ID );
+			$post->the_title     = get_the_title( $post->ID );
 			$post->the_title_esc = esc_attr( the_title_attribute( 'echo=0' ) );
-			$post->type = get_post_type( $post->ID );
-			$post->video_embed = wpex_get_post_video_html();
-			$post->format = get_post_format( $post->ID ); ?>
+			$post->type          = get_post_type( $post->ID );
+			$post->video_embed   = wpex_get_post_video_html();
+			$post->format        = get_post_format( $post->ID );
 
-			<?php if ( $grid_columns > '1' ) : ?>
-				<div class="col span_1_of_<?php echo $grid_columns; ?> vcex-recent-news-entry-wrap col-<?php echo $count; ?>">
-			<?php endif; ?>
+			// Open grid columns wrap
+			if ( $grid_columns > '1' ) :
 
-			<article <?php echo post_class( $entry_classes ); ?><?php echo $entry_style; ?>>
+				$output .= '<div class="col span_1_of_'. $grid_columns .' vcex-recent-news-entry-wrap col-'. $count .'">';
 
-				<?php if ( 'true' == $date ) : ?>
+			endif;
 
-					<div class="vcex-recent-news-date">
+			$output .= '<article '. wpex_get_post_class( $entry_classes, $post->ID ) .''. $entry_style .'>';
 
-						<span class="day"><?php
+				// Display date
+				if ( 'true' == $date ) :
 
-						// Standard day display
-						$day = get_the_time( 'd', $post->ID );
+					$output .= '<div class="vcex-recent-news-date">';
 
-						// Filter day display for tribe events calendar plugin
-						// @todo move to events config file
-						if ( 'tribe_events' == $post->type && function_exists( 'tribe_get_start_date' ) ) {
-							echo tribe_get_start_date( $post->ID, false, 'd' );
-						}
+						$output .= '<span class="day">';
 
-						// Echo the day
-						echo apply_filters( 'vcex_recent_news_day_output', $day ); ?></span><!-- .day -->
+							// Standard day display
+							$day = get_the_time( 'd', $post->ID );
 
-						<span class="month"<?php echo $month_style; ?>><?php
+							// Filter day display for tribe events calendar plugin
+							// @todo move to events config file
+							if ( 'tribe_events' == $post->type && function_exists( 'tribe_get_start_date' ) ) {
+								$day = tribe_get_start_date( $post->ID, false, 'd' );
+							}
 
-						// Standard month year display
-						$month_year = '<span>'. get_the_time( 'M', $post->ID ) .'</span>';
-						$month_year .= ' <span class="year">'. get_the_time( 'y', $post->ID ) .'</span>';
+							// Apply filters and return date
+							$output .= apply_filters( 'vcex_recent_news_day_output', $day );
 
-						// Filter month/year display for tribe events calendar plugin
-						// @todo move to events config file
-						if ( 'tribe_events' == $post->type && function_exists( 'tribe_get_start_date' ) ) {
-							$month_year = '<span>'. tribe_get_start_date( $post->ID, false, 'M' ) .'</span>';
-							$month_year .= ' <span class="year">'. tribe_get_start_date( $post->ID, false, 'y' ) .'</span>';
-						}
+						// Close day
+						$output .= '</span>';
 
-						// Echo the month/year
-						echo apply_filters( 'vcex_recent_news_month_year_output', $month_year ); ?></span><!-- .month -->
+						$output .= '<span class="month"'. $month_style .'>';
 
-					</div><!-- .vcex-recent-news-date -->
+							// Standard month year display
+							$month_year = '<span>'. get_the_time( 'M', $post->ID ) .'</span>';
+							$month_year .= ' <span class="year">'. get_the_time( 'y', $post->ID ) .'</span>';
 
-				<?php endif; ?>
+							// Filter month/year display for tribe events calendar plugin
+							// @todo move to events config file
+							if ( 'tribe_events' == $post->type && function_exists( 'tribe_get_start_date' ) ) {
+								$month_year = '<span>'. tribe_get_start_date( $post->ID, false, 'M' ) .'</span>';
+								$month_year .= ' <span class="year">'. tribe_get_start_date( $post->ID, false, 'y' ) .'</span>';
+							}
 
-				<div class="vcex-news-entry-details clr">
+							// Echo the month/year
+							$output .= apply_filters( 'vcex_recent_news_month_year_output', $month_year );
 
-					<?php if ( 'true' == $featured_image ) : ?>
+						// Close month
+						$output .= '</span>';
 
-						<?php if ( 'true' == $featured_video && $post->video_embed ) : ?>
+					$output .= '</div>';
 
-							<div class="vcex-news-entry-video clr">
-								<?php echo $post->video_embed; ?>
-							</div><!-- .vcex-news-entry-video -->
+				endif;
 
-						<?php elseif ( has_post_thumbnail( $post->ID ) ) : ?>
+				$output .= '<div class="vcex-news-entry-details clr">';
 
-							<div class="vcex-news-entry-thumbnail clr">
-								<a href="<?php echo $post->permalink; ?>" title="<?php wpex_esc_title(); ?>">
-									<?php
+					// Show featured media if enabled
+					if ( 'true' == $featured_image ) :
+
+						// Display video
+						if ( 'true' == $featured_video && $post->video_embed ) :
+
+							$output .= '<div class="vcex-news-entry-video clr">'. $post->video_embed .'</div>';
+
+						// Display featured image
+						elseif ( has_post_thumbnail( $post->ID ) ) :
+
+							$output .= '<div class="vcex-news-entry-thumbnail clr">';
+
+								$output .= '<a href="'. $post->permalink .'" title="'. wpex_get_esc_title() .'">';
+
 									// Display thumbnail
-									wpex_post_thumbnail( array(
+									$output .= wpex_get_post_thumbnail( array(
 										'size'   => $img_size,
 										'crop'   => $img_crop,
 										'width'  => $img_width,
 										'height' => $img_height,
 										'alt'    => wpex_get_esc_title(),
-									) ); ?>
-								</a>
-							</div><!-- .vcex-news-entry-thumbnail -->
+									) );
 
-						<?php endif; ?>
+								$output .= '</a>';
 
-					<?php endif; ?>
+							$output .= '</div>';
 
-					<?php if ( 'true' == $title ) : ?>
+						endif; // End thumbnail check
 
-						<header class="vcex-recent-news-entry-title entry-title">
-							<<?php echo $title_tag; ?> class="vcex-recent-news-entry-title-heading"<?php echo $heading_style; ?>>
-								<a href="<?php echo $post->permalink; ?>" title="<?php wpex_esc_title(); ?>"><?php the_title(); ?></a>
-							</<?php echo $title_tag; ?>>
-						</header><!-- .vcex-recent-news-entry-title -->
+					endif; // End featured image check
 
-					<?php endif; ?>
+					// Show title if enabled
+					if ( 'true' == $title ) :
 
-					<?php if ( 'true' == $excerpt || 'true' == $read_more ) : ?>
+						$output .= '<header class="vcex-recent-news-entry-title entry-title">';
+							$output .= '<'. $title_tag .' class="vcex-recent-news-entry-title-heading"'. $heading_style .'>';
+								$output .= '<a href="'. $post->permalink .'" title="'. $post->the_title_esc .'">'. $post->the_title .'</a>';
+							$output .= '</'. $title_tag .'>';
+						$output .= '</header>';
 
-						<div class="vcex-recent-news-entry-excerpt clr">
+					endif; // End title check
 
-							<?php if ( 'true' == $excerpt ) : ?> 
-								<div class="entry"<?php echo $excerpt_style; ?>>
-									<?php
+					// Excerpt and readmore
+					if ( 'true' == $excerpt || 'true' == $read_more ) :
+
+						$output .= '<div class="vcex-recent-news-entry-excerpt clr">';
+
+							if ( 'true' == $excerpt ) :
+
+								$output .= '<div class="entry"'. $excerpt_style .'>';
+
 									// Output excerpt
-									wpex_excerpt( array (
+									$output .= wpex_get_excerpt( array (
 										'length' => $excerpt_length,
-									) ); ?>
-								</div><!-- .entry -->
-							<?php endif; ?>
+									) );
 
-							<?php
+								$output .= '</div>';
+
+							endif;
+
 							// Display readmore link
-							if ( 'true' == $read_more ) : ?>
+							if ( 'true' == $read_more ) :
 
-								<a href="<?php echo $post->permalink; ?>" title="<?php echo esc_attr( $read_more_text ); ?>" rel="bookmark" class="<?php echo $readmore_classes; ?>"<?php echo $readmore_style; ?><?php echo $readmore_data; ?>>
-									<?php echo $read_more_text; ?>
-									<?php if ( 'true' == $readmore_rarr ) { ?>
-										<span class="vcex-readmore-rarr"><?php echo wpex_element( 'rarr' ); ?></span>
-									<?php } ?>
-								</a>
+								$output .= '<a href="'. $post->permalink .'" title="'. esc_attr( $read_more_text ) .'" rel="bookmark" class="'. $readmore_classes .'"'. $readmore_style .''. $readmore_data .'>';
 
-							<?php endif; ?>
+									$output .= $read_more_text;
 
-						</div><!-- .vcex-recent-news-entry-excerpt -->
+									// Show readmore rarr
+									if ( 'true' == $readmore_rarr ) {
 
-					<?php endif; ?>
+										$output .= '<span class="vcex-readmore-rarr">'. wpex_element( 'rarr' ) .'</span>';
 
-				</div><!-- .vcex-recent-news-entry-details -->
+									}
+								$output .= '</a>';
 
-			</article><!-- .vcex-recent-news-entry -->
+							endif;
 
-			<?php if ( $grid_columns > '1' ) echo '</div>'; ?>
+						$output .= '</div>';
 
-			<?php if ( $count == $grid_columns ) $count = ''; ?>
+					endif; // End excerpt + readmore
 
-		<?php endwhile; ?>
+				$output .= '</div>';
 
-		<?php
+			$output .= '</article>';
+
+			// Close grid columns wrap
+			if ( $grid_columns > '1' ) {
+				$output .= '</div>';
+			}
+
+			if ( $count == $grid_columns ) {
+				$count = '';
+			}
+
+		endwhile;
+
 		// Display pagination
-		if ( 'true' == $pagination ) : ?>
-			<div class="wpex-clear"></div>
-			<?php wpex_pagination( $wpex_query ); ?>
-		<?php endif; ?>
+		if ( 'true' == $pagination ) :
+			$output .= '<div class="wpex-clear"></div>';
+			$output .= wpex_pagination( $wpex_query, false );
+		endif;
 	
-	</div><!-- .vcex-recent-news -->
+	$output .= '</div>';
 
-	<?php
 	// Remove post object from memory
 	$post = null;
 
 	// Reset the post data to prevent conflicts with WP globals
-	wp_reset_postdata(); ?>
+	wp_reset_postdata();
 
-<?php
+	// Echo output
+	echo $output;
+
 // If no posts are found display message
-else : ?>
+else :
 
-	<?php
 	// Display no posts found error if function exists
-	echo vcex_no_posts_found_message( $atts ); ?>
+	echo vcex_no_posts_found_message( $atts );
 
-<?php
 // End post check
-endif; ?>
+endif;

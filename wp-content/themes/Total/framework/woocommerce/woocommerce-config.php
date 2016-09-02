@@ -4,7 +4,9 @@
  *
  * @package Total WordPress Theme
  * @subpackage WooCommerce
- * @version 3.3.5
+ * @version 3.5.3
+ *
+ * @todo Remove global var ?
  */
 
 // Define global var for class, makes child theming easier/possible
@@ -32,6 +34,9 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 
 			// Register Woo sidebar
 			add_filter( 'widgets_init', array( $this, 'register_woo_sidebar' ) );
+
+			// Add Woo VC modules
+			add_filter( 'vcex_builder_modules', array( 'WPEX_WooCommerce_Config', 'vc_modules' ) );
 
 			/*-------------------------------------------------------------------------------*/
 			/* -  Admin only actions/filters
@@ -99,7 +104,7 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 			// Scripts
 			add_action( 'woocommerce_enqueue_styles', array( $this, 'remove_styles' ) );
 			add_action( 'wp_enqueue_scripts', array( $this, 'remove_scripts' ) );
-			add_action( 'wp_enqueue_scripts', array( $this, 'add_custom_css' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'add_custom_scripts' ) );
 			
 			// Social share
 			add_action( 'woocommerce_after_single_product_summary', 'wpex_social_share', 11 );
@@ -128,7 +133,7 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 			add_filter( 'woocommerce_output_related_products_args', array( $this, 'related_product_args' ) );
 			add_filter( 'woocommerce_pagination_args', array( $this, 'pagination_args' ) );
 			add_filter( 'woocommerce_continue_shopping_redirect', array( $this, 'continue_shopping_redirect' ) );
-			add_filter( 'post_class', array( $this, 'add_product_entry_classes' ) );
+			add_filter( 'post_class', array( $this, 'add_product_entry_classes' ), 40, 3 );
 			add_filter( 'product_cat_class', array( $this, 'product_cat_class' ) );
 			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 10, 3 );
 
@@ -352,8 +357,9 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 
 			// Shop title
 			if ( is_shop() ) {
-				$title = get_the_title( wc_get_page_id( 'shop' ) );
-				$title = $title ? $title : $title = esc_html__( 'Shop', 'total' );
+				$shop_id = wpex_parse_obj_id( wc_get_page_id( 'shop' ), 'page' );
+				$title   = $shop_id ? get_the_title( $shop_id ) : '';
+				$title   = $title ? $title : $title = esc_html__( 'Shop', 'total' );
 			}
 
 			// Product title
@@ -407,8 +413,11 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 		 * @link  http://docs.woothemes.com/document/disable-the-default-stylesheet/
 		 */
 		public static function remove_styles( $enqueue_styles ) {
-			unset( $enqueue_styles['woocommerce-layout'] );
-			unset( $enqueue_styles['woocommerce_prettyPhoto_css'] );
+			if ( is_array( $enqueue_styles ) ) {
+				unset( $enqueue_styles['woocommerce-layout'] );
+				unset( $enqueue_styles['woocommerce-smallscreen'] );
+				unset( $enqueue_styles['woocommerce_prettyPhoto_css'] );
+			}
 			return $enqueue_styles;
 		}
 
@@ -429,14 +438,19 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public static function add_custom_css() {
+		public static function add_custom_scripts() {
 
 			// General WooCommerce Custom CSS
-			wp_enqueue_style( 'wpex-woocommerce', WPEX_CSS_DIR_URI .'wpex-woocommerce.css' );
+			wp_enqueue_style( 'wpex-woocommerce', WPEX_CSS_DIR_URI .'wpex-woocommerce.css', array(), WPEX_THEME_VERSION );
 
 			// WooCommerce Responsiveness
 			if ( wpex_global_obj( 'responsive' ) ) {
-				wp_enqueue_style( 'wpex-woocommerce-responsive', WPEX_CSS_DIR_URI .'wpex-woocommerce-responsive.css', array( 'wpex-woocommerce' ) );
+				wp_enqueue_style( 'wpex-woocommerce-responsive', WPEX_CSS_DIR_URI .'wpex-woocommerce-responsive.css', array( 'wpex-woocommerce' ), WPEX_THEME_VERSION );
+			}
+
+			// Increment JS
+			if ( is_singular( 'product' ) || is_cart() ) {
+				wp_enqueue_script( 'wpex-wc-quantity-increment', WPEX_JS_DIR_URI .'dynamic/wc-quantity-increment-min.js', array( 'jquery' ), '', WPEX_THEME_VERSION );
 			}
 
 		}
@@ -635,11 +649,8 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 		 * @since 2.0.0
 		 */
 		public static function continue_shopping_redirect( $return_to ) {
-			$shop_id = woocommerce_get_page_id( 'shop' );
-			if ( function_exists( 'icl_object_id' ) ) {
-				$shop_id = icl_object_id( $shop_id, 'page' );
-			}
-			if ( $shop_id ) {
+			if ( $shop_id  = wc_get_page_id( 'shop' ) ) {
+				$shop_id   = wpex_parse_obj_id( $shop_id, 'page' );
 				$return_to = get_permalink( $shop_id );
 			}
 			return $return_to;
@@ -689,7 +700,7 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 			// Orderby, search...etc
 			if ( is_shop() ) {
 				if ( ! empty( $_GET['s'] ) ) {
-					$subheading = esc_html__( 'Search results for:', 'total' ) .' <span>&quot;'. $_GET['s'] .'&quot;</span>';
+					$subheading = esc_html__( 'Search results for:', 'total' ) .' <span>&quot;'. esc_html( $_GET['s'] ) .'&quot;</span>';
 				}
 			}
 
@@ -732,11 +743,16 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public static function add_product_entry_classes( $classes ) {
-			global $product, $woocommerce_loop;
-			if ( $product && $woocommerce_loop ) {
-				$classes[] = 'col';
-				$classes[] = wpex_grid_class( $woocommerce_loop['columns'] );
+		public static function add_product_entry_classes( $classes, $class = '', $post_id = '' ) {
+			if ( 'product' == get_post_type() && is_array( $classes ) ) {
+				global $woocommerce_loop;
+				if ( ! empty( $woocommerce_loop['columns'] ) && in_array( 'wpex-woo-entry', $classes ) ) {
+					$classes[] = 'col';
+					$columns = isset( $woocommerce_loop['columns'] ) ? $woocommerce_loop['columns'] : 4;
+					$classes[] = wpex_grid_class( $columns );
+					$key = array_search( 'wpex-woo-entry', $classes );
+					unset( $classes[$key] );
+				}
 			}
 			return $classes;
 		}
@@ -1014,9 +1030,25 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 		 * @since 3.0.0
 		 */
 		public static function typography_settings( $settings ) {
+			$settings['woo_entry_title'] = array(
+				'label' => esc_html__( 'WooCommerce Entry Title', 'total' ),
+				'target' => '.woocommerce ul.products li.product h3, .woocommerce ul.products li.product h3 mark',
+				'margin' => true,
+			);
 			$settings['woo_product_title'] = array(
 				'label' => esc_html__( 'WooCommerce Product Title', 'total' ),
 				'target' => '.woocommerce div.product .product_title',
+				'margin' => true,
+			);
+			$settings['woo_post_tabs_title'] = array(
+				'label' => esc_html__( 'WooCommerce Tabs Title', 'total' ),
+				'target' => '.woocommerce-tabs h2',
+				'margin' => true,
+			);
+			$settings['woo_upsells_related_title'] = array(
+				'label' => esc_html__( 'WooCommerce Up-Sells & Related Title', 'total' ),
+				'target' => '.woocommerce .upsells.products h2, .woocommerce .related.products h2',
+				'margin' => true,
 			);
 			return $settings;
 		}
@@ -1056,6 +1088,16 @@ if ( ! class_exists( 'WPEX_WooCommerce_Config' ) ) {
 				$ids[] = $shop_id;
 			}
 			return $ids;
+		}
+
+		/**
+		 * Add custom VC modules
+		 *
+		 * @since 3.5.3
+		 */
+		public static function vc_modules( $modules ) {
+			$modules[] = 'woocommerce_carousel';
+			return $modules;
 		}
 
 	}

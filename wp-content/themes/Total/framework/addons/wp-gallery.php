@@ -4,11 +4,12 @@
  *
  * @package Total WordPress theme
  * @subpackage Framework
- * @version 3.3.5
+ * @version 3.5.3
  */
 
 // Render the class
 if ( ! class_exists( 'WPEX_Custom_WP_Gallery' ) ) {
+
 	class WPEX_Custom_WP_Gallery {
 
 		/**
@@ -17,8 +18,8 @@ if ( ! class_exists( 'WPEX_Custom_WP_Gallery' ) ) {
 		 * @since 1.0.0
 		 */
 		public function __construct() {
-			add_filter( 'wpex_image_sizes', array( $this, 'add_image_sizes' ), 999 );
-			add_filter( 'post_gallery', array( $this, 'output' ), 10, 2 );
+			add_filter( 'wpex_image_sizes', array( 'WPEX_Custom_WP_Gallery', 'add_image_sizes' ), 999 );
+			add_filter( 'post_gallery', array( 'WPEX_Custom_WP_Gallery', 'output' ), 10, 2 );
 		}
 
 		/**
@@ -159,7 +160,7 @@ if ( ! class_exists( 'WPEX_Custom_WP_Gallery' ) ) {
 
 
 			// Begin output
-			$output .= '<div id="gallery-'. $instance .'" class="wpex-gallery wpex-row lightbox-group clr">';
+			$output .= '<div id="gallery-'. esc_attr( $instance ) .'" class="wpex-gallery wpex-row lightbox-group clr">';
 				
 				// Begin Loop
 				$count  = 0;
@@ -169,24 +170,15 @@ if ( ! class_exists( 'WPEX_Custom_WP_Gallery' ) ) {
 					$count++;
 
 					// Attachment Vars
-					$attachment_data = wpex_get_attachment_data( $attachment_id );
-					$alt             = $attachment_data['alt'];
-					$caption         = $attachment_data['caption'];
-					$video           = $attachment_data['video'];
-					$lightbox_url    = $video ? $video : wpex_get_lightbox_image( $attachment_id );
-
-					// Generate the image HTMl
-					$img_html = wpex_get_post_thumbnail( array(
-						'attachment' => $attachment_id,
-						'size'       => $size,
-						'width'      => $img_width,
-						'height'     => $img_height,
-						'crop'       => $crop
-					) );
+					$attachment_id = $attachment->ID;
+					$caption       = $attachment->post_excerpt;
+					$alt           = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
+					$video         = wpex_sanitize_data( get_post_meta( $attachment_id, '_video_url', true ), 'embed_url' );
+					$lightbox_url  = $video ? $video : wpex_get_lightbox_image( $attachment_id );
 
 					// Add data attributes for lightbox
 					if ( $video ) {
-						$lightbox_data = ' data-options="thumbnail: \''. wpex_get_lightbox_image( $attachment_id ) .'\', width:1920, height:1080"';
+						$lightbox_data = ' data-options="thumbnail: \''. wpex_get_lightbox_image( $attachment_id ) .'\', width:1920,height:1080"';
 					} else {
 						$lightbox_data = ' data-type="image"';
 					}
@@ -195,23 +187,46 @@ if ( ! class_exists( 'WPEX_Custom_WP_Gallery' ) ) {
 					$output .= '<figure class="gallery-item '. wpex_grid_class( $columns ) .' col col-'. $count .'">';
 					
 						// Display image
-						$output .= '<a href="'. $lightbox_url .'" title="'. wp_strip_all_tags( $caption ) .'" class="wpex-lightbox-group-item"'. $lightbox_data .'>';
-							$output .= $img_html;
+						$output .= '<a href="'. esc_url( $lightbox_url ) .'" class="wpex-lightbox-group-item"'. $lightbox_data .'>';
+
+							$output .= wpex_get_post_thumbnail( array(
+								'attachment' => $attachment_id,
+								'size'       => $size,
+								'width'      => $img_width,
+								'height'     => $img_height,
+								'crop'       => $crop,
+								'alt'        => $alt,
+							) );
+
 						$output .= '</a>';
 
 						// Display Caption
-						if ( trim ( $attachment->post_excerpt ) ) {
+						if ( trim ( $caption ) ) {
+
+							// Front end composer doesn't like the figcaption class
 							if ( wpex_is_front_end_composer() ) {
-								$output .= '<div class="gallery-caption">'. wptexturize( $attachment->post_excerpt ) . '</div>';
+
+								$output .= '<div class="gallery-caption">';
+
+									$output .= wp_kses_post( wptexturize( $caption ) );
+
+								$output .= '</div>';
+
 							} else {
-								$output .= '<figcaption class="gallery-caption">'. wptexturize( $attachment->post_excerpt ) . '</figcaption>';
+
+								$output .= '<figcaption class="gallery-caption">';
+
+									$output .= wp_kses_post( wptexturize( $caption ) );
+
+								$output .= '</figcaption>';
+
 							}
 						}
 						
 					// Close gallery item div
-					$output .= "</figure>";
+					$output .= '</figure>';
 
-					// Set vars to remove margin on last item of each row and clear floats
+					// Reset counter
 					if ( $count == $columns ) {
 						$count = '0';
 					}
@@ -223,6 +238,9 @@ if ( ! class_exists( 'WPEX_Custom_WP_Gallery' ) ) {
 
 			return $output;
 		}
+
 	}
+
+	new WPEX_Custom_WP_Gallery;
+
 }
-$wpex_custom_wp_gallery = new WPEX_Custom_WP_Gallery;

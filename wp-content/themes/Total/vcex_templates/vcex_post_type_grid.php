@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,8 +17,17 @@ if ( is_admin() ) {
     return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output var
+$output = '';
+
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_post_type_grid', $atts );
 extract( $atts );
 
 // Build the WordPress query
@@ -42,17 +51,15 @@ if ( $wpex_query->have_posts() ) :
 	$inline_js          = array();
 	$is_isotope         = false;
 	$url_target         = vcex_html( 'target_attr', $url_target );
-	$equal_heights_grid = ( 'true' == $equal_heights_grid ) ? true : false;
-	$equal_heights_grid = ( $equal_heights_grid && $columns > '1' ) ? true : false;
-	$css_animation      = $this->getCSSAnimation( $css_animation );
+	$equal_heights_grid = ( 'true' == $equal_heights_grid && $columns > '1' ) ? true : false;
+	$css_animation      = vcex_get_css_animation( $css_animation );
 	$css_animation      = 'true' == $filter ? false : $css_animation;
 	$title_tag          = apply_filters( 'vcex_grid_default_title_tag', $title_tag, $atts );
 	$title_tag          = $title_tag ? $title_tag : 'h2';
 
 	// Advanced sanitization
 	if ( 'true' == $filter || 'masonry' == $grid_style || 'no_margins' == $grid_style ) {
-		$is_isotope         = true;
-		$equal_heights_grid = false;
+		$is_isotope = true;
 	}
 	if ( 'true' != $filter && 'masonry' == $grid_style ) {
 		$post_count = count( $wpex_query->posts );
@@ -165,19 +172,19 @@ if ( $wpex_query->have_posts() ) :
 	if ( 'true' == $excerpt ) {
 		$excerpt_style = vcex_inline_style( array(
 			'font_size' => $content_font_size,
-			'color' => $content_color,
+			'color'     => $content_color,
 		) );
 	}
 
 	// Heading Design
 	if ( 'true' == $title ) {
 		$heading_style = vcex_inline_style( array(
-			'margin' => $content_heading_margin,
-			'font_size' => $content_heading_size,
-			'color' => $content_heading_color,
-			'line_height' => $content_heading_line_height,
+			'margin'         => $content_heading_margin,
+			'font_size'      => $content_heading_size,
+			'color'          => $content_heading_color,
+			'line_height'    => $content_heading_line_height,
 			'text_transform' => $content_heading_transform,
-			'font_weight' => $content_heading_weight,
+			'font_weight'    => $content_heading_weight,
 		) );
 		$heading_link_style = vcex_inline_style( array(
 			'color' => $content_heading_color,
@@ -198,12 +205,12 @@ if ( $wpex_query->have_posts() ) :
 
 		// Readmore style
 		$readmore_style = vcex_inline_style( array(
-			'background' => $readmore_background,
-			'color' => $readmore_color,
-			'font_size' => $readmore_size,
-			'padding' => $readmore_padding,
+			'background'    => $readmore_background,
+			'color'         => $readmore_color,
+			'font_size'     => $readmore_size,
+			'padding'       => $readmore_padding,
 			'border_radius' => $readmore_border_radius,
-			'margin' => $readmore_margin,
+			'margin'        => $readmore_margin,
 		) );
 
 		// Readmore data
@@ -244,22 +251,22 @@ if ( $wpex_query->have_posts() ) :
 	// Static entry classes
 	$static_entry_classes = array( 'vcex-post-type-entry', 'clr' );
 	if ( 'false' == $columns_responsive ) {
-		$static_entry_classes[] = ' nr-col';
+		$static_entry_classes[] = 'nr-col';
 	} else {
-		$static_entry_classes[] = ' col';
+		$static_entry_classes[] = 'col';
 	}
-	$static_entry_classes[] = ' span_1_of_'. $columns;
+	$static_entry_classes[] = 'span_1_of_'. $columns;
 	if ( $is_isotope ) {
-		$static_entry_classes[] = ' vcex-isotope-entry';
+		$static_entry_classes[] = 'vcex-isotope-entry';
 	}
 	if ( 'no_margins' == $grid_style ) {
-		$static_entry_classes[] = ' vcex-no-margin-entry';
+		$static_entry_classes[] = 'vcex-no-margin-entry';
 	}
 	if ( $css_animation ) {
-		$static_entry_classes[] = ' '. $css_animation;
+		$static_entry_classes[] = $css_animation;
 	}
 	if ( 'true' != $entry_media ) {
-		$static_entry_classes[] = ' vcex-post-type-no-media-entry';
+		$static_entry_classes[] = 'vcex-post-type-no-media-entry';
 	}
 
 	// Entry media classes
@@ -285,13 +292,13 @@ if ( $wpex_query->have_posts() ) :
 	$wrap_classes  = implode( ' ', $wrap_classes );
 	$grid_classes  = implode( ' ', $grid_classes );
 	$grid_data     = $grid_data ? ' '. implode( ' ', $grid_data ) : '';
-	$media_classes = implode( ' ', $media_classes ); ?>
+	$media_classes = implode( ' ', $media_classes );
 
-	<div class="<?php echo $wrap_classes; ?>"<?php echo vcex_unique_id( $unique_id ); ?>>
+	// Start output
+	$output .= '<div class="'. $wrap_classes .'"'. vcex_get_unique_id( $unique_id ) .'>';
 
-		<?php
 		// Display filter links
-		if ( 'true' == $filter ) {
+		if ( 'true' == $filter ) :
 
 			// Make sure the filter should display
 			if ( count( $post_types ) > 1 || 'taxonomy' == $filter_type ) {
@@ -302,22 +309,33 @@ if ( $wpex_query->have_posts() ) :
 				// Filter font size
 				$filter_style = vcex_inline_style( array(
 					'font_size' => $filter_font_size,
-				) ); ?>
+				) );
 
-				<ul class="vcex-post-type-filter vcex-filter-links wpex-clr<?php if ( 'yes' == $center_filter ) echo ' center'; ?>"<?php echo $filter_style; ?>>
+				$filter_classes = 'vcex-post-type-filter vcex-filter-links vcex-clr';
+				if ( 'yes' == $center_filter ) {
+					$filter_classes .= ' center';
+				}
 
-					<?php
+				$output .= '<ul class="'. $filter_classes .'"'. $filter_style .'>';
+
 					// Sanitize all text
-					$all_text = $all_text ? $all_text : esc_html__( 'All', 'total' ); ?>
+					$all_text = $all_text ? $all_text : esc_html__( 'All', 'total' );
 
-					<li<?php if ( ! $filter_active_category ) echo ' class="active"'; ?>><a href="#" data-filter="*" class="<?php echo $filter_button_classes; ?>"><span><?php echo $all_text; ?></span></a></li>
+					$output .= '<li';
+						if ( ! $filter_active_category ) {
+							$output .= ' class="active"';
+						}
+					$output .= '>';
 
-					<?php
+						$output .= '<a href="#" data-filter="*" class="'. $filter_button_classes .'"><span>'. $all_text .'</span></a>';
+
+					$output .= '</li>';
+
 					// Taxonomy style filter
 					if ( 'taxonomy' == $filter_type ) :
 
 						// If taxonony exists get terms
-						if ( taxonomy_exists( $filter_taxonomy ) ) {
+						if ( taxonomy_exists( $filter_taxonomy ) ) :
 
 							// Get filter args
 							$atts['filter_taxonomy'] = $filter_taxonomy;
@@ -325,19 +343,25 @@ if ( $wpex_query->have_posts() ) :
 							$terms = get_terms( $filter_taxonomy, $args );
 
 							// Display filter
-							if ( ! empty( $terms ) ) { ?>
+							if ( ! empty( $terms ) ) :
 
-								<?php foreach ( $terms as $term ) : ?>
-									<li class="filter-cat-<?php echo $term->term_id; ?>"><a href="#" data-filter=".cat-<?php echo $term->term_id; ?>" class="<?php echo $filter_button_classes; ?>"><?php echo $term->name; ?></a></li>
-								<?php endforeach; ?>
+								foreach ( $terms as $term ) :
 
-							<?php } ?>
+									$output .= '<li class="filter-cat-'. $term->term_id .'">';
+										$output .= '<a href="#" data-filter=".cat-'. $term->term_id .'" class="'. $filter_button_classes .'">';
+											$output .= $term->name;
+										$output .= '</a>';
+									$output .= '</li>';
 
-						<?php } ?>
+								endforeach;
 
-					<?php else : ?>
+							endif; // Terms check
 
-						<?php
+						endif; // Taxonomy exists check
+
+					// Post types filter
+					else :
+
 						// Get array of post types in loop so we don't display empty results
 						$active_types = array();
 						$post_ids = wp_list_pluck( $wpex_query->posts, 'ID' );
@@ -352,23 +376,32 @@ if ( $wpex_query->have_posts() ) :
 							// Get type object
 							$obj = get_post_type_object( $type );
 
-							// Define filter item var
-							$filter_item = 'post-type-'. $type; ?>
+							$output .= '<li class="vcex-filter-link-'. $type;
+								if ( $filter_active_category == 'post-type-'. $type ) {
+									$output .= ' active';
+								}
+							$output .= '">';
 
-							<li class="vcex-filter-link-<?php echo $type; ?><?php if ( $filter_active_category == $filter_item ) echo ' active'; ?>"><a href="#" data-filter=".<?php echo $filter_item; ?>" class="<?php echo $filter_button_classes; ?>"><?php echo $obj->labels->name; ?></a></li>
+							$output .= '<a href="#" data-filter=".type-'. $type .'" class="'. $filter_button_classes .'">';
+								$output .= $obj->labels->name;
+							$output .= '</a></li>';
 
-						<?php endforeach; ?>
+						endforeach;
 
-					<?php endif; ?>
+					endif;
 
-				</ul><!-- .vcex-post-type-filter -->
+				$output .= '</ul>';
 
-			<?php } ?>
+				if ( $vcex_after_grid_filter = apply_filters( 'vcex_after_grid_filter', '', $atts ) ) { 
+					$output .= $vcex_after_grid_filter;
+				}
 
-		<?php } ?>
+			}
 
-		<div class="<?php echo $grid_classes; ?>"<?php echo $grid_data; ?>>
-			<?php
+		endif; // End filter
+
+		$output .= '<div class="'. $grid_classes .'"'. $grid_data .'>';
+
 			// Define counter var to clear floats
 			$count='';
 
@@ -378,238 +411,264 @@ if ( $wpex_query->have_posts() ) :
 				// Get post from query
 				$wpex_query->the_post();
 
-				// Create new post object.
-				$post = new stdClass();
-
-				// Get post data
-				$get_post = get_post();
-
 				// Add to counter var
 				$count++;
 
 				// Post Data
-				$post->ID        = $get_post->ID;
-				$post->content   = $get_post->post_content;
-				$post->type      = get_post_type( $post->ID );
-				$post->title     = $get_post->post_title;
-				$post->permalink = wpex_get_permalink( $post->ID );
-				$post->format    = get_post_format( $post->ID );
-				$post->excerpt   = '';
-				$post->thumbnail = wp_get_attachment_url( get_post_thumbnail_id() );
-				$post->video     = wpex_get_post_video_html();
+				$atts['post_id']        = get_the_ID();
+				$atts['post_type']      = get_post_type( $atts['post_id'] );
+				$atts['post_title']     = get_the_title();
+				$atts['post_esc_title'] = wpex_get_esc_title();
+				$atts['post_permalink'] = wpex_get_permalink( $atts['post_id'] );
+				$atts['post_format']    = get_post_format( $atts['post_id'] );
+				$atts['post_excerpt']   = '';
+				$atts['post_thumbnail'] = wp_get_attachment_url( get_post_thumbnail_id() );
+				$atts['post_video']     = wpex_get_post_video_html();
 
 				// Entry Classes
-				$entry_classes  = array();
+				$entry_classes   = array();
 				$entry_classes[] = 'col-'. $count;
-				$entry_classes[] = 'post-type-'. get_post_type( $post->ID );
-				if ( taxonomy_exists( $filter_taxonomy ) ) {
-					if ( $post_terms = get_the_terms( $post, $filter_taxonomy ) ) {
-						foreach ( $post_terms as $post_term ) {
-							$entry_classes[] = 'cat-'. $post_term->term_id;
-						}
-					}
-				}
 				$entry_classes = array_merge( $static_entry_classes, $entry_classes );
 
 				// Define entry link and entry link classes
-				$entry_link = $post->permalink;
+				$entry_link = $atts['post_permalink'];
 				if ( $thumb_link == 'lightbox' ) {
-					//$entry_link         = $post->video ? $post->video : $post->thumbnail;
-					//$entry_link_classes = $post->video ? 'wpex-lightbox-video' : 'wpex-lightbox';
+					//$entry_link         = $atts['post_video'] ? $atts['post_video'] : $atts['post_thumbnail'];
+					//$entry_link_classes = $atts['post_video'] ? 'wpex-lightbox-video' : 'wpex-lightbox';
 					$entry_link            = wpex_get_lightbox_image();
 					$entry_link_classes    = 'wpex-lightbox';
 					$atts['lightbox_link'] = $entry_link;
 				}
-				$entry_link_classes = ! empty( $entry_link_classes ) ? 'class="'. $entry_link_classes .'"' : '';
+				$entry_link_classes = ! empty( $entry_link_classes ) ? ' class="'. $entry_link_classes .'"' : '';
 
 				// Entry image output HTMl
-				if ( $post->thumbnail ) {
+				if ( $atts['post_thumbnail'] ) {
 					$entry_image = wpex_get_post_thumbnail( array(
-						'size' => $img_size,
-						'crop' => $img_crop,
-						'width' => $img_width,
+						'size'   => $img_size,
+						'crop'   => $img_crop,
+						'width'  => $img_width,
 						'height' => $img_height,
-						'alt' => wpex_get_esc_title(),
+						'alt'   => $atts['post_esc_title'],
 					) );
-				} ?>
+				}
 
-				<div <?php post_class( $entry_classes ); ?>>
+				// Apply filters to attributes
+				$latts = apply_filters( 'vcex_shortcode_loop_atts', $atts );
 
-					<div class="vcex-post-type-entry-inner entry-inner wpex-clr<?php if ( $entry_css ) echo ' '. $entry_css; ?>">
+				// Begin entry output
+				$output .= '<div '. vcex_grid_get_post_class( $entry_classes, $atts['post_id'] ) .'>';
 
-						<?php if ( 'true' == $entry_media ) : ?>
+					$classes = 'vcex-post-type-entry-inner entry-inner vcex-clr';
+					if ( $entry_css ) {
+						$classes .= ' '. $entry_css;
+					}
 
-							<?php
+					$output .= '<div class="'. $classes .'">';
+
+						// Display media
+						if ( 'true' == $entry_media ) :
+
 							// Display video
-							if ( 'true' == $featured_video && $post->video ) : ?>
+							if ( 'true' == $featured_video && $latts['post_video'] ) :
 
-								<div class="vcex-post-type-entry-media entry-media clr">
+								$output .= '<div class="vcex-post-type-entry-media entry-media vcex-clr">';
 
-									<div class="vcex-video-wrap">
+									$output .= '<div class="vcex-video-wrap">';
 
-										<?php echo $post->video; ?>
+										$output .= $latts['post_video'];
 
-									</div><!-- .vcex-video-wrap -->
+									$output .= '</div>';
 
-								</div><!-- .vcex-post-type-entry-media -->
+								$output .= '</div>';
 
-							<?php
 							// Display featured image
-							elseif ( $post->thumbnail ) : ?>
+							elseif ( $latts['post_thumbnail'] ) :
 
-								<div class="<?php echo $media_classes; ?>">
+								$output .= '<div class="'. $media_classes .'">';
 
-									<?php if ( $thumb_link == 'post' || $thumb_link == 'lightbox' ) : ?>
+									// Image with link
+									if ( $thumb_link == 'post' || $thumb_link == 'lightbox' ) :
 
-										<a href="<?php echo $entry_link; ?>" title="<?php wpex_esc_title(); ?>"<?php echo $url_target; ?><?php echo $entry_link_classes; ?>>
-											<?php echo $entry_image; ?>
-											<?php wpex_overlay( 'inside_link', $overlay_style, $atts ); ?>
-										</a>
+										$output .= '<a href="'. $entry_link .'" title="'. $latts['post_esc_title'] .'"'. $url_target .''. $entry_link_classes .'>';
 
-									<?php else : ?>
+											$output .= $entry_image;
 
-										<?php echo $entry_image; ?>
+											if ( $overlay_style && 'none' != $overlay_style ) {
+												ob_start();
+												wpex_overlay( 'inside_link', $overlay_style, $latts );
+												$output .= ob_get_clean();
+											}
 
-									<?php endif; ?>
+										$output .= '</a>';
 
-									<?php wpex_overlay( 'outside_link', $overlay_style, $atts ); ?>
+									// Just the image
+									else :
 
-								</div><!-- .post_type-entry-media -->
+										// Display image
+										$output .= $entry_image;
 
-							<?php endif; ?>
+										// Inside overlay
+										if ( $overlay_style && 'none' != $overlay_style ) {
+											ob_start();
+											wpex_overlay( 'inside_link', $overlay_style, $latts );
+											$output .= ob_get_clean();
+										}
 
-						<?php endif; ?>
+									endif;
 
-						<?php if ( 'true' == $title
+									// Outside link overlay
+									if ( $overlay_style && 'none' != $overlay_style ) {
+										ob_start();
+										wpex_overlay( 'outside_link', $overlay_style, $latts );
+										$output .= ob_get_clean();
+									}
+
+								$output .= '</div>';
+
+							endif;
+
+						endif;
+
+						// Display entry details (title, categories, excerpt, button )
+						if ( 'true' == $title
 							|| 'true' == $show_categories
 							|| 'true' == $excerpt
 							|| 'true' == $read_more
-						) : ?>
+						) :
 
-							<div class="vcex-post-type-entry-details entry-details wpex-clr<?php if ( $content_css ) echo ' '. $content_css; ?>"<?php echo $content_style; ?>>
+							$classes = 'vcex-post-type-entry-details entry-details wpex-clr';
+							if ( $content_css ) {
+								$classes .= ' '. $content_css;
+							}
 
-								<?php if ( $equal_heights_grid ) echo '<div class="match-height-content">'; ?>
+							$output .= '<div class="'. $classes .'"'. $content_style .'>';
 
-								<?php
+								// Open equal heights wrapper
+								if ( $equal_heights_grid ) :
+									$output .= '<div class="match-height-content">';
+								endif;
+
 								// Display title
-								if ( 'true' == $title ) : ?>
+								if ( 'true' == $title ) :
 
-									<<?php echo $title_tag; ?> class="vcex-post-type-entry-title entry-title" <?php echo $heading_style; ?>>
-										<a href="<?php echo $post->permalink; ?>" title="<?php wpex_esc_title(); ?>"<?php echo $url_target; ?><?php echo $heading_link_style; ?>><?php the_title(); ?></a>
-									</<?php echo $title_tag; ?> >
+									$output .= '<'. $title_tag .' class="vcex-post-type-entry-title entry-title" '. $heading_style .'>';
+										$output .= '<a href="'. $latts['post_permalink'] .'" title="'. $latts['post_esc_title'] .'"'. $url_target .''. $heading_link_style .'>';
+											$output .= $latts['post_title'];
+										$output .= '</a>';
+									$output .= '</'. $title_tag .' >';
 
-								<?php endif; ?>
+								endif;
 
-								<?php
 								// Display date
-								if ( 'true' == $date ) : ?>
+								if ( 'true' == $date ) :
 
-									<div class="vcex-post-type-entry-date"<?php echo $date_style; ?>>
-										<?php
-										// Display Event Calendar date
-										if ( 'tribe_events' == $post->type
+									$output .= '<div class="vcex-post-type-entry-date"'. $date_style .'>';
+
+										// Get Tribe Events date
+										if ( 'tribe_events' == $latts['post_type']
 											&& function_exists( 'wpex_get_tribe_event_date' )
 										) {
 											$instance = $unique_id ? $unique_id : 'vcex_post_type_grid';
-											echo wpex_get_tribe_event_date( $instance );
-										// Display standard date
+											$latts['post_date'] = wpex_get_tribe_event_date( $instance );
+
+										// Get standard date
 										} else {
-											echo get_the_date();
-										} ?>
-									</div><!-- .vcex-post-type-entry-date -->
+											$latts['post_date'] = get_the_date();
+										}
 
-								<?php endif; ?>
+										// Output date
+										$output .= $latts['post_date'];
 
-								<?php
+									$output .= '</div>';
+
+								endif;
+
 								// Display categories
-								if ( 'true' == $show_categories && taxonomy_exists( $categories_taxonomy ) ) : ?>
+								if ( 'true' == $show_categories && taxonomy_exists( $categories_taxonomy ) ) :
 
-									<div class="<?php echo $categories_classes; ?>"<?php echo $categories_style; ?>>
-										<?php
+									$output .= '<div class="'. $categories_classes .'"'. $categories_style .'>';
 										// Display categories
 										if ( 'true' == $show_first_category_only ) {
-											wpex_first_term_link( $post->ID, $categories_taxonomy );
+											$output .= wpex_get_first_term_link( $latts['post_id'], $categories_taxonomy );
 										} else {
-											wpex_list_post_terms( $categories_taxonomy, true, true );
-										} ?>
-									</div><!-- .portfolio-entry-categories -->
+											$output .= wpex_get_list_post_terms( $categories_taxonomy, true, true );
+										}
+									$output .= '</div>';
 
-								<?php endif; ?>
+								endif;
 
-								<?php
 								// Display excerpt
-								if ( 'true' == $excerpt ) : ?>
+								if ( 'true' == $excerpt ) :
 
-									<div class="vcex-post-type-entry-excerpt clr"<?php echo $excerpt_style; ?>>
+									$output .= '<div class="vcex-post-type-entry-excerpt clr"'. $excerpt_style .'>';
 
-										<?php
 										// Display Excerpt
-										wpex_excerpt( array (
+										$output .= wpex_get_excerpt( array (
 											'length' => intval( $excerpt_length ),
-										) ); ?>
+										) );
 
-									</div><!-- .vcex-post-type-entry-excerpt -->
+									$output .= '</div>';
 
-								<?php endif; ?>
+								endif;
 
-								<?php
 								// Display read more button
-								if ( 'true' == $read_more ) : ?>
+								if ( 'true' == $read_more ) :
 
-									<div class="vcex-post-type-entry-readmore-wrap clr">
+									$output .= '<div class="vcex-post-type-entry-readmore-wrap clr">';
 
-										<a href="<?php echo $post->permalink; ?>" title="<?php echo esc_attr( $read_more_text ); ?>" rel="bookmark" class="<?php echo $readmore_classes; ?>"<?php echo $url_target; ?><?php echo $readmore_style; ?><?php echo $readmore_data; ?>>
-											<?php echo $read_more_text; ?>
-											<?php if ( 'true' == $readmore_rarr ) : ?>
-												<span class="vcex-readmore-rarr"><?php echo wpex_element( 'rarr' ); ?></span>
-											<?php endif; ?>
-										</a>
+										$output .= '<a href="'. $latts['post_permalink'] .'" title="'. esc_attr( $read_more_text ) .'" rel="bookmark" class="'. $readmore_classes .'"'. $url_target .''. $readmore_style .''. $readmore_data .'>';
+											$output .= $read_more_text;
+											if ( 'true' == $readmore_rarr ) :
+												$output .= '<span class="vcex-readmore-rarr">'. wpex_element( 'rarr' ) .'</span>';
+											endif;
+										$output .= '</a>';
 
-									</div><!-- .vcex-post-type-entry-readmore-wrap -->
+									$output .= '</div>';
 
-								<?php endif; ?>
+								endif;
 
-								<?php if ( $equal_heights_grid ) echo '</div>'; ?>
+								// Close equal heights wrap
+								if ( $equal_heights_grid ) :
+									$output .= '</div>';
+								endif;
 
-							</div><!-- .post_type-entry-details -->
+							$output .= '</div>';
 
-						<?php endif; ?>
+						endif;
 
-					</div><!-- .vcex-post-type-entry-inner -->
+					$output .= '</div>';
 
-				</div><!-- .post_type-entry -->
+				$output .= '</div>';
 
-			<?php if ( $count == $columns ) $count = ''; ?>
+			// Reset count clear floats
+			if ( $count == $columns ) {
+				$count = '';
+			}
 
-			<?php endwhile; // End main loop ?>
+			endwhile;
 
-		</div><!-- .vcex-post-type-grid -->
+		$output .= '</div>';
 		
-		<?php
 		// Display pagination if enabled
-		if ( 'true' == $pagination ) : ?>
+		if ( 'true' == $pagination ) :
 
-			 <?php wpex_pagination( $wpex_query ); ?>
+			$output .= wpex_pagination( $wpex_query, false );
 
-		<?php endif; ?>
+		endif;
 
-	</div><!-- <?php echo $wrap_classes; ?> -->
-
-	<?php
-	// Remove post object from memory
-	$post = null;
+	$output .= '</div>';
 
 	// Reset the post data to prevent conflicts with WP globals
-	wp_reset_postdata(); ?>
+	wp_reset_postdata();
 
-<?php
+	// Output shortcode HTML
+	echo $output;
+
 // If no posts are found display message
-else : ?>
+else :
 
-	<?php
 	// Display no posts found error if function exists
-	echo vcex_no_posts_found_message( $atts ); ?>
+	echo vcex_no_posts_found_message( $atts );
 
-<?php
 // End post check
-endif; ?>
+endif;

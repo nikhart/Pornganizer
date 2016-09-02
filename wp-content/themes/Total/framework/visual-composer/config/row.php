@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Functions
- * @version 3.3.5
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -47,9 +47,9 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 		 */
 		public function update_params() {
 
-			// Variables
+			// Save re-usable strings in var
 			$parallax_tab = esc_html__( 'Parallax', 'total' );
-			$s_video = esc_html__( 'Video', 'total' );
+			$s_video      = esc_html__( 'Video', 'total' );
 
 			// Set ID weight
 			$param = WPBMap::getParam( 'vc_row', 'el_id' );
@@ -135,10 +135,12 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 		 */
 		public function add_remove_params() {
 
-			// Vars
+			// Save re-usable strings in var
 			$s_video = esc_html__( 'Video', 'total' );
+			$s_no    = esc_html__( 'No', 'total' );
+			$s_yes   = esc_html__( 'Yes', 'total' );
 
-			// Remove params
+			// Remove params that don't work because of the VC negative margin fix :(
 			vc_remove_param( 'vc_row', 'gap' );
 			vc_remove_param( 'vc_row', 'equal_height' );
 			vc_remove_param( 'vc_row', 'content_placement' );
@@ -177,8 +179,8 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 				'heading' => esc_html__( 'Center Row Content', 'total' ),
 				'param_name' => 'center_row',
 				'value' => array(
-					esc_html__( 'No', 'total' ) => 'no',
-					esc_html__( 'Yes', 'total' ) => 'yes',
+					$s_no => 'no',
+					$s_yes => 'yes',
 				),
 				'dependency' => array( 'element' => 'full_width', 'is_empty' => true ),
 				'description' => esc_html__( 'Use this option to center the inner content (Horizontally). Only used for "Full Screen" layouts.', 'total' ),
@@ -189,8 +191,8 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 				'heading' => esc_html__( 'Equal Column Heights', 'total' ),
 				'param_name' => 'match_column_height',
 				'value' => array(
-					esc_html__( 'No', 'total' ) => '',
-					esc_html__( 'Yes', 'total' ) => 'yes',
+					$s_no => '',
+					$s_yes => 'yes',
 				),
 			);
 
@@ -248,8 +250,8 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 				'heading' => esc_html__( 'Full-Width Columns On Tablets', 'total' ),
 				'param_name' => 'tablet_fullwidth_cols',
 				'value' => array(
-					esc_html__( 'No', 'total' ) => '',
-					esc_html__( 'Yes', 'total' ) => 'yes',
+					$s_no => '',
+					$s_yes => 'yes',
 				),
 				'description' => esc_html__( 'Check this box to make all columns inside this row full-width for tablets.', 'total' ),
 			);
@@ -260,8 +262,8 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 				'heading' => esc_html__( 'Enable parallax for mobile devices', 'total' ),
 				'param_name' => 'parallax_mobile',
 				'value' => array(
-					esc_html__( 'No', 'total' ) => '',
-					esc_html__( 'Yes', 'total' ) => 'on',
+					$s_no => '',
+					$s_yes => 'on',
 				),
 				'description' => esc_html__( 'Parallax effects would most probably cause slowdowns when your site is viewed in mobile devices. By default it is disabled.', 'total' ),
 				'group' => esc_html__( 'Parallax', 'total' ),
@@ -356,21 +358,33 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 				),
 				'group' => $s_video,
 			);
-			$add_params['video_bg_overlay'] = array(
+			$add_params['wpex_bg_overlay'] = array(
 				'type' => 'dropdown',
-				'heading' => esc_html__( 'Video Background Overlay', 'total' ),
-				'param_name' => 'video_bg_overlay',
-				'group' => $s_video,
+				'heading' => esc_html__( 'Background Overlay', 'total' ),
+				'param_name' => 'wpex_bg_overlay',
+				'group' => esc_html__( 'Overlay', 'total' ),
 				'value' => array(
-					esc_html__( 'None', 'total' ) => 'none',
+					esc_html__( 'None', 'total' ) => '',
+					esc_html__( 'Color', 'total' ) => 'color',
 					esc_html__( 'Dark', 'total' ) => 'dark',
 					esc_html__( 'Dotted', 'total' ) => 'dotted',
 					esc_html__( 'Diagonal Lines', 'total' ) => 'dashed',
 				),
-				'dependency' => array(
-					'element' => 'video_bg',
-					'value' => 'self_hosted',
-				),
+			);
+			$add_params['wpex_bg_overlay_color'] = array(
+				'type' => 'colorpicker',
+				'heading' => esc_html__( 'Background Overlay Color', 'total' ),
+				'param_name' => 'wpex_bg_overlay_color',
+				'group' => esc_html__( 'Overlay', 'total' ),
+				'dependency' => array( 'element' => 'wpex_bg_overlay', 'value' => array( 'color', 'dark', 'dotted', 'dashed' ) ),
+			);
+			$add_params['wpex_bg_overlay_opacity'] = array(
+				'type' => 'textfield',
+				'heading' => esc_html__( 'Background Overlay Opacity', 'total' ),
+				'param_name' => 'wpex_bg_overlay_opacity',
+				'dependency' => array( 'element' => 'wpex_bg_overlay', 'value' => array( 'color', 'dark', 'dotted', 'dashed' ) ),
+				'group' => esc_html__( 'Overlay', 'total' ),
+				'description' => '0.65',
 			);
 
 			// Apply filters for child theming
@@ -399,6 +413,7 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 				'padding_left',
 				'padding_right',
 				'no_margins',
+				'video_bg_overlay',
 			);
 			foreach ( $deprecated as $key => $val ) {
 				vc_add_param( 'vc_row', array(
@@ -448,9 +463,15 @@ if ( ! class_exists( 'VCEX_VC_Row_Config' ) ) {
 			}
 
 			// Convert 'no-margins' to '0px' column_spacing
-			if ( empty( $this->atts['column_spacing'] ) && ! empty( $atts['no_margins'] ) && 'true' == $atts['no_margins'] ) {
+			if ( empty( $atts['column_spacing'] ) && ! empty( $atts['no_margins'] ) && 'true' == $atts['no_margins'] ) {
 				$atts['column_spacing'] = '0px';
 				unset( $atts['no_margins'] );
+			}
+
+			// Convert video overlay to just overlay
+			if ( ! empty( $atts['video_bg_overlay'] ) && 'none' != $atts['video_bg_overlay'] ) {
+				$atts['wpex_bg_overlay'] = $atts['video_bg_overlay'];
+				unset( $atts['video_bg_overlay'] );
 			}
 
 			// Parse css

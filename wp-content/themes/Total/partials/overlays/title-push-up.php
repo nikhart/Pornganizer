@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -18,8 +18,10 @@ if ( 'inside_link' != $position ) {
 }
 
 // Add javascript for the VC
-vcex_inline_js( 'overlay_popup_title' ); ?>
+vcex_inline_js( 'overlay_popup_title' );
 
-<div class="overlay-title-push-up theme-overlay">
-	<span class="title"><?php the_title(); ?></span>
-</div>
+// Get post data
+$title = isset( $args['post_title'] ) ? $args['post_title'] : get_the_title();
+
+// Display overlay
+echo '<div class="overlay-title-push-up theme-overlay"><span class="title">'. $title .'</span></div>';

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -18,14 +18,14 @@ if ( is_admin() ) {
 }
 
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_spacing', $atts ) );
 
 // Core class
 $classes = 'vcex-spacing';
 
 // Custom Class
 if ( $class ) {
-    $classes .= $this->getExtraClass( $class );
+    $classes .= ' '. vcex_get_extra_class( $class );
 }
 
 // Visiblity Class
@@ -34,8 +34,8 @@ if ( $visibility ) {
 }
 
 // Front-end composer class
-if ( vc_is_inline() ) {
+if ( wpex_vc_is_inline() ) {
     $classes .= ' vc-spacing-shortcode';
-} ?>
+}
 
-<div class="<?php echo $classes; ?>" style="height:<?php echo wpex_sanitize_data( $size, 'px-pct' ); ?>"></div>
+echo '<div class="'. $classes .'" style="height:'. wpex_sanitize_data( $size, 'px-pct' ) .'"></div>';

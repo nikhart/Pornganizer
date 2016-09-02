@@ -4,6 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -22,7 +23,7 @@ if ( ! class_exists( 'WPEX_Site_Backgrounds' ) ) {
 		 * @since 2.0.0
 		 */
 		function __construct() {
-			add_filter( 'wpex_head_css', array( $this, 'get_css' ), 999 );
+			add_filter( 'wpex_head_css', array( 'WPEX_Site_Backgrounds', 'get_css' ), 999 );
 		}
 
 		/**
@@ -94,33 +95,20 @@ if ( ! class_exists( 'WPEX_Site_Backgrounds' ) ) {
 
 			// Color
 			if ( $color ) {
+				
 				$css .= 'background-color:#'. $color .'!important;';
+
+				// Footer reveal fix
+				if ( wpex_global_obj( 'has_footer_reveal' ) ) {
+					$output .= '.footer-has-reveal #main{ background-color:#'. $color .'!important;}';
+				}
+
 			}
 			
 			// Image
 			if ( $image && ! $pattern ) {
 				$css .= 'background-image:url('. $image .') !important;';
-				if ( $style == 'stretched' ) {
-					$css .= '-webkit-background-size: cover;
-							-moz-background-size: cover;
-							-o-background-size: cover;
-							background-size: cover;
-							background-position: center center;
-							background-attachment: fixed;
-							background-repeat: no-repeat;';
-				} elseif ( $style == 'repeat' ) {
-					$css .= 'background-repeat:repeat;';
-				} elseif ( $style == 'repeat-y' ) {
-					$css .= 'background-position: center center;background-repeat:repeat-y;';
-				} elseif ( $style == 'fixed' ) {
-					$css .= 'background-repeat: no-repeat; background-position: center center; background-attachment: fixed;';
-				} elseif ( $style == 'fixed-top' ) {
-					$css .= 'background-repeat: no-repeat; background-position: center top; background-attachment: fixed;';
-				} elseif ( $style == 'fixed-bottom' ) {
-					$css .= 'background-repeat: no-repeat; background-position: center bottom; background-attachment: fixed;';
-				} else {
-					$css .= 'background-repeat:'. $style .';';
-				}
+				$css .= wpex_sanitize_data( $style, 'background_style_css' );
 			}
 			
 			// Pattern

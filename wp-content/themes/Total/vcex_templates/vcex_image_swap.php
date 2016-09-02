@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,12 +17,24 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' )
+	|| ! function_exists( 'vc_shortcode_custom_css_class' )
+	|| ! function_exists( 'vc_build_link' )
+) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Fallbacks (old atts)
 $link_title  = isset( $atts['link_title'] ) ? $atts['link_title'] : '';
 $link_target = isset( $atts['link_target'] ) ? $atts['link_target'] : '';
 
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_image_swap', $atts ) );
+
+// Output var
+$output = '';
 
 // Primary and secondary imags required
 if ( ! $primary_image || ! $secondary_image ) {
@@ -40,24 +52,23 @@ $image_style = vcex_inline_style( array(
 // Add classes
 $wrapper_classes = array( 'vcex-image-swap', 'clr' );
 if ( $classes ) {
-	$wrapper_classes[] = $this->getExtraClass( $classes );
+	$wrapper_classes[] = vcex_get_extra_class( $classes );
 }
 if ( $css_animation ) {
-	$wrapper_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrapper_classes[] = vcex_get_css_animation( $css_animation );
 }
-$wrapper_classes = implode( ' ', $wrapper_classes ); ?>
+$wrapper_classes = implode( ' ', $wrapper_classes );
 
-<?php if ( $primary_image && $secondary_image ) : ?>
+if ( $primary_image && $secondary_image ) :
 
-	<?php if ( $css ) : ?>
-		<div class="<?php echo vc_shortcode_custom_css_class( $css ); ?>">
-	<?php endif; ?>
+	if ( $css ) :
+		$output .='<div class="'. vc_shortcode_custom_css_class( $css ) .'">';
+	endif;
 
-	<div class="<?php echo $wrapper_classes; ?>"<?php echo $wrapper_inline_style; ?><?php vcex_unique_id( $unique_id ); ?>>
+	$output .='<figure class="'. $wrapper_classes .'"'. $wrapper_inline_style . vcex_get_unique_id( $unique_id ) .'>';
 
-		<?php if ( $link ) { ?>
+		if ( $link ) {
 
-			<?php
 			// Link attributes
 			$link_atts = vc_build_link( $link );
 			if ( ! empty( $link_atts['url'] ) ) {
@@ -73,42 +84,48 @@ $wrapper_classes = implode( ' ', $wrapper_classes ); ?>
 			}
 
 			// Display link
-			if ( $link ) { ?>
+			if ( $link ) {
 
-				<a href="<?php echo esc_url( $link ); ?>" class="<?php echo $link_classes; ?>"<?php echo vcex_html( 'title_attr', $link_title ); ?><?php echo vcex_html( 'target_attr', $link_target ); ?>>
+				$output .='<a href="'. esc_url( $link ) .'" class="'. $link_classes .'"'. vcex_html( 'title_attr', $link_title ) .''. vcex_html( 'target_attr', $link_target ) .'>';
 
-			<?php } ?>
+			}
 
-		<?php } ?>
+		}
 
-			<?php
-			// Primary image
-			wpex_post_thumbnail( array(
-				'attachment' => $primary_image,
-				'size'       => $img_size,
-				'crop'       => $img_crop,
-				'width'      => $img_width,
-				'height'     => $img_height,
-				'class'      => 'vcex-image-swap-primary',
-				'style'      => $image_style,
-			) ); ?>
+		// Primary image
+		$output .= wpex_get_post_thumbnail( array(
+			'attachment' => $primary_image,
+			'size'       => $img_size,
+			'crop'       => $img_crop,
+			'width'      => $img_width,
+			'height'     => $img_height,
+			'class'      => 'vcex-image-swap-primary',
+			'style'      => $image_style,
+		) );
 
-			<?php
-			// Secondary image
-			wpex_post_thumbnail( array(
-				'attachment' => $secondary_image,
-				'size'       => $img_size,
-				'crop'       => $img_crop,
-				'width'      => $img_width,
-				'height'     => $img_height,
-				'class'      => 'vcex-image-swap-secondary',
-				'style'      => $image_style,
-			) ); ?>
+		// Secondary image
+		$output .= wpex_get_post_thumbnail( array(
+			'attachment' => $secondary_image,
+			'size'       => $img_size,
+			'crop'       => $img_crop,
+			'width'      => $img_width,
+			'height'     => $img_height,
+			'class'      => 'vcex-image-swap-secondary',
+			'style'      => $image_style,
+		) );
 
-		<?php if ( $link ) echo '</a>'; ?>
+		// Close link wrapper
+		if ( $link ) {
+			$output .='</a>';
+		}
 
-	</div><!-- .vcex-image-swap -->
+	$output .='</figure>'; // Close main wrap
 
-	<?php if ( $css ) echo '</div><!-- .css-wrapper -->'; ?>
+	// Close CSS wrapper
+	if ( $css ) {
+		$output .='</div>';
+	}
 
-<?php endif; ?>
+	echo $output;
+
+endif;

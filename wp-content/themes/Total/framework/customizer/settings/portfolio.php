@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Customizer
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -14,13 +14,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Single Blocks
 $blocks = apply_filters( 'wpex_portfolio_single_blocks', array(
-    'title'    => esc_html__( 'Post Title', 'total' ),
-    'meta'     => esc_html__( 'Post Meta', 'total' ),
-    'media'    => esc_html__( 'Media', 'total' ),
-    'content'  => esc_html__( 'Content', 'total' ),
-    'share'    => esc_html__( 'Social Share', 'total' ),
-    'comments' => esc_html__( 'Comments', 'total' ),
-    'related'  => esc_html__( 'Related Posts', 'total' ),
+	'title'    => esc_html__( 'Post Title', 'total' ),
+	'meta'     => esc_html__( 'Post Meta', 'total' ),
+	'media'    => esc_html__( 'Media', 'total' ),
+	'content'  => esc_html__( 'Content', 'total' ),
+	'share'    => esc_html__( 'Social Share', 'total' ),
+	'comments' => esc_html__( 'Comments', 'total' ),
+	'related'  => esc_html__( 'Related Posts', 'total' ),
 ) );
 
 // Archives

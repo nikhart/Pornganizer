@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.0.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -14,5 +14,5 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Display author if defined
 if ( $author = get_post_meta( get_the_ID(), 'wpex_testimonial_author', true ) ) : ?>
-	<span class="testimonial-entry-author entry-title"><?php echo $author; ?></span>
+	<span class="testimonial-entry-author entry-title"><?php echo esc_html( $author ); ?></span>
 <?php endif; ?>

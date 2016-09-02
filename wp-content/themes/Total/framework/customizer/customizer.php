@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Customizer
- * @version 3.3.4
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -22,14 +22,14 @@ global $wpex_customizer;
  */
 if ( ! class_exists( 'WPEX_Customizer' ) ) {
 	class WPEX_Customizer {
-		private $customizer_dir_uri  = null;
-		private $customizer_dir      = null;
-		private $admin_enabled       = true;
-		private $panels              = array();
-		private $enabled_panels      = array();
-		public $sections             = array();
-		private $settings            = array();
-		private $enable_postMessage  = true;
+		private $customizer_dir_uri = null;
+		private $customizer_dir     = null;
+		private $admin_enabled      = true;
+		private $panels             = array();
+		private $enabled_panels     = array();
+		public $sections            = array();
+		private $settings           = array();
+		private $enable_postMessage = true;
 
 		/**
 		 * Start things up
@@ -904,7 +904,7 @@ if ( ! class_exists( 'WPEX_Customizer' ) ) {
 // Start up class and set to global var
 $wpex_customizer = new WPEX_Customizer();
 
-// Helper function generates customizer live preview js
+/* Helper function generates customizer live preview js
 // Better then looping through on every page load...same some time and allows for manually minifying
 function wpex_generate_customizer_live_preview_js() {
 	global $wpex_customizer;
@@ -976,4 +976,4 @@ function wpex_generate_customizer_live_preview_js() {
 	echo $output;
 	exit;
 }
-//wpex_generate_customizer_live_preview_js();
+add_action( 'init', 'wpex_generate_customizer_live_preview_js' ); */

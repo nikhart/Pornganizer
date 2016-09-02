@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Framework
- * @version 3.4.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_Import_Export' ) ) {
+
 	class WPEX_Import_Export {
 
 		/**
@@ -22,9 +23,9 @@ if ( ! class_exists( 'WPEX_Import_Export' ) ) {
 		 * @since 1.6.0
 		 */
 		public function __construct() {
-			add_action( 'admin_menu', array( $this, 'add_page' ), 50 );
-			add_action( 'admin_init', array( $this,'register_settings' ) );
-			add_action( 'admin_notices', array( $this, 'notices' ) );
+			add_action( 'admin_menu', array( 'WPEX_Import_Export', 'add_page' ), 50 );
+			add_action( 'admin_init', array( 'WPEX_Import_Export','register_settings' ) );
+			add_action( 'admin_notices', array( 'WPEX_Import_Export', 'notices' ) );
 		}
 
 		/**
@@ -32,14 +33,14 @@ if ( ! class_exists( 'WPEX_Import_Export' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function add_page() {
+		public static function add_page() {
 			add_submenu_page(
 				WPEX_THEME_PANEL_SLUG,
 				esc_attr__( 'Import/Export', 'total' ), 
 				esc_attr__( 'Import/Export', 'total' ),
 				'manage_options',
 				WPEX_THEME_PANEL_SLUG .'-import-export',
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_Import_Export', 'create_admin_page' )
 			);
 		}
 
@@ -48,11 +49,11 @@ if ( ! class_exists( 'WPEX_Import_Export' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function register_settings() {
+		public static function register_settings() {
 			register_setting(
 				'wpex_customizer_options',
 				'wpex_customizer_options',
-				array( $this, 'sanitize' )
+				array( 'WPEX_Import_Export', 'sanitize' )
 			);
 		}
 
@@ -266,5 +267,7 @@ if ( ! class_exists( 'WPEX_Import_Export' ) ) {
 		<?php }
 
 	}
+
+	new WPEX_Import_Export();
+
 }
-new WPEX_Import_Export();

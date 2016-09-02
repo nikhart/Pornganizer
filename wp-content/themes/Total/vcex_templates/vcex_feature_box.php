@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.2
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,8 +17,17 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_build_link' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Output 
+$output = '';
+
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_feature_box', $atts );
 extract( $atts );
 
 // Sanitize vars
@@ -45,10 +54,10 @@ if ( $visibility ) {
 	$wrap_classes[] = $visibility;
 }
 if ( $css_animation ) {
-	$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $classes ) {
-	$wrap_classes[] = $this->getExtraClass( $classes );
+	$wrap_classes[] = vcex_get_extra_class( $classes );
 }
 if ( $style ) {
 	$wrap_classes[] = $style;
@@ -62,20 +71,20 @@ if ( $tablet_widths ) {
 if ( $phone_widths ) {
 	$wrap_classes[] = 'phone-fullwidth-columns';
 }
-$wrap_classes = implode( ' ', $wrap_classes ); ?>
+$wrap_classes = implode( ' ', $wrap_classes );
 
-<div class="<?php echo esc_attr( $wrap_classes ); ?>"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrap_style; ?>>
-	<?php
+$output .= '<div class="'. esc_attr( $wrap_classes ) .'"'. vcex_get_unique_id( $unique_id ) . $wrap_style .'>';
+
 	// Image/Video check
 	if ( $image || $video ) :
 
 		// Image args
 		$image_args = array(
-			'attachment'    => $image,
-			'size'          => $img_size,
-			'width'         => $img_width,
-			'height'        => $img_height,
-			'crop'          => $img_crop,
+			'attachment' => $image,
+			'size'       => $img_size,
+			'width'      => $img_width,
+			'height'     => $img_height,
+			'crop'       => $img_crop,
 		);
 
 		// Add classes
@@ -88,19 +97,15 @@ $wrap_classes = implode( ' ', $wrap_classes ); ?>
 		// Media style
 		$media_style = vcex_inline_style( array(
 			'width' => $media_width,
-		) ); ?>
+		) );
 
-		<div class="<?php echo $inner_classes; ?>" <?php echo $media_style; ?>>
+		$output .= '<div class="'. $inner_classes .'"'. $media_style .'>';
 
-			<?php
 			// Display Video
-			if ( $video ) : ?>
+			if ( $video ) :
 
-				<div class="responsive-video-wrap">
-					<?php echo wp_oembed_get( esc_url( $video ) ); ?>
-				</div><!-- .vcex-feature-box-media -->
+				$output .= '<div class="responsive-video-wrap">'. wp_oembed_get( esc_url( $video ) ) .'</div>';
 
-			<?php
 			// Display Image
 			elseif ( $image ) :
 
@@ -108,9 +113,13 @@ $wrap_classes = implode( ' ', $wrap_classes ); ?>
 				$image_alt = strip_tags( get_post_meta( $image, '_wp_attachment_image_alt', true ) );
 
 				// Image inline CSS
-				$image_style = vcex_inline_style( array(
-					'border_radius' => $img_border_radius,
-				) );
+				$image_style = '';
+				if ( $img_border_radius ) {
+					$image_style = vcex_inline_style( array(
+						'border_radius' => $img_border_radius,
+					) );
+					$image_args['style'] = 'border-radius:'. $img_border_radius .';';
+				}
 
 				// Image classes
 				$image_classes = array( 'vcex-feature-box-image' );
@@ -137,7 +146,8 @@ $wrap_classes = implode( ' ', $wrap_classes ); ?>
 					if ( $image_lightbox ) {
 						vcex_enque_style( 'ilightbox' );
 						vcex_inline_js( 'ilightbox' );
-						if ( 'image' == $image_lightbox ) {
+						if ( 'image' == $image_lightbox || 'self' == $image_lightbox ) {
+							$a_href = wpex_get_lightbox_image( $image );
 							$image_classes[] = 'wpex-lightbox';
 							$data_attributes .= ' data-type="image"';
 						} elseif ( 'url' == $image_lightbox ) {
@@ -172,66 +182,64 @@ $wrap_classes = implode( ' ', $wrap_classes ); ?>
 				$image_classes = implode( ' ', $image_classes );
 
 				// Open link if defined
-				if ( ! empty( $a_href ) ) { ?>
+				if ( ! empty( $a_href ) ) {
 
-					<a href="<?php echo esc_url( $a_href ); ?>" title="<?php echo esc_attr( $a_title ); ?>" class="vcex-feature-box-image-link <?php echo esc_attr( $image_classes ); ?>"<?php echo $image_style; ?><?php echo $data_attributes; ?><?php echo $a_target; ?>>
+					$output .= '<a href="'. esc_url( $a_href ) .'" title="'. esc_attr( $a_title ) .'" class="vcex-feature-box-image-link '. esc_attr( $image_classes ) .'"'. $image_style .''. $data_attributes .''. $a_target .'>';
 
-				<?php
 
 				// Link isn't defined open div
-				} else { ?>
+				} else {
 
-					<div class="<?php echo $image_classes; ?>" <?php echo $image_style; ?>>
+					$output .= '<div class="'. $image_classes .'" '. $image_style .'>';
 
-				<?php } ?>
+				}
 
-				<?php
 				// Display image
-				wpex_post_thumbnail( $image_args ); ?>
+				$output .= wpex_get_post_thumbnail( $image_args );
 
-				<?php
 				// Close link
-				if ( isset( $a_href ) && $a_href ) { ?>
+				if ( isset( $a_href ) && $a_href ) {
 
-					</a><!-- .vcex-feature-box-image -->
+					$output .= '</a>';
 
-				<?php
 				// Link not defined, close div
-				} else { ?>
+				} else {
 
-					</div><!-- .vcex-feature-box-image -->
+					$output .= '</div>';
 
-				<?php } ?>
+				}
 
-				<?php endif; // End video check ?>
+				endif; // End video check
 
-			</div><!-- .vcex-feature-box-media -->
+			$output .= '</div>'; // close media
 
-		<?php endif; // $video or $image check ?>
+		endif; // $video or $image check
 
-		<?php
 		// Content area
-		if ( $content || $heading ) {
+		if ( $content || $heading ) :
+
 			$add_classes = 'vcex-feature-box-content clr';
-		if ( 'true' == $equal_heights ) {
-			$add_classes .=' vcex-match-height';
-		}
-		$content_style = vcex_inline_style( array(
-			'width'      => $content_width,
-			'background' => $content_background
-		) ); ?>
 
-		<div class="<?php echo $add_classes; ?>"<?php echo $content_style; ?>>
+			if ( 'true' == $equal_heights ) {
 
-			<?php if ( $content_padding ) : ?>
+				$add_classes .= ' vcex-match-height';
+			}
 
-				<div class="vcex-feature-box-padding-container clr" style="padding:<?php echo $content_padding; ?>;">
+			$content_style = vcex_inline_style( array(
+				'width'      => $content_width,
+				'background' => $content_background
+			) );
 
-			<?php endif; ?>
+			$output .= '<div class="'. $add_classes .'"'. $content_style .'>';
 
-			<?php
+			if ( $content_padding ) :
+
+				$output .= '<div class="vcex-feature-box-padding-container clr" style="padding:'. $content_padding .'">';
+
+			endif;
+
 			// Heading
-			if ( $heading ) {
+			if ( $heading ) :
 
 				// Load custom font
 				if ( $heading_font_family ) {
@@ -259,39 +267,44 @@ $wrap_classes = implode( ' ', $wrap_classes ); ?>
 					$a_target = ( false !== strpos( $a_target, 'blank' ) ) ? ' target="_blank"' : '';
 				}
 
-				if ( isset( $a_href ) && $a_href ) { ?>
+				if ( isset( $a_href ) && $a_href ) {
 
-					<a href="<?php echo esc_url( $a_href ); ?>" title="<?php echo esc_attr( $a_title ); ?>"class="vcex-feature-box-heading-link"<?php echo $a_target; ?>>
+					$output .= '<a href="'. esc_url( $a_href ) .'" title="'. esc_attr( $a_title ) .'"class="vcex-feature-box-heading-link"'. $a_target .'>';
 
-				<?php } ?> 
+				}
 
-				<<?php echo $heading_type; ?> class="vcex-feature-box-heading"<?php echo $heading_style; ?>><?php echo do_shortcode( $heading ); ?></<?php echo $heading_type; ?>>
+				$output .= '<'. $heading_type .' class="vcex-feature-box-heading"'. $heading_style .'>'. do_shortcode( $heading ) .'</'. $heading_type .'>';
 
-				<?php if ( isset( $a_href ) && $a_href ) echo '</a>'; ?>
+				if ( isset( $a_href ) && $a_href ) {
+					 $output .= '</a>';
+				}
 
-			<?php
-			}
+			endif; //  End heading
+
 			// Text
-			if ( $content ) {
+			if ( $content ) :
 
 				$text_style = vcex_inline_style( array(
-					'font_size'     => $content_font_size,
-					'color'         => $content_color,
-					'font_weight'   => $content_font_weight
-				) ); ?>
+					'font_size'   => $content_font_size,
+					'color'       => $content_color,
+					'font_weight' => $content_font_weight,
+				) );
 
-				<div class="vcex-feature-box-text clr"<?php echo $text_style; ?>>
-					<?php echo apply_filters(  'the_content', $content ); ?>
-				</div><!-- .vcex-feature-box-text -->
+				$output .= '<div class="vcex-feature-box-text clr"'. $text_style .'>'. apply_filters(  'the_content', $content ) .'</div>';
 
-			<?php } ?>
+			endif; // End content
 
-			<?php if ( $content_padding ) { ?>
-				</div><!-- .vcex-feature-box-padding-container -->
-			<?php } ?>
+			// Close padding container
+			if ( $content_padding ) {
 
-		</div><!-- .vcex-feature-box-content -->
+				$output .= '</div>';
 
-	<?php } ?>
+			}
 
-</div><!-- .vcex-feature -->
+		$output .= '</div>';
+
+	endif; // End content + Heading wrap
+
+$output .= '</div>';
+
+echo $output;

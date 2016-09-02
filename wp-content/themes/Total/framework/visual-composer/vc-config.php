@@ -4,13 +4,10 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Functions
- * @version 3.3.5
+ * @version 3.5.3
  */
 
-global $wpex_visual_composer_config;
-
-class WPEX_Visual_Composer {
-	private $remove_design_options;
+class WPEX_Visual_Composer_Config {
 
 	/**
 	 * Start things up
@@ -27,10 +24,10 @@ class WPEX_Visual_Composer {
 		require_once( WPEX_FRAMEWORK_DIR .'visual-composer/vc-helpers.php' );
 
 		// Check if design options are enabled
-		$this->remove_design_options = apply_filters( 'wpex_remove_vc_design_options', true );
+		$remove_design_options = apply_filters( 'wpex_remove_vc_design_options', true );
 
 		// Delete design options
-		if ( $this->remove_design_options ) {
+		if ( $remove_design_options ) {
 			delete_option( 'wpb_js_use_custom' );
 		}
 
@@ -38,7 +35,7 @@ class WPEX_Visual_Composer {
 		if ( is_admin() ) {
 
 			// Remove design options tab
-			if ( $this->remove_design_options ) {
+			if ( $remove_design_options ) {
 				add_filter( 'vc_settings_page_show_design_tabs', '__return_false' );
 			}
 
@@ -51,7 +48,6 @@ class WPEX_Visual_Composer {
 				$theme_mode = false;
 			}
 			
-
 			// Disable updater and add extra notices to VC license tab
 			if ( $theme_mode ) {
 
@@ -62,53 +58,55 @@ class WPEX_Visual_Composer {
 				}
 
 				// Add admin notice on product license tab
-				add_action( 'admin_notices', array( $this, 'vc_license_tab_notice' ) );
+				add_action( 'admin_notices', array( 'WPEX_Visual_Composer_Config', 'vc_license_tab_notice' ) );
 
 				// Is this still needed?
-				add_action( 'admin_init', array( $this, 'disable_updater' ), 99 );
-
+				add_action( 'admin_init', array( 'WPEX_Visual_Composer_Config', 'disable_updater' ), 99 );
 
 			}
 
 		}
 
 		// Run on init
-		add_action( 'init', array( $this, 'init' ), 20 );
+		add_action( 'init', array( 'WPEX_Visual_Composer_Config', 'init' ), 20 );
 
 		// Add grid-builder modules => must load early on
 		require_once( WPEX_VCEX_DIR .'shortcodes/post_video.php' );
 		require_once( WPEX_VCEX_DIR .'shortcodes/post_meta.php' );
 
 		// Tweak scripts
-		add_action( 'wp_enqueue_scripts', array( $this, 'load_composer_front_css' ), 0 );
-		add_action( 'wp_enqueue_scripts', array( $this, 'load_remove_styles' ) );
-		add_action( 'wp_footer', array( $this, 'remove_footer_scripts' ) );
-		add_action( 'admin_enqueue_scripts',  array( $this, 'admin_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( 'WPEX_Visual_Composer_Config', 'load_composer_front_css' ), 0 );
+		add_action( 'wp_enqueue_scripts', array( 'WPEX_Visual_Composer_Config', 'load_remove_styles' ) );
+		add_action( 'wp_footer', array( 'WPEX_Visual_Composer_Config', 'remove_footer_scripts' ) );
+		add_action( 'admin_enqueue_scripts',  array( 'WPEX_Visual_Composer_Config', 'admin_scripts' ) );
 
 		// Load Visual Composer meta CSS for footer builder, topbar, etc.
-		add_action( 'wpex_head_css', array( $this,'vc_css_ids' ) );
+		add_action( 'wpex_head_css', array( 'WPEX_Visual_Composer_Config', 'vc_css_ids' ) );
 
 		// Alter the allowed font tags and fonts
-		add_filter( 'vc_font_container_get_allowed_tags', array( $this, 'font_container_tags' ) );
-		add_filter( 'vc_font_container_get_fonts_filter', array( $this, 'font_container_fonts' ) );
+		add_filter( 'vc_font_container_get_allowed_tags', array( 'WPEX_Visual_Composer_Config', 'font_container_tags' ) );
+		add_filter( 'vc_font_container_get_fonts_filter', array( 'WPEX_Visual_Composer_Config', 'font_container_fonts' ) );
 
 		// Alter default templates
-		add_filter( 'vc_load_default_templates', array( $this, 'default_templates' ) );
+		add_filter( 'vc_load_default_templates', array( 'WPEX_Visual_Composer_Config', 'default_templates' ) );
+
+		// Add Theme Default templates @todo once demo importer is included
+		//require_once( WPEX_VCEX_DIR .'templates/templates.php' );
 
 		// Remove VC welcome screen
-		add_action( 'admin_menu', array( __class__, 'remove_welcome' ), 999 );
+		add_action( 'admin_menu', array( 'WPEX_Visual_Composer_Config', 'remove_welcome' ), 999 );
 		remove_action( 'vc_activation_hook', 'vc_page_welcome_set_redirect' );
 		remove_action( 'init', 'vc_page_welcome_redirect' );
 		remove_action( 'admin_init', 'vc_page_welcome_redirect' );
 
 		// Register accent colors
-		add_filter( 'wpex_accent_texts', array( $this, 'accent_texts' ) );
-		add_filter( 'wpex_accent_borders', array( $this, 'accent_borders' ) );
-		add_filter( 'wpex_accent_backgrounds', array( $this, 'accent_backgrounds' ) );
+		add_filter( 'wpex_accent_texts', array( 'WPEX_Visual_Composer_Config', 'accent_texts' ) );
+		add_filter( 'wpex_accent_borders', array( 'WPEX_Visual_Composer_Config', 'accent_borders' ) );
+		add_filter( 'wpex_accent_backgrounds', array( 'WPEX_Visual_Composer_Config', 'accent_backgrounds' ) );
 
 		// Add new parameter types
 		if ( function_exists( 'vc_add_shortcode_param' ) ) {
-			vc_add_shortcode_param( 'vcex_font_family_select', array( $this, 'vcex_font_family_select' ) );
+			vc_add_shortcode_param( 'vcex_font_family_select', array( 'WPEX_Visual_Composer_Config', 'vcex_font_family_select' ) );
 		}
 
 	}
@@ -118,13 +116,13 @@ class WPEX_Visual_Composer {
 	 *
 	 * @since 2.0.0
 	 */
-	public function init() {
+	public static function init() {
 
 		// Remove purchase notice
 		wpex_remove_class_filter( 'admin_notices', 'Vc_License', 'adminNoticeLicenseActivation', 10 );
 
 		// Override editor logo
-		add_filter( 'vc_nav_front_logo', array( $this, 'nav_logo' ) );
+		add_filter( 'vc_nav_front_logo', array( 'WPEX_Visual_Composer_Config', 'nav_logo' ) );
 
 		// Remove templatera notice
 		remove_action( 'admin_notices', 'templatera_notice' );
@@ -137,7 +135,7 @@ class WPEX_Visual_Composer {
 		// Set defaults for editor
 		if ( function_exists( 'vc_editor_set_post_types ') ) {
 			$types = vc_settings()->get( 'content_types' );
-			if ( empty( $types  ) ) {
+			if ( empty( $types ) ) {
 				vc_editor_set_post_types( array( 'page', 'portfolio', 'staff' ) );
 			}
 		}
@@ -202,7 +200,7 @@ class WPEX_Visual_Composer {
 			&& class_exists( 'WPBakeryShortCode' )
 			&& wpex_get_mod( 'extend_visual_composer', true )
 		) {
-			$this->total_custom_vc_shortcodes();
+			self::total_custom_vc_shortcodes();
 		}
 
 	}
@@ -212,10 +210,10 @@ class WPEX_Visual_Composer {
 	 *
 	 * @since 3.3.3
 	 */
-	public function vc_license_tab_notice() {
+	public static function vc_license_tab_notice() {
 		$screen = get_current_screen();
 		if ( 'visual-composer_page_vc-updater' == $screen->id ) {
-			echo '<div class="error"><p><strong>'. esc_html__( 'Activating the Visual Composer plugin is 100% optional and NOT required to function correctly with the theme.', 'wpex' ) .'</strong></p></div>';
+			echo '<div class="error"><p><strong>'. esc_html__( 'Activating the Visual Composer plugin is 100% optional and NOT required to function correctly with the theme.', 'total' ) .'</strong></p></div>';
 		}
 	}
 
@@ -224,63 +222,13 @@ class WPEX_Visual_Composer {
 	 *
 	 * @since 3.0.0
 	 */
-	public function disable_updater() {
+	public static function disable_updater() {
 
-		// Define filter names
-		if ( version_compare( WPB_VC_VERSION, '4.4', '<=' ) ) {
-			$pre_upgrade_filter = 'upgradeFilterFromEnvato';
-		} else {
-			$pre_upgrade_filter = 'preUpgradeFilter';
-		}
+		wpex_remove_class_filter( 'plugins_api', 'Vc_Updating_Manager', 'check_info', 10, 3 );
+		wpex_remove_class_filter( 'pre_set_site_transient_update_plugins', 'Vc_Updating_Manager', 'check_update', 10 );
 
-		// Get Globals
-		global $GLOBALS;
-
-		/**
-		 * Remove update pre_download filter
-		 *
-		 * @see Vc_Updater
-		 *
-		 */
-		if ( ! empty ( $GLOBALS['wp_filter']['upgrader_pre_download'] ) ) {
-			$filters = $GLOBALS['wp_filter']['upgrader_pre_download'];
-			if ( ! empty( $filters ) && is_array( $filters ) ) {
-				foreach ( $filters as $priority => $filter ) {
-					foreach ( $filter as $identifier => $function ) {
-						if ( is_array( $function )
-							and is_a( $function['function'][0], 'Vc_Updater' )
-							and $pre_upgrade_filter === $function['function'][1]
-						) {
-							remove_filter( 'upgrader_pre_download', array ( $function['function'][0], $pre_upgrade_filter ), $priority );
-						}
-					}
-				}
-			}
-		}
-
-		/**
-		 * Remove Updater message in plugins list
-		 *
-		 * @see Vc_Updating_Manager
-		 *
-		 */
 		if ( function_exists( 'vc_plugin_name' ) ) {
-			$tag = 'in_plugin_update_message-' . vc_plugin_name();
-			if ( ! empty ( $GLOBALS['wp_filter'][$tag] ) ) {
-				$filters = $GLOBALS['wp_filter'][$tag];
-				if ( ! empty ( $filters ) && is_array( $filters ) ) {
-					foreach ( $filters as $priority => $filter ) {
-						foreach ( $filter as $identifier => $function ) {
-							if ( is_array( $function )
-								and is_a( $function['function'][0], 'Vc_Updating_Manager' )
-								and 'check_update' === $function['function'][1]
-							) {
-								remove_filter( $tag, array ( $function['function'][0], 'check_update' ), $priority );
-							}
-						}
-					}
-				}
-			}
+			wpex_remove_class_filter( 'in_plugin_update_message-' . vc_plugin_name(), 'Vc_Updating_Manager', 'addUpgradeMessageLink', 10 );
 		}
 
 	}
@@ -317,7 +265,7 @@ class WPEX_Visual_Composer {
 	 *
 	 * @since 2.0.0
 	 */
-	public function load_remove_styles() {
+	public static function load_remove_styles() {
 
 		// Add Scripts
 		wp_enqueue_style(
@@ -471,77 +419,47 @@ class WPEX_Visual_Composer {
 	 */
 	public static function total_custom_vc_shortcodes() {
 
-		// Define dir
-		$dir = WPEX_VCEX_DIR .'shortcodes/';
-
 		// Array of new modules to add to the VC
 		$vcex_modules = apply_filters( 'vcex_builder_modules', array(
-			'spacing' => $dir .'spacing.php',
-			'divider' => $dir .'divider.php',
-			'divider_dots' => $dir .'divider_dots.php',
-			'heading' => $dir .'heading.php',
-			'button' => $dir .'button.php',
-			'icon_box' => $dir .'icon_box.php',
-			'teaser' => $dir .'teaser.php',
-			'feature' => $dir .'feature.php',
-			'callout' => $dir .'callout.php',
-			'list_item' => $dir .'list_item.php',
-			'bullets' => $dir .'bullets.php',
-			'pricing' => $dir .'pricing.php',
-			'skillbar' => $dir .'skillbar.php',
-			'icon' => $dir .'icon.php',
-			'milestone' => $dir .'milestone.php',
-			'social_links' => $dir .'social_links.php',
-			'navbar' => $dir .'navbar.php',
-			'searchbar' => $dir .'searchbar.php',
-			'login_form' => $dir .'login_form.php',
-			'newsletter_form' => $dir .'newsletter_form.php',
-			'image_swap' => $dir .'image_swap.php',
-			'image_galleryslider'  => $dir .'image_galleryslider.php',
-			'image_flexslider' => $dir .'image_flexslider.php',
-			'image_carousel' => $dir .'image_carousel.php',
-			'image_grid' => $dir .'image_grid.php',
-			'recent_news' => $dir .'recent_news.php',
-			'blog_grid' => $dir .'blog_grid.php',
-			'blog_carousel' => $dir .'blog_carousel.php',
-			'post_type_grid' => $dir .'post_type_grid.php',
-			//'post_type_list' => $dir .'post_type_list.php', // @todo finish module
-			'post_type_archive' => $dir .'post_type_archive.php',
-			'post_type_slider' => $dir .'post_type_slider.php',
-			'post_type_carousel' => $dir .'post_type_carousel.php',
-			'testimonials_grid' => array(
-				'file' => $dir .'testimonials_grid.php',
-				'condition' => WPEX_TESTIMONIALS_IS_ACTIVE,
+			'spacing',
+			'divider',
+			'divider_dots',
+			'heading',
+			'button',
+			'leader',
+			'animated_text',
+			'icon_box',
+			'teaser',
+			'feature',
+			'list_item',
+			'bullets',
+			'pricing',
+			'skillbar',
+			'icon',
+			'milestone',
+			'countdown',
+			'social_links',
+			'navbar',
+			'searchbar',
+			'login_form',
+			'newsletter_form',
+			'image_swap',
+			'image_galleryslider',
+			'image_flexslider',
+			'image_carousel',
+			'image_grid',
+			'recent_news',
+			'blog_grid',
+			'blog_carousel',
+			'post_type_grid',
+			'post_type_archive',
+			'post_type_slider',
+			'post_type_carousel',
+			'callout' => array(
+				'file' =>  WPEX_VCEX_DIR .'shortcodes/callout/callout.php',
 			),
-			'testimonials_slider' => array(
-				'file' => $dir .'testimonials_slider.php',
-				'condition' => WPEX_TESTIMONIALS_IS_ACTIVE,
-			),
-			'portfolio_grid' => array(
-				'file' => $dir .'portfolio_grid.php',
-				'condition' => WPEX_PORTFOLIO_IS_ACTIVE,
-			),
-			'portfolio_carousel' => array(
-				'file' => $dir .'portfolio_carousel.php',
-				'condition' => WPEX_PORTFOLIO_IS_ACTIVE,
-			),
-			'staff_grid' => array( 
-				'file' => $dir .'staff_grid.php',
-				'condition' => WPEX_STAFF_IS_ACTIVE,
-			),
-			'staff_carousel' => array(
-				'file' => $dir .'staff_carousel.php',
-				'condition' => WPEX_STAFF_IS_ACTIVE,
-			),
-			'staff_social' => array(
-				'file' => $dir .'staff_social.php',
-				'condition' => WPEX_STAFF_IS_ACTIVE,
-			),
-			'woocommerce_carousel' => array(
-				'file' => $dir .'woocommerce_carousel.php',
-				'condition' => WPEX_WOOCOMMERCE_ACTIVE,
-			),
-			'terms_grid' => $dir .'terms_grid.php',
+			'terms_grid',
+			'terms_carousel',
 		) );
 
 		// Load mapping files
@@ -549,11 +467,13 @@ class WPEX_Visual_Composer {
 			foreach ( $vcex_modules as $key => $val ) {
 				if ( is_array( $val ) ) {
 					$condition = isset( $val['condition'] ) ? $val['condition'] : true;
+					$file      = isset( $val['file'] ) ? $val['file'] : WPEX_VCEX_DIR .'shortcodes/'. $key .'.php';
 					if ( $condition ) {
-						require_once( $val['file'] );
+						require_once( $file );
 					}
 				} else {
-					require_once( $val );
+					$file = WPEX_VCEX_DIR .'shortcodes/'. $val .'.php';
+					require_once( $file );
 				}
 			}
 		}
@@ -569,6 +489,8 @@ class WPEX_Visual_Composer {
 		if ( $ids = wpex_global_obj( 'vc_css_ids' ) ) {
 			foreach ( $ids as $id ) {
 				if ( function_exists( 'is_shop' ) && is_shop() ) {
+					$condition = true;
+				} elseif ( is_404() && $id == wpex_global_obj( 'post_id' ) ) {
 					$condition = true;
 				} else {
 					$condition = ( $id == wpex_global_obj( 'post_id' ) ) ? false : true;
@@ -625,13 +547,13 @@ class WPEX_Visual_Composer {
 	}
 
 	/**
-	 * Alter default templates
+	 * Remove default templates
 	 *
-	 * @since 3.2.0
+	 * @since 2.0.0
 	 */
-	public static function default_templates( $templates ) {
-		return array(); // remove all default templates
+	public static function default_templates() {
+		return array();
 	}
 	
 }
-$wpex_visual_composer_config = new WPEX_Visual_Composer();
+new WPEX_Visual_Composer_Config();

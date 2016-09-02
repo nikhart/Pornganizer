@@ -94,7 +94,6 @@ if ( ! class_exists( 'WPEX_Video_Widget' ) ) {
 			return $instance;
 		}
 		
-
 		/**
 		 * Back-end widget form.
 		 *
@@ -128,7 +127,7 @@ if ( ! class_exists( 'WPEX_Video_Widget' ) ) {
 			<p>
 				<label for="<?php echo esc_attr( $this->get_field_id( 'video_description' ) ); ?>">
 				<?php esc_html_e( 'Description', 'total' ); ?></label>
-				<textarea rows="5" class="widefat" name="<?php echo esc_attr( $this->get_field_name( 'video_description' ) ); ?>" type="text"><?php echo wpex_sanitize_data( $instance['video_description'], 'html' ); ?></textarea>
+				<textarea rows="5" class="widefat" name="<?php echo esc_attr( $this->get_field_name( 'video_description' ) ); ?>" type="text"><?php echo wpex_sanitize_data( $video_description, 'html' ); ?></textarea>
 			</p>
 			
 		<?php }

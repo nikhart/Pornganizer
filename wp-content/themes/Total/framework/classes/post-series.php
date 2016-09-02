@@ -3,11 +3,10 @@
  * Post Series Class
  *
  * @package Total WordPress Theme
- * @subpackage Framework
- * @version 3.3.4
+ * @subpackage Framework/Classes
+ * @version 3.5.0
  */
 
-// Registers the Post Series Taxonomy
 if ( ! class_exists( 'WPEX_Post_Series_Config' ) ) {
 
 	class WPEX_Post_Series_Config {
@@ -20,15 +19,15 @@ if ( ! class_exists( 'WPEX_Post_Series_Config' ) ) {
 		public function __construct() {
 
 			// Filters
-			add_filter( 'manage_edit-post_columns', array( $this, 'edit_columns' ) );
-			add_filter( 'wpex_is_blog_query', array( $this, 'wpex_is_blog_query' ) );
-			add_filter( 'wpex_customizer_sections', array( $this, 'customizer_settings' ) );
+			add_filter( 'manage_edit-post_columns', array( 'WPEX_Post_Series_Config', 'edit_columns' ) );
+			add_filter( 'wpex_is_blog_query', array( 'WPEX_Post_Series_Config', 'wpex_is_blog_query' ) );
+			add_filter( 'wpex_customizer_sections', array( 'WPEX_Post_Series_Config', 'customizer_settings' ) );
 
 			// Actions
-			add_action( 'init', array( $this, 'register' ), 0 );
-			add_action( 'manage_post_posts_custom_column', array( $this, 'column_display' ), 10, 2 );
-			add_action( 'restrict_manage_posts', array( $this, 'tax_filters' ) );
-			add_action( 'wpex_next_prev_same_cat_taxonomy', array( $this, 'next_prev_same_cat_taxonomy' ) );
+			add_action( 'init', array( 'WPEX_Post_Series_Config', 'register' ), 0 );
+			add_action( 'manage_post_posts_custom_column', array( 'WPEX_Post_Series_Config', 'column_display' ), 10, 2 );
+			add_action( 'restrict_manage_posts', array( 'WPEX_Post_Series_Config', 'tax_filters' ) );
+			add_action( 'wpex_next_prev_same_cat_taxonomy', array( 'WPEX_Post_Series_Config', 'next_prev_same_cat_taxonomy' ) );
 
 		}
 
@@ -115,7 +114,7 @@ if ( ! class_exists( 'WPEX_Post_Series_Config' ) ) {
 			global $typenow;
 			if ( 'post' == $typenow ) {
 				$tax_slug         = 'post_series';
-				$current_tax_slug = isset( $_GET[$tax_slug] ) ? $_GET[$tax_slug] : false;
+				$current_tax_slug = isset( $_GET[$tax_slug] ) ? esc_html( $_GET[$tax_slug] ) : false;
 				$tax_obj          = get_taxonomy( $tax_slug );
 				$tax_name         = $tax_obj->labels->name;
 				$terms            = get_terms( $tax_slug );
@@ -161,7 +160,7 @@ if ( ! class_exists( 'WPEX_Post_Series_Config' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function customizer_settings( $sections ) {
+		public static function customizer_settings( $sections ) {
 			$sections['wpex_post_series'] = array(
 				'title' => esc_html__( 'Post Series', 'total' ),
 				'panel' => 'wpex_general',
@@ -173,16 +172,19 @@ if ( ! class_exists( 'WPEX_Post_Series_Config' ) ) {
 							'label' => esc_html__( 'Admin Label', 'total' ),
 							'type' => 'text',
 						),
-						'inline_css' => array(
-							'target' => 'label',
-							'alter' => 'color',
-						),
 					),
 					array(
 						'id' => 'post_series_slug',
 						'transport' => 'postMessage',
 						'control' => array (
 							'label' => esc_html__( 'Slug', 'total' ),
+							'type' => 'text',
+						),
+					),
+					array(
+						'id' => 'post_series_heading',
+						'control' => array (
+							'label' => esc_html__( 'Front-End Heading', 'total' ),
 							'type' => 'text',
 						),
 					),
@@ -241,4 +243,4 @@ if ( ! class_exists( 'WPEX_Post_Series_Config' ) ) {
 
 	}
 }
-$wpex_post_series = new WPEX_Post_Series_Config;
+new WPEX_Post_Series_Config;

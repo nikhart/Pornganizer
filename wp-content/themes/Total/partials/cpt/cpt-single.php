@@ -9,7 +9,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.2
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -25,6 +25,9 @@ if ( ! empty( $blocks ) ) :
 
 	// Loop through blocks and get template part
 	foreach ( $blocks as $block ) :
+		if ( 'media' == $block && get_post_meta( get_the_ID(), 'wpex_post_media_position', true ) ) {
+			continue;
+		}
 		get_template_part( 'partials/cpt/cpt-single-'. $block, get_post_type() );
 	endforeach;
 

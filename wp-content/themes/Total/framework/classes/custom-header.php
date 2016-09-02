@@ -4,6 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -22,8 +23,8 @@ if ( ! class_exists( 'WPEX_Custom_Header' ) ) {
          * @since 1.6.3
          */
         public function __construct() {
-            add_filter( 'after_setup_theme', array( $this, 'add_support' ) );
-            add_filter( 'wpex_head_css', array( $this, 'custom_header_css' ), 99 );
+            add_filter( 'after_setup_theme', array( 'WPEX_Custom_Header', 'add_support' ) );
+            add_filter( 'wpex_head_css', array( 'WPEX_Custom_Header', 'custom_header_css' ), 99 );
         }
 
         /**

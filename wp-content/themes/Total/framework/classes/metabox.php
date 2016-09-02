@@ -5,7 +5,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -36,8 +36,15 @@ class WPEX_Post_Metaboxes {
 		) );
 
 		// Add metabox to corresponding post types
-		foreach( $this->post_types as $key => $val ) {
-			add_action( 'add_meta_boxes_'. $val, array( $this, 'post_meta' ), 11 );
+		if ( $this->post_types ) {
+
+			foreach( $this->post_types as $key => $val ) {
+
+				// Adds the metabox
+				add_action( 'add_meta_boxes_'. $val, array( $this, 'post_meta' ), 11 );
+
+			}
+			
 		}
 
 		// Save meta
@@ -105,7 +112,7 @@ class WPEX_Post_Metaboxes {
 		wp_nonce_field( 'wpex_metabox', 'wpex_metabox_nonce' );
 
 		// Get current post data
-		$post_id = $post->ID;
+		$post_id   = $post->ID;
 		$post_type = get_post_type();
 
 		// Get tabs
@@ -113,7 +120,7 @@ class WPEX_Post_Metaboxes {
 
 		// Make sure tabs aren't empty
 		if ( empty( $tabs ) ) {
-			echo '<p>Hey your settings are empty, something is going on please contact your webmaster</p>';
+			echo '<p>'. esc_html__( 'This page doesnt have any meta settings.', 'total' ) .'</p>';
 			return;
 		}
 
@@ -168,7 +175,7 @@ class WPEX_Post_Metaboxes {
 						$meta_value  = get_post_meta( $post_id, $meta_id, true );
 						$meta_value  = $meta_value ? $meta_value : $default; ?>
 
-						<tr<?php if ( $hidden ) echo ' style="display:none;"'; ?> id="<?php echo $meta_id; ?>_tr">
+						<tr<?php if ( $hidden ) echo ' style="display:none;"'; ?> id="<?php echo esc_attr( $meta_id ); ?>_tr">
 							<th>
 								<label for="wpex_main_layout"><strong><?php echo $title; ?></strong></label>
 								<?php
@@ -182,28 +189,48 @@ class WPEX_Post_Metaboxes {
 							// Text Field
 							if ( 'text' == $type ) { ?>
 
-								<td><input name="<?php echo $meta_id; ?>" type="text" value="<?php echo $meta_value; ?>"></td>
+								<td><input name="<?php echo esc_attr( $meta_id ); ?>" type="text" value="<?php echo esc_attr( $meta_value ); ?>"></td>
+
+							<?php
+							}
+
+							// Date Field
+							elseif ( 'date' == $type ) {
+								wp_enqueue_script( 'jquery-ui' );
+								wp_enqueue_script( 'jquery-ui-datepicker', array( 'jquery-ui' ) );
+								wp_enqueue_style( 'jquery-ui-datepicker-style', '//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css' ); ?>
+
+								<td><input class="wpex-date-meta" name="<?php echo esc_attr( $meta_id ); ?>" type="text" value="<?php echo esc_attr( $meta_value ); ?>"></td>
 
 							<?php }
 
 							// Number Field
-							if ( 'number' == $type ) { ?>
+							elseif ( 'number' == $type ) {
+								
+								$step = isset( $setting['step'] ) ? $setting['step'] : '1';
+								$min  = isset( $setting['min'] ) ? $setting['min'] : '1';
+								$max  = isset( $setting['max'] ) ? $setting['max'] : '10'; ?>
 
-								<td><input name="<?php echo $meta_id; ?>" type="number" value="<?php echo $meta_value; ?>"></td>
+								<td>
+									<input name="<?php echo esc_attr( $meta_id ); ?>" type="number" value="<?php echo esc_attr( $meta_value ); ?>" step="<?php echo floatval( $step ); ?>" min="<?php echo floatval( $min ); ?>" max="<?php echo floatval( $max ); ?>">
+								</td>
 
 							<?php }
 
 							// HTML Text
-							if ( 'text_html' == $type ) { ?>
+							elseif ( 'text_html' == $type ) { ?>
 
-								<td><input name="<?php echo $meta_id; ?>" type="text" value="<?php echo esc_html( $meta_value ); ?>"></td>
+								<td><input name="<?php echo esc_attr( $meta_id ); ?>" type="text" value="<?php echo esc_html( $meta_value ); ?>"></td>
 
 							<?php }
 
 							// Link field
-							elseif ( 'link' == $type ) { ?>
+							elseif ( 'link' == $type ) {
 
-								<td><input name="<?php echo $meta_id; ?>" type="text" value="<?php echo esc_url( $meta_value ); ?>"></td>
+								// Sanitize
+								$meta_value = ( 'home_url' == $meta_value ) ? esc_html( $meta_value ) : esc_url( $meta_value ); ?>
+
+								<td><input name="<?php echo esc_attr( $meta_id ); ?>" type="text" value="<?php echo $meta_value; ?>"></td>
 
 							<?php }
 
@@ -212,7 +239,7 @@ class WPEX_Post_Metaboxes {
 								$rows = isset ( $setting['rows'] ) ? $setting['rows'] : '4';?>
 
 								<td>
-									<textarea rows="<?php echo $rows; ?>" cols="1" name="<?php echo $meta_id; ?>" type="text" class="wpex-mb-textarea"><?php echo $meta_value; ?></textarea>
+									<textarea rows="<?php echo $rows; ?>" cols="1" name="<?php echo esc_attr( $meta_id ); ?>" type="text" class="wpex-mb-textarea"><?php echo $meta_value; ?></textarea>
 								</td>
 
 							<?php }
@@ -221,7 +248,7 @@ class WPEX_Post_Metaboxes {
 							elseif ( 'code' == $type ) { ?>
 
 								<td>
-									<textarea rows="1" cols="1" name="<?php echo $meta_id; ?>" type="text" class="wpex-mb-textarea-code"><?php echo $meta_value; ?></textarea>
+									<textarea rows="1" cols="1" name="<?php echo esc_attr( $meta_id ); ?>" type="text" class="wpex-mb-textarea-code"><?php echo $meta_value; ?></textarea>
 								</td>
 
 							<?php }
@@ -229,8 +256,8 @@ class WPEX_Post_Metaboxes {
 							// Checkbox
 							elseif ( 'checkbox' == $type ) {
 
-								$meta_value = ( 'on' == $meta_value ) ? false : true; ?>
-								<td><input name="<?php echo $meta_id; ?>" type="checkbox" <?php checked( $meta_value, true, true ); ?>></td>
+								$meta_value = ( 'on' != $meta_value ) ? false : true; ?>
+								<td><input name="<?php echo esc_attr( $meta_id ); ?>" type="checkbox" <?php checked( $meta_value, true, true ); ?>></td>
 
 							<?php }
 
@@ -239,7 +266,7 @@ class WPEX_Post_Metaboxes {
 
 								$options = isset ( $setting['options'] ) ? $setting['options'] : '';
 								if ( ! empty( $options ) ) { ?>
-									<td><select id="<?php echo $meta_id; ?>" name="<?php echo $meta_id; ?>">
+									<td><select id="<?php echo esc_attr( $meta_id ); ?>" name="<?php echo esc_attr( $meta_id ); ?>">
 									<?php foreach ( $options as $option_value => $option_name ) { ?>
 										<option value="<?php echo $option_value; ?>" <?php selected( $meta_value, $option_value, true ); ?>><?php echo $option_name; ?></option>
 									<?php } ?>
@@ -251,7 +278,7 @@ class WPEX_Post_Metaboxes {
 							// Select
 							elseif ( 'color' == $type ) { ?>
 
-								<td><input name="<?php echo $meta_id; ?>" type="text" value="<?php echo $meta_value; ?>" class="wpex-mb-color-field"></td>
+								<td><input name="<?php echo esc_attr( $meta_id ); ?>" type="text" value="<?php echo esc_attr( $meta_value ); ?>" class="wpex-mb-color-field"></td>
 
 							<?php }
 
@@ -268,8 +295,8 @@ class WPEX_Post_Metaboxes {
 								} ?>
 								<td>
 									<div class="uploader">
-									<input type="text" name="<?php echo $meta_id; ?>" value="<?php echo $meta_value; ?>">
-									<input class="wpex-mb-uploader button-secondary" name="<?php echo $meta_id; ?>" type="button" value="<?php esc_html_e( 'Upload', 'total' ); ?>" />
+									<input type="text" name="<?php echo esc_attr( $meta_id ); ?>" value="<?php echo esc_attr( $meta_value ); ?>">
+									<input class="wpex-mb-uploader button-secondary" name="<?php echo esc_attr( $meta_id ); ?>" type="button" value="<?php esc_html_e( 'Upload', 'total' ); ?>" />
 									<?php /* if ( $meta_value ) {
 											if ( is_numeric( $meta_value ) ) {
 												$meta_value = wp_get_attachment_image_src( $meta_value, 'full' );
@@ -289,7 +316,7 @@ class WPEX_Post_Metaboxes {
 								$media_buttons= isset( $setting['media_buttons'] ) ? $setting['media_buttons'] : true; ?>
 								<td><?php wp_editor( $meta_value, $meta_id, array(
 									'textarea_name' => $meta_id,
-									'teeny' => $teeny,
+									'teeny'         => $teeny,
 									'textarea_rows' => $rows,
 									'media_buttons' => $media_buttons,
 								) ); ?></td>
@@ -356,7 +383,7 @@ class WPEX_Post_Metaboxes {
 		// Check reset field
 		$reset = isset( $_POST['wpex_metabox_reset'] ) ? $_POST['wpex_metabox_reset'] : '';
 
-		// Set settings array
+		// Get array of settings to save
 		$tabs = $this->meta_array();
 		$settings = array();
 		foreach( $tabs as $tab ) {
@@ -401,7 +428,7 @@ class WPEX_Post_Metaboxes {
 				}
 
 				// Validate media
-				if ( 'media' == $type ) {
+				elseif ( 'media' == $type ) {
 
 					// Sanitize
 					$value = $_POST[$id];
@@ -411,6 +438,14 @@ class WPEX_Post_Metaboxes {
 						$value = $old;
 						delete_post_meta( $post_id, 'wpex_post_self_hosted_shortcode_redux' );
 					}
+
+				}
+
+				// Validate editor
+				if ( 'editor' == $type ) {
+
+					$value = $_POST[$id];
+					$value = ( '<p><br data-mce-bogus="1"></p>' == $value ) ? '' : $value;
 
 				}
 
@@ -569,6 +604,12 @@ class WPEX_Post_Metaboxes {
 						'on' => $s_disable,
 					),
 				),
+				'secondary_thumbnail' => array(
+					'title' => esc_html__( 'Secondary Thumbnail', 'total' ),
+					'id' => $prefix . 'secondary_thumbnail',
+					'type' => 'media',
+					'description' => esc_html__( 'The secondary thumbnail is used on the Secondary Image Swap overlay style.', 'total' ),
+				),
 			),
 		);
 
@@ -625,6 +666,8 @@ class WPEX_Post_Metaboxes {
 					'id' => $prefix . 'overlay_header_font_size',
 					'description' => esc_html__( 'Enter a size in px.', 'total' ),
 					'type' => 'number',
+					'max' => '99',
+					'min' => '8',
 				),
 				'overlay_header_logo' => array(
 					'title' => esc_html__( 'Overlay Header Logo', 'total'),
@@ -643,6 +686,8 @@ class WPEX_Post_Metaboxes {
 					'id' => $prefix . 'overlay_header_logo_retina_height',
 					'description' => esc_html__( 'Enter a size in px.', 'total' ),
 					'type' => 'number',
+					'max' => '999',
+					'min' => '1',
 				),
 			),
 		);
@@ -991,36 +1036,6 @@ class WPEX_Post_Metaboxes {
 			);
 		}
 
-		// Testimonials Tab
-		if ( WPEX_TESTIMONIALS_IS_ACTIVE ) {
-			$obj= get_post_type_object( 'testimonials' );
-			$tab_title = $obj->labels->singular_name;
-			$array['testimonials'] = array(
-				'title' => $tab_title,
-				'post_type' => array( 'testimonials' ),
-				'settings' => array(
-					'testimonial_author' => array(
-						'title' => esc_html__( 'Author', 'total' ),
-						'description' => esc_html__( 'Enter the name of the author for this testimonial.', 'total' ),
-						'id' => $prefix .'testimonial_author',
-						'type' => 'text',
-					),
-					'testimonial_company' => array(
-						'title' => esc_html__( 'Company', 'total' ),
-						'description' => esc_html__( 'Enter the name of the company for this testimonial.', 'total' ),
-						'id' => $prefix .'testimonial_company',
-						'type' => 'text',
-					),
-					'testimonial_url' => array(
-						'title' => esc_html__( 'Company URL', 'total' ),
-						'description' => esc_html__( 'Enter the url for the company for this testimonial.', 'total' ),
-						'id' => $prefix .'testimonial_url',
-						'type' => 'text',
-					),
-				),
-			);
-		}
-
 		// Apply filter & return settings array
 		return apply_filters( 'wpex_metabox_array', $array, $post );
 	}
@@ -1047,10 +1062,11 @@ class WPEX_Post_Metaboxes {
 	 * @see assets/metabox.js
 	 * @since 1.0.0
 	 */
-	public static function metaboxes_js() { ?>
+	public static function metaboxes_js() {
+		$date_format = apply_filters( 'wpex_metabox_date_format', 'yy-mm-dd' ); ?>
 
 		<script type="text/javascript">
-			!function(e){"use strict";e(document).on("ready",function(){e("div#wpex-metabox ul.wp-tab-bar a").click(function(){var t=e("#wpex-metabox ul.wp-tab-bar li"),a=e(this).data("tab"),o=e("#wpex-metabox div.wp-tab-panel");return e(t).removeClass("wp-tab-active"),e(o).hide(),e(a).show(),e(this).parent("li").addClass("wp-tab-active"),!1}),e("div#wpex-metabox .wpex-mb-color-field").wpColorPicker();var t=!0,a=wp.media.editor.send.attachment;e("div#wpex-metabox .wpex-mb-uploader").click(function(){var o=(wp.media.editor.send.attachment,e(this)),i=o.prev();return wp.media.editor.send.attachment=function(o,r){return t?void e(i).val(r.id):a.apply(this,[o,r])},wp.media.editor.open(o),!1}),e("div#wpex-metabox .add_media").on("click",function(){t=!1}),e("div#wpex-metabox div.wpex-mb-reset a.wpex-reset-btn").click(function(){var t=e("div.wpex-mb-reset div.wpex-reset-checkbox"),a=t.is(":visible")?"<?php esc_html_e( 'Reset Settings', 'total' ); ?>":"<?php esc_html_e( 'Cancel Reset', 'total' ); ?>";e(this).text(a),e("div.wpex-mb-reset div.wpex-reset-checkbox input").attr("checked",!1),t.toggle()});var o=(e("#wpex_disable_header_margin_tr, #wpex_post_subheading_tr,#wpex_post_title_style_tr"),e("div#wpex-metabox select#wpex_post_title_style")),i=(o.val(),e("#wpex_post_title_background_color_tr, #wpex_post_title_background_redux_tr,#wpex_post_title_height_tr,#wpex_post_title_background_overlay_tr,#wpex_post_title_background_overlay_opacity_tr")),r=e("#wpex_post_title_background_color_tr");"background-image"==o.val()&&i.show(),"solid-color"==o.val()&&r.show(),"background-image"==o&&i.show(),o.change(function(){i.hide(),"background-image"==e(this).val()?i.show():"solid-color"===e(this).val()&&r.show()});var _=e("div#wpex-metabox select#wpex_overlay_header"),p=e("#wpex_overlay_header_style_tr, #wpex_overlay_header_font_size_tr,#wpex_overlay_header_logo_tr,#wpex_overlay_header_logo_retina_tr,#wpex_overlay_header_logo_retina_height_tr");"on"===_.val()?p.show():p.hide(),_.change(function(){"on"===e(this).val()?p.show():p.hide()})})}(jQuery);
+			!function(a){"use strict";a(document).on("ready",function(){var b=a(".wpex-date-meta");b.length&&a.datepicker&&b.datepicker({dateFormat:"<?php echo esc_html( $date_format ); ?>"}),a("div#wpex-metabox ul.wp-tab-bar a").click(function(){var b=a("#wpex-metabox ul.wp-tab-bar li"),c=a(this).data("tab"),d=a("#wpex-metabox div.wp-tab-panel");return a(b).removeClass("wp-tab-active"),a(d).hide(),a(c).show(),a(this).parent("li").addClass("wp-tab-active"),!1}),a("div#wpex-metabox .wpex-mb-color-field").wpColorPicker();var c=!0,d=wp.media.editor.send.attachment;a("div#wpex-metabox .wpex-mb-uploader").click(function(b){var f=(wp.media.editor.send.attachment,a(this)),g=f.prev();return wp.media.editor.send.attachment=function(b,e){return c?void a(g).val(e.id):d.apply(this,[b,e])},wp.media.editor.open(f),!1}),a("div#wpex-metabox .add_media").on("click",function(){c=!1}),a("div#wpex-metabox div.wpex-mb-reset a.wpex-reset-btn").click(function(){var b=a("div.wpex-mb-reset div.wpex-reset-checkbox"),c=b.is(":visible")?"<?php esc_html_e(  'Reset Settings', 'total' ); ?>":"<?php esc_html_e(  'Cancel Reset', 'total' ); ?>";a(this).text(c),a("div.wpex-mb-reset div.wpex-reset-checkbox input").attr("checked",!1),b.toggle()});var f=(a("#wpex_disable_header_margin_tr, #wpex_post_subheading_tr,#wpex_post_title_style_tr"),a("div#wpex-metabox select#wpex_post_title_style")),g=f.val(),h=a("#wpex_post_title_background_color_tr, #wpex_post_title_background_redux_tr,#wpex_post_title_height_tr,#wpex_post_title_background_overlay_tr,#wpex_post_title_background_overlay_opacity_tr"),i=a("#wpex_post_title_background_color_tr");"background-image"===g?h.show():"solid-color"===g&&i.show(),f.change(function(){h.hide(),"background-image"==a(this).val()?h.show():"solid-color"===a(this).val()&&i.show()});var j=a("div#wpex-metabox select#wpex_overlay_header"),k=a("#wpex_overlay_header_style_tr, #wpex_overlay_header_font_size_tr,#wpex_overlay_header_logo_tr,#wpex_overlay_header_logo_retina_tr,#wpex_overlay_header_logo_retina_height_tr,#wpex_overlay_header_dropdown_style_tr");"on"===j.val()?k.show():k.hide(),j.change(function(){"on"===a(this).val()?k.show():k.hide()})})}(jQuery);
 		</script>
 
 	<?php }

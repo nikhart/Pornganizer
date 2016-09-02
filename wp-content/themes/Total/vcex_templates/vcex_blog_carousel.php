@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,13 +17,22 @@ if ( is_admin() ) {
     return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output
+$output = '';
+
 // Deprecated Attributes
 if ( ! empty( $atts['term_slug'] ) && empty( $atts['include_categories']) ) {
 	$atts['include_categories'] = $atts['term_slug'];
 }
 
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_blog_carousel', $atts );
 
 // Define vars
 $atts['post_type'] = 'post';
@@ -54,15 +63,34 @@ if ( $wpex_query->have_posts() ) :
 
 	// Main Classes
 	$wrap_classes = array( 'wpex-carousel', 'wpex-carousel-blog', 'owl-carousel', 'clr' );
-	if ( $style ) {
+
+	// Carousel style
+	if ( $style && 'default' != $style ) {
 		$wrap_classes[] = $style;
+		$arrows_position = ( 'no-margins' == $style && 'default' == $arrows_position ) ? 'abs' : $arrows_position;
 	}
+
+	// Arrow style
+	if ( $arrows_style ) {
+		$wrap_classes[] = 'arrwstyle-'. $arrows_style;
+	}
+
+	// Arrow position
+	if ( $arrows_position && 'default' != $arrows_position ) {
+		$wrap_classes[] = 'arrwpos-'. $arrows_position;
+	}
+
+	// Css animation
 	if ( $css_animation ) {
-		$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+		$wrap_classes[] = vcex_get_css_animation( $css_animation );
 	}
+
+	// Extra classes
 	if ( $classes ) {
-		$wrap_classes[] = $this->getExtraClass( $classes );
+		$wrap_classes[] = vcex_get_extra_class( $classes );
 	}
+
+	// Visibility
 	if ( $visibility ) {
 		$wrap_classes[] = $visibility;
 	}
@@ -139,7 +167,7 @@ if ( $wpex_query->have_posts() ) :
 	$tablet_items           = wpex_intval( $tablet_items, 3 );
 	$mobile_landscape_items = wpex_intval( $mobile_landscape_items, 2 );
 	$mobile_portrait_items  = wpex_intval( $mobile_portrait_items, 1 );
-	$animation_speed        = wpex_intval( $animation_speed, 150 );
+	$animation_speed        = wpex_intval( $animation_speed );
 
 	// Disable autoplay
 	if ( vc_is_inline() || '1' == count( $wpex_query->posts ) ) {
@@ -150,168 +178,167 @@ if ( $wpex_query->have_posts() ) :
 	$wrap_classes = implode( ' ', $wrap_classes );
 
 	// Inline js
-	vcex_inline_js( $inline_js ); ?>
+	vcex_inline_js( $inline_js );
 
-	<div class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?> data-items="<?php echo $items; ?>" data-slideby="<?php echo $items_scroll; ?>" data-nav="<?php echo $arrows; ?>" data-dots="<?php echo $dots; ?>" data-autoplay="<?php echo $auto_play; ?>" data-loop="<?php echo $infinite_loop; ?>" data-autoplay-timeout="<?php echo $timeout_duration ?>" data-center="<?php echo $center; ?>" data-margin="<?php echo intval( $items_margin ); ?>" data-items-tablet="<?php echo $tablet_items; ?>" data-items-mobile-landscape="<?php echo $mobile_landscape_items; ?>" data-items-mobile-portrait="<?php echo $mobile_portrait_items; ?>" data-smart-speed="<?php echo $animation_speed; ?>">
-		<?php
-		// Start loop
+	// Begin shortcode output
+	$output .= '<div class="'. esc_attr( $wrap_classes ) .'"'. vcex_get_unique_id( $unique_id ) .' data-items="'. $items .'" data-slideby="'. $items_scroll .'" data-nav="'. $arrows .'" data-dots="'. $dots .'" data-autoplay="'. $auto_play .'" data-loop="'. $infinite_loop .'" data-autoplay-timeout="'. $timeout_duration .'" data-center="'. $center .'" data-margin="'. intval( $items_margin ) .'" data-items-tablet="'. $tablet_items .'" data-items-mobile-landscape="'. $mobile_landscape_items .'" data-items-mobile-portrait="'. $mobile_portrait_items .'" data-smart-speed="'. $animation_speed .'">';
+
+		// Define counter
 		$count = 0;
+
+		// Start loop
 		while ( $wpex_query->have_posts() ) :
-			$count++;
 
 			// Get post from query
 			$wpex_query->the_post();
 
-			// Create new post object.
-			$post = new stdClass();
-
-			// Get post data
-			$get_post = get_post();
+			// Add to counter
+			$count++;
 		
 			// Post VARS
-			$post->ID              = $get_post->ID;
-			$post->permalink       = wpex_get_permalink( $post->ID );
-			$post->title           = get_the_title();
-			$post->esc_title       = wpex_get_esc_title();
-			$post->thumbnail       = get_post_thumbnail_id( $post->ID );
-			$post->thumbnail_link  = $post->permalink;
+			$atts['post_id']             = get_the_ID();
+			$atts['post_permalink']      = wpex_get_permalink( $atts['post_id'] );
+			$atts['post_title']          = get_the_title();
+			$atts['post_esc_title']      = wpex_get_esc_title();
+			$atts['post_thumbnail']      = get_post_thumbnail_id( $atts['post_id'] );
+			$atts['post_thumbnail_link'] = $atts['post_permalink'];
 
-			// Lets store the dynamic $post->ID into the shortcodes attributes
-			$atts['post_id'] = $post->ID;
+			// Lets store the dynamic $atts['post_id'] into the shortcodes attributes
+			$atts['post_id'] = $atts['post_id'];
 
 			// Only display carousel item if there is content to show
 			if ( ( 'true' == $media && has_post_thumbnail() )
 				|| 'true' == $title
 				|| 'true' == $date
 				|| 'true' == $excerpt
-			) : ?>
+			) :
 
-				<div class="wpex-carousel-slide">
+				$output .= '<div class="wpex-carousel-slide">';
 				
-					<?php
 					// Display thumbnail if enabled and defined
-					if ( 'true' == $media && has_post_thumbnail() ) : ?>
+					if ( 'true' == $media && has_post_thumbnail() ) :
 
-						<div class="<?php echo $media_classes; ?>">
+						$output .= '<div class="'. $media_classes .'">';
 
-							<?php
 							// If thumbnail link doesn't equal none
 							if ( 'none' != $thumbnail_link ) :
 
 								// Lightbox thumbnail
 								if ( 'lightbox' == $thumbnail_link ) {
-									$atts['lightbox_link'] = wpex_get_lightbox_image( $post->thumbnail );
-									$post->thumbnail_link  = $atts['lightbox_link'];
+									$atts['lightbox_link'] = wpex_get_lightbox_image( $atts['post_thumbnail'] );
+									$atts['post_thumbnail_link']  = $atts['lightbox_link'];
 								}
 
 								// Link attributes
 								$link_attrs = array(
-									'href'  => esc_url( $post->thumbnail_link ),
-									'title' => $post->esc_title,
+									'href'  => esc_url( $atts['post_thumbnail_link'] ),
+									'title' => $atts['post_esc_title'],
 									'class' => 'wpex-carousel-entry-img',
 								);
 								// Add lightbox link
 								if ( 'lightbox' == $thumbnail_link ) {
 									$link_attrs['class'] .= ' wpex-carousel-lightbox-item';
-									$link_attrs['data-title'] = $post->esc_title;
+									$link_attrs['data-title'] = $atts['post_esc_title'];
 									$link_attrs['data-count'] = $count;
-								} ?>
+								}
 
-							<a <?php echo wpex_parse_attrs( $link_attrs ); ?>>
+							$output .= '<a '. wpex_parse_attrs( $link_attrs ) .'>';
 
-							<?php endif; ?>
+							endif; // End thumbnail_link check
 
-							<?php
 							// Display post thumbnail
-							wpex_post_thumbnail( array(
+							$output .= wpex_get_post_thumbnail( array(
 								'width'  => $img_width,
 								'height' => $img_height,
 								'size'   => $img_size,
 								'crop'   => $img_crop,
-								'alt'    => $post->esc_title,
-							) ); ?>
+								'alt'    => $atts['post_esc_title'],
+							) );
 
-							<?php
 							// Inner link overlay html
-							wpex_overlay( 'inside_link', $overlay_style, $atts ); ?>
+							if ( 'none' != $overlay_style ) {
+								ob_start();
+								wpex_overlay( 'inside_link', $overlay_style, $atts );
+								$output .= ob_get_clean();
+							}
 
-							<?php
 							// Close link tag
-							if ( 'none' != $thumbnail_link ) echo '</a>'; ?>
+							if ( 'none' != $thumbnail_link ) {
+								$output .= '</a>';
+							}
 
-							<?php
 							// Outer link overlay HTML
-							wpex_overlay( 'outside_link', $overlay_style, $atts ); ?>
+							if ( 'none' != $overlay_style ) {
+								ob_start();
+								wpex_overlay( 'outside_link', $overlay_style, $atts );
+								$output .= ob_get_clean();
+							}
 
-						</div><!-- .wpex-carousel-entry-media -->
+						$output .= '</div>';
 
-					<?php endif; ?>
+					endif; // End media check
 
-					<?php
 					// Open details element if the title or excerpt are true
 					if ( 'true' == $title
 						|| 'true' == $date
 						|| 'true' == $excerpt
-					) : ?>
+					) :
 
-						<div class="wpex-carousel-entry-details clr"<?php echo $content_style; ?>>
+						$output .= '<div class="wpex-carousel-entry-details clr"'. $content_style .'>';
 
-							<?php
 							// Display title if $title is true and there is a post title
-							if ( 'true' == $title ) : ?>
+							if ( 'true' == $title ) :
 
-								<div class="wpex-carousel-entry-title entry-title"<?php echo $heading_style; ?>>
-									<a href="<?php echo $post->permalink; ?>" title="<?php echo $post->esc_title; ?>"><?php echo $post->title; ?></a>
-								</div>
+								$output .= '<div class="wpex-carousel-entry-title entry-title"'. $heading_style .'>';
+									$output .= '<a href="'. $atts['post_permalink'] .'" title="'. $atts['post_esc_title'] .'">';
+										$output .= $atts['post_title'];
+									$output .= '</a>';
+								$output .= '</div>';
 
-							<?php endif; ?>
+							endif;
 
-							<?php
 							// Display publish date if $date is enabled
-							if ( 'true' == $date ) : ?>
+							if ( 'true' == $date ) :
 
-								<div class="vcex-blog-entry-date"<?php echo $date_style; ?>>
-									<?php echo get_the_date(); ?>
-								</div><!-- .vcex-blog-entry-date -->
+								$output .= '<div class="vcex-blog-entry-date"'. $date_style .'>';
+									$output .= get_the_date();
+								$output .= '</div>';
 
-							<?php endif; ?>
+							endif;
 
-							<?php
 							// Display excerpt if $excerpt is true
-							if ( 'true' == $excerpt ) : ?>
+							if ( 'true' == $excerpt ) :
 
-								<div class="wpex-carousel-entry-excerpt clr"<?php echo $excerpt_styling; ?>>
-									<?php wpex_excerpt( $excerpt_length ); ?>
-								</div><!-- .wpex-carousel-entry-excerpt -->
+								$output .= '<div class="wpex-carousel-entry-excerpt clr"'. $excerpt_styling .'>';
+									$output .= wpex_get_excerpt( $excerpt_length );
+								$output .= '</div>';
 								
-							<?php endif ?>
+							endif;
 
-						</div><!-- .wpex-carousel-entry-details -->
+						$output .= '</div>';
 
-					<?php endif; ?>
+					endif; // End details check
 
-				</div><!-- .wpex-carousel-slide -->
+				$output .= '</div>';
 
-			<?php endif; ?>
+			endif; // End data check
 
-		<?php
 		// End entry loop
-		endwhile; ?>
+		endwhile;
 
-	</div><!-- .wpex-carousel -->
+	$output .= '</div>';
 
-	<?php
 	// Reset the post data to prevent conflicts with WP globals
-	wp_reset_postdata(); ?>
+	wp_reset_postdata();
 
-<?php
+	// Output shortcode
+	echo $output;
+
 // If no posts are found display message
-else : ?>
+else :
 
-	<?php
 	// Display no posts found error if function exists
-	echo vcex_no_posts_found_message( $atts ); ?>
+	echo vcex_no_posts_found_message( $atts );
 
-<?php
 // End post check
-endif; ?>
+endif;

@@ -40,8 +40,8 @@ function wpex_portfolio_post_blocks() {
 	// Get layout blocks
 	$blocks = wpex_get_mod( 'portfolio_post_composer' );
 
-	// If blocks are 100% empty return defaults
-	$blocks = $blocks ? $blocks : 'content,share,related';
+	// If blocks are empty return defaults - should never be empty!
+	$blocks = $blocks ? $blocks : array( 'content', 'share', 'related' );
 
 	// Convert blocks to array so we can loop through them
 	if ( ! is_array( $blocks ) ) {

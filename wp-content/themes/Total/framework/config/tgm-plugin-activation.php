@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Configs
- * @version 3.3.4
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -19,7 +19,11 @@ function wpex_tgmpa_register() {
 	$plugins = wpex_recommended_plugins();
 
 	// Prevent dismiss
-	$dismissable = wpex_vc_is_supported() ? true : false;
+	if ( WPEX_VC_ACTIVE ) {
+		$dismissable = wpex_vc_is_supported() ? true : false;
+	} else {
+		$dismissable = true; // VC not active
+	}
 
 	// Register notice
 	tgmpa( $plugins, array(

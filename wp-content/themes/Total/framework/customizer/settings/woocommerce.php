@@ -23,7 +23,7 @@ $this->sections['wpex_woocommerce_general'] = array(
 		array(
 			'id' => 'woo_custom_sidebar',
 			'default' => true,
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Custom WooCommerce Sidebar', 'total' ),
 				'type' => 'checkbox',
 			),
@@ -32,7 +32,7 @@ $this->sections['wpex_woocommerce_general'] = array(
 			'id' => 'woo_menu_icon_display',
 			'default' => 'icon_count',
 			'transport' => 'postMessage',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Menu Cart: Display', 'total' ),
 				'type' => 'select',
 				'choices' => array(
@@ -48,7 +48,7 @@ $this->sections['wpex_woocommerce_general'] = array(
 			'id' => 'woo_menu_icon_class',
 			'default' => 'drop_down',
 			'transport' => 'postMessage',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Menu Cart: Icon', 'total' ),
 				'type' => 'select',
 				'choices' => array(
@@ -63,7 +63,7 @@ $this->sections['wpex_woocommerce_general'] = array(
 			'id' => 'woo_menu_icon_style',
 			'default' => 'drop_down',
 			'transport' => 'postMessage',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Menu Cart: Style', 'total' ),
 				'type' => 'select',
 				'choices' => array(
@@ -78,7 +78,7 @@ $this->sections['wpex_woocommerce_general'] = array(
 		array(
 			'id' => 'woo_menu_icon_custom_link',
 			'transport' => 'postMessage',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Menu Cart: Custom Link', 'total' ),
 				'type' => 'text',
 				'desc' => $refresh_desc,
@@ -95,14 +95,14 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woo_shop_title',
 			'default' => 'on',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Shop Title', 'total' ),
 				'type' => 'checkbox',
 			),
 		),
 		array(
 			'id' => 'woo_shop_slider',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Shop Slider', 'total' ),
 				'type' => 'text',
 			),
@@ -110,7 +110,7 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woo_shop_posts_per_page',
 			'default' => '12',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Shop Posts Per Page', 'total' ),
 				'type' => 'text',
 				'desc' => esc_html__( 'You must save your options and refresh your live site to preview changes to this setting.', 'total' ),
@@ -119,7 +119,7 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woo_shop_layout',
 			'default' => 'full-width',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Layout', 'total' ),
 				'type' => 'select',
 				'choices' => $post_layouts,
@@ -128,7 +128,7 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woocommerce_shop_columns',
 			'default' => '4',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Shop Columns', 'total' ),
 				'type' => 'select',
 				'choices' => wpex_grid_columns(),
@@ -138,7 +138,7 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woo_category_description_position',
 			'default' => 'under_title',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Category Description Position', 'total' ),
 				'type' => 'select',
 				'choices' => array(
@@ -151,7 +151,8 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woo_shop_sort',
 			'default' => 'on',
-			'control' => array (
+			'transport' => 'postMessage',
+			'control' => array(
 				'label' => esc_html__( 'Shop Sort', 'total' ),
 				'type' => 'checkbox',
 				'desc' => esc_html__( 'You must save your options and refresh your live site to preview changes to this setting.', 'total' ),
@@ -160,7 +161,8 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woo_shop_result_count',
 			'default' => 'on',
-			'control' => array (
+			'transport' => 'postMessage',
+			'control' => array(
 				'label' => esc_html__( 'Shop Result Count', 'total' ),
 				'type' => 'checkbox',
 				'desc' => esc_html__( 'You must save your options and refresh your live site to preview changes to this setting.', 'total' ),
@@ -169,7 +171,7 @@ $this->sections['wpex_woocommerce_archives'] = array(
 		array(
 			'id' => 'woo_product_entry_style',
 			'default' => 'image-swap',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Product Entry Media', 'total' ),
 				'type' => 'select',
 				'choices' => array(
@@ -190,7 +192,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woo_shop_single_title',
 			'default' => esc_html__( 'Store', 'total' ),
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Page Header Title', 'total' ),
 				'type' => 'text',
 			),
@@ -198,7 +200,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woo_product_layout',
 			'default' => 'full-width',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Layout', 'total' ),
 				'type' => 'select',
 				'choices' => $post_layouts,
@@ -207,7 +209,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woocommerce_upsells_count',
 			'default' => '4',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Up-Sells Count', 'total' ), 
 				'type' => 'text',
 			),
@@ -215,7 +217,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woocommerce_upsells_columns',
 			'default' => '4',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Up-Sells Columns', 'total' ), 
 				'type' => 'select',
 				'choices' => wpex_grid_columns(),
@@ -224,7 +226,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woocommerce_related_count',
 			'default' => '4',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Related Items Count', 'total' ), 
 				'type' => 'text',
 			),
@@ -232,7 +234,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woocommerce_related_columns',
 			'default' => '4',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Related Products Columns', 'total' ),
 				'type' => 'select',
 				'choices' => wpex_grid_columns(),
@@ -241,7 +243,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woo_single_gallery_include_thumbnail',
 			'default' => true,
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Include Featured Image in Gallery', 'total' ),
 				'type' => 'checkbox',
 			),
@@ -249,7 +251,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woo_product_meta',
 			'default' => 'on',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Product Meta', 'total' ),
 				'type' => 'checkbox',
 				'desc' => esc_html__( 'You must save your options and refresh your live site to preview changes to this setting.', 'total' ),
@@ -258,7 +260,7 @@ $this->sections['wpex_woocommerce_single'] = array(
 		array(
 			'id' => 'woo_next_prev',
 			'default' => 'on',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Next & Previous Links', 'total' ),
 				'type' => 'checkbox',
 			),
@@ -274,7 +276,7 @@ $this->sections['wpex_woocommerce_cart'] = array(
 		array(
 			'id' => 'woocommerce_cross_sells_count',
 			'default' => '2',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Cross-Sells Count', 'total' ),
 				'type' => 'text',
 			),
@@ -282,7 +284,7 @@ $this->sections['wpex_woocommerce_cart'] = array(
 		array(
 			'id' => 'woocommerce_cross_sells_columns',
 			'default' => '2',
-			'control' => array (
+			'control' => array(
 				'label' => esc_html__( 'Cross-Sells Columns', 'total' ),
 				'type' => 'select',
 				'choices' => wpex_grid_columns(),
@@ -299,7 +301,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 	'settings' => array(
 		array(
 			'id' => 'onsale_bg',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'On Sale Background', 'total' ),
 			),
@@ -310,7 +312,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'onsale_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'On Sale Color', 'total' )
 			),
@@ -321,7 +323,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_product_title_link_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Product Entry Title Color', 'total' )
 			),
@@ -335,7 +337,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_product_title_link_color_hover',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Product Entry Title Color: Hover', 'total' )
 			),
@@ -349,7 +351,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_price_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Global Price Color', 'total' )
 			),
@@ -364,7 +366,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_product_entry_price_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Product Entry Price Color', 'total' )
 			),
@@ -378,7 +380,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_single_price_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Single Product Price Color', 'total' )
 			),
@@ -392,7 +394,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_stars_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Star Ratings Color', 'total' )
 			),
@@ -406,7 +408,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_single_tabs_active_border_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Product Tabs Active Border Color', 'total' )
 			),
@@ -419,7 +421,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_button_bg',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Woo Button Background', 'total' )
 			),
@@ -435,7 +437,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_button_color',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Woo Button Color', 'total' )
 			),
@@ -451,7 +453,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_button_border_radius',
-			'control' => array (
+			'control' => array(
 				'type' => 'text',
 				'label' => esc_html__( 'Woo Button Border Radius', 'total' )
 			),
@@ -467,7 +469,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_button_bg_hover',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Woo Button Hover: Background', 'total' )
 			),
@@ -483,7 +485,7 @@ $this->sections['wpex_woocommerce_styling'] = array(
 		),
 		array(
 			'id' => 'woo_button_color_hover',
-			'control' => array (
+			'control' => array(
 				'type' => 'color',
 				'label' => esc_html__( 'Woo Button Hover: Color', 'total' )
 			),

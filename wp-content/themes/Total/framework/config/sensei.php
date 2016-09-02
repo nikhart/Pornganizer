@@ -263,7 +263,7 @@ if ( ! class_exists( 'WPEX_Sensei_Config' ) ) {
 			// Add course to Module
 			elseif ( is_tax( 'module' ) ) {
 				if ( ! empty( $_GET['course_id'] ) ) {
-					$course_id = $_GET['course_id'];
+					$course_id = esc_html( $_GET['course_id'] );
 					$offset = 1;
 					$og_trail = $trail;
 					$courses_obj = get_post_type_object( 'course' );

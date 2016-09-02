@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,7 +17,13 @@ if ( is_admin() ) {
 	return;
 }
 
-// FALLBACK VARS
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// FALLBACK VARS => NEVER REMOVE!!
 $padding          = isset( $atts['padding'] ) ? $atts['padding'] : '';
 $background       = isset( $atts['background'] ) ? $atts['background'] : '';
 $background_image = isset( $atts['background_image'] ) ? $atts['background_image'] : '';
@@ -25,10 +31,11 @@ $margin_bottom    = isset( $atts['margin_bottom'] ) ? $atts['margin_bottom'] : '
 $border_color     = isset( $atts['border_color'] ) ? $atts['border_color'] : '';
 
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_icon_box', $atts );
 extract( $atts );
 
 // Sanitize data & declare main vars
+$output           = '';
 $url              = esc_url( $url );
 $inline_js        = array();
 $css_wrap_classes = array( 'vcex-icon-box-css-wrap' );
@@ -105,7 +112,7 @@ if ( 'true' == $hover_white_text ) {
 	$css_wrap_classes[] = 'wpex-hover-white-text';
 }
 if ( $hover_animation ) {
-	if ( $css ) {
+	if ( $css && in_array( $style, array( 'one', 'seven' ) ) ) {
 		$css_wrap_classes[] = wpex_hover_animation_class( $hover_animation );
 	} else {
 		$wrapper_classes[] = wpex_hover_animation_class( $hover_animation );
@@ -117,10 +124,10 @@ if ( ! $hover_animation && $hover_background ) {
 	$css_wrap_classes[] = 'animate-bg-hover';
 }
 if ( $css_animation ) {
-	$wrapper_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrapper_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $classes ) {
-	$wrapper_classes[] = $this->getExtraClass( $classes );
+	$wrapper_classes[] = vcex_get_extra_class( $classes );
 }
 if ( $visibility ) {
 	$wrapper_classes[] = $visibility;
@@ -232,8 +239,8 @@ if ( ! empty( $inline_js ) ) {
 }
 
 // Open new wrapper for icon style 1
-if ( $css && in_array( $style, array( 'one', 'seven' ) ) ) : ?>
-	<?php
+if ( $css && in_array( $style, array( 'one', 'seven' ) ) ) :
+
 	// Remove wrapper hover
 	if ( isset( $wrapper_classes['wpex-data-hover'] ) ) {
 		unset( $wrapper_classes['wpex-data-hover'] );
@@ -247,31 +254,50 @@ if ( $css && in_array( $style, array( 'one', 'seven' ) ) ) : ?>
 	// Add hover animations to css div
 	$outer_wrap_data = '';
 	if ( $hover_background ) {
-		$outer_wrap_data = 'data-hover-background="'. $hover_background .'"';
-	}?>
-	<div class="<?php echo $css_wrap_classes; ?>"<?php echo $outer_wrap_data; ?>>
-<?php endif; ?>
+		$outer_wrap_data = ' data-hover-background="'. $hover_background .'"';
+	}
 
-<?php
+	$output .= '<div class="'. $css_wrap_classes .'"'. $outer_wrap_data .'>';
+
+endif;
+
 // Convert arrays to strings
 $wrapper_classes = implode( ' ', $wrapper_classes );
-$wrapper_data    = implode( ' ', $wrapper_data );
+$wrapper_data    = $wrapper_data ? ' '. implode( ' ', $wrapper_data ) : '';
 $wrapper_style   = vcex_inline_style( $wrapper_style );
 
 // Open link tag if url and url_wrap are defined
-if ( $url && 'true' == $url_wrap ) : ?>
-<a href="<?php echo $url; ?>" title="<?php echo esc_attr( $heading ); ?>" class="<?php echo $wrapper_classes; ?>"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrapper_style; ?><?php echo $url_target; ?><?php echo $url_rel; ?><?php echo $wrapper_data; ?>>
-<?php else : ?>
-<div class="<?php echo $wrapper_classes; ?>"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrapper_style; ?><?php echo $wrapper_data; ?>>
-<?php endif; ?>
+if ( $url && 'true' == $url_wrap ) :
 
-	<?php
+	$output .= '<a href="'. esc_url( $url ) .'" title="'. esc_attr( $heading ) .'" class="'. $wrapper_classes .'"'
+		. vcex_get_unique_id( $unique_id )
+		. $wrapper_style
+		. $url_target
+		. $url_rel
+		. $wrapper_data;
+	$output .= '>';
+
+// Open icon box with standard div
+else :
+
+	$output .= '<div class="'. $wrapper_classes .'"'
+		. vcex_get_unique_id( $unique_id )
+		. $wrapper_style
+		. $wrapper_data;
+	$output .= '>';
+
+endif;
+
 	// Open link if url is defined and the entire wrapper isn't a link
-	if ( $url && 'true' != $url_wrap ) : ?>
-		<a href="<?php echo $url; ?>" title="<?php echo esc_attr( $heading ); ?>" class="<?php echo $url_classes; ?>"<?php echo $url_target; ?><?php echo $url_rel; ?>>
-	<?php endif; ?>
+	if ( $url && 'true' != $url_wrap ) :
+
+		$output .= '<a href="'. esc_url( $url ) .'" title="'. esc_attr( $heading ) .'" class="'. $url_classes .'"'
+			. $url_target
+			. $url_rel;
+		$output .= '>';
+
+	endif;
 	
-	<?php
 	// Display Image Icon Alternative
 	if ( $image ) :
 
@@ -284,76 +310,76 @@ if ( $url && 'true' == $url_wrap ) : ?>
 
 		$img_dims = '';
 		if ( $image_width ) {
-			$img_dims .= 'width="'. intval( $image_width ) .'"';
+			$img_dims .= ' width="'. intval( $image_width ) .'"';
 		}
 		if ( $image_height ) {
-			$img_dims .= 'width="'. intval( $image_height ) .'"';
-		} ?>
+			$img_dims .= ' height="'. intval( $image_height ) .'"';
+		}
 
-		<img src="<?php echo $image; ?>" alt="<?php echo esc_attr( $heading ); ?>" class="vcex-icon-box-image"<?php echo $img_dims; ?><?php echo $image_style; ?> />
+		$output .= '<img src="'. esc_url( $image ) .'" alt="'. esc_attr( $heading ) .'" class="vcex-icon-box-image"'
+			. $img_dims
+			. $image_style;
+		$output .= '/>';
 
-	<?php
 	// Display Icon
-	elseif ( $icon ) : ?>
+	elseif ( $icon ) :
 
-		<div class="<?php echo $icon_classes; ?>"<?php echo $icon_style; ?>>
+		$output .= '<div class="'. $icon_classes .'"'. $icon_style .'>';
 
-			<?php
 			// Display alternative icon
-			if ( $icon_alternative_classes ) : ?>
+			if ( $icon_alternative_classes ) :
 
-				<span class="<?php echo $icon_alternative_classes; ?>"></span>
+				$output .= '<span class="'. $icon_alternative_classes .'"></span>';
 
-			<?php
 			// Display theme supported icon
-			else : ?>
+			else :
 
-				<span class="<?php echo $icon; ?>"></span>
+				$output .= '<span class="'. $icon .'"></span>';
 
-			<?php endif; ?>
+			endif;
 
-		</div><!-- .<?php echo $icon_classes; ?> -->
+		$output .= '</div>';
 
-	<?php endif; ?>
+	endif;
 	
-	<?php
 	// Display heading if defined
-	if ( $heading ) : ?>
+	if ( $heading ) :
 
-		<<?php echo $heading_type; ?> class="vcex-icon-box-heading"<?php echo $heading_style; ?>>
-			<?php echo $heading; ?>
-		</<?php echo $heading_type; ?>>
+		$output .= '<'. $heading_type .' class="vcex-icon-box-heading"'. $heading_style .'>';
+			$output .= $heading;
+		$output .= '</'. $heading_type .'>';
 
-	<?php endif; ?>
+	endif;
 
-	<?php
 	// Close link around heading and icon
-	if ( $url && 'true' != $url_wrap ) echo '</a>'; ?>
+	if ( $url && 'true' != $url_wrap ) {
+		$output .= '</a>';
+	}
 
-	<?php
 	// Display content if defined
-	if ( $content ) : ?>
+	if ( $content ) :
 
-		<div class="vcex-icon-box-content clr"<?php echo $content_style; ?>>
-			<?php echo apply_filters( 'the_content', $content ); ?>
-		</div><!-- .vcex-icon-box-content -->
+		$output .= '<div class="vcex-icon-box-content clr"'. $content_style .'>';
+			$output .= apply_filters( 'the_content', $content );
+		$output .= '</div>';
 
-	<?php endif; ?>
+	endif;
 
-<?php
 // Close outer link wrap
-if ( $url && 'true' == $url_wrap ) : ?>
+if ( $url && 'true' == $url_wrap ) :
 
-	</a><!-- .vcex-icon-box -->
+	$output .= '</a>';
 
-<?php
 // Close outer div wrap
-else : ?>
+else :
 
-	</div><!-- .vcex-icon-box -->
+	$output .= '</div>';
 
-<?php endif; ?>
+endif;
 
-<?php
 // Close css wrapper for icon style one
-if ( $css && in_array( $style, array( 'one', 'seven' ) ) ) echo '</div>'; ?>
+if ( $css && in_array( $style, array( 'one', 'seven' ) ) ) {
+	$output .= '</div>';
+}
+
+echo $output;

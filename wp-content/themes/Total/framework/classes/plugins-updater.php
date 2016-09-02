@@ -31,13 +31,8 @@ if ( ! class_exists( 'WPEX_Plugin_Updater' ) ) {
 		 * @since 3.3.3
 		 */
 		public function __construct() {
-
-			// Check for updates
 			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_for_updates' ) );
-
-			// For testing only!!!
-			//set_site_transient( 'update_plugins', null );
-
+			//set_site_transient( 'update_plugins', null ); // For testing only
 		}
 
 		/**

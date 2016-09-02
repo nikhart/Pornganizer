@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -52,11 +52,9 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_post_image_lightb
 
 					<?php
 					// Get attachment data
-					$lightbox_url       = $lightbox_enabled ? wpex_get_lightbox_image( $attachment ) : '';
-					$attachment_data    = wpex_get_attachment_data( $attachment );
-					$attachment_alt     = $attachment_data['alt'];
-					$attachment_video   = $attachment_data['video'];
-					$attachment_caption = $attachment_data['caption'];
+					$attachment_data  = wpex_get_attachment_data( $attachment );
+					$attachment_alt   = $attachment_data['alt'];
+					$attachment_video = $attachment_data['video'];
 
 					// Get image output
 					$attachment_html    = wpex_get_blog_post_thumbnail( array(
@@ -70,9 +68,7 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_post_image_lightb
 						// Display attachment video
 						if ( $attachment_video && ! is_wp_error( $attachment_video = wp_oembed_get( $attachment_video ) ) ) : ?>
 
-							<div class="wpex-slider-video responsive-video-wrap">
-								<?php echo $attachment_video; ?>
-							</div><!-- .wpex-slider-video -->
+							<div class="wpex-slider-video responsive-video-wrap"><?php echo $attachment_video; ?></div>
 
 						<?php
 						// Display attachment image
@@ -82,9 +78,15 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_post_image_lightb
 
 								<?php
 								// Display with lightbox
-								if ( $lightbox_enabled ) : ?>
+								if ( $lightbox_enabled ) :
 
-									<a href="<?php echo $lightbox_url; ?>" title="<?php echo $attachment_alt; ?>" data-title="<?php echo $attachment_alt; ?>" data-type="image" class="wpex-lightbox-group-item"><?php echo $attachment_html; ?></a>
+									if ( apply_filters( 'wpex_blog_gallery_lightbox_title', false ) ) {
+										$title_data_attr = ' data-title="'. esc_attr( $attachment_alt ) .'"';
+									} else {
+										$title_data_attr = ' data-show_title="false"';
+									} ?>
+
+									<a href="<?php echo wpex_get_lightbox_image( $attachment ); ?>" title="<?php echo $attachment_alt; ?>" data-type="image" class="wpex-lightbox-group-item"<?php echo $title_data_attr; ?>><?php echo $attachment_html; ?></a>
 
 								<?php
 								// Display single image
@@ -92,9 +94,9 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_post_image_lightb
 
 									<?php echo $attachment_html; ?>
 
-									<?php if ( $attachment_caption ) : ?>
+									<?php if ( ! empty( $attachment_data['caption'] ) ) : ?>
 										<div class="wpex-slider-caption sp-layer sp-black sp-padding clr" data-position="bottomCenter" data-show-transition="up" data-hide-transition="down" data-width="100%" data-show-delay="500">
-											<?php echo $attachment_caption; ?>
+											<?php echo wp_kses_post( $attachment_data['caption'] ); ?>
 										</div><!-- .wpex-slider-caption -->
 									<?php endif; ?>
 
@@ -110,23 +112,27 @@ if ( wpex_gallery_is_lightbox_enabled() || wpex_get_mod( 'blog_post_image_lightb
 
 			</div><!-- .wpex-slider-slides .sp-slides -->
 
-			<div class="wpex-slider-thumbnails sp-thumbnails">
+			<?php if ( apply_filters( 'wpex_post_gallery_slider_has_thumbnails', true ) ) : ?>
 
-				<?php
-				// Loop through attachments
-				foreach ( $attachments as $attachment ) : ?>
+				<div class="wpex-slider-thumbnails sp-thumbnails">
 
 					<?php
-					// Display image thumbnail
-					wpex_blog_entry_thumbnail( array(
-						'attachment'    => $attachment,
-						'class'         => 'wpex-slider-thumbnail sp-thumbnail',
-						'alt'           => get_post_meta( $attachments, '_wp_attachment_image_alt', true ),
-					) ); ?>
+					// Loop through attachments
+					foreach ( $attachments as $attachment ) : ?>
 
-				<?php endforeach; ?>
+						<?php
+						// Display image thumbnail
+						wpex_blog_entry_thumbnail( array(
+							'attachment'    => $attachment,
+							'class'         => 'wpex-slider-thumbnail sp-thumbnail',
+							'alt'           => get_post_meta( $attachments, '_wp_attachment_image_alt', true ),
+						) ); ?>
 
-			</div><!-- .wpex-slider-thumbnails -->
+					<?php endforeach; ?>
+
+				</div><!-- .wpex-slider-thumbnails -->
+
+			<?php endif; ?>
 
 		</div><!-- .wpex-slider .slider-pro -->
 

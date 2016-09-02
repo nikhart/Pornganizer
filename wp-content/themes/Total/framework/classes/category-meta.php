@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -24,8 +24,8 @@ if ( ! class_exists( 'WPEX_Category_Meta' ) ) {
 		 * @since  2.1.0
 		 */
 		public function __construct() {
-			add_action ( 'edit_category_form_fields', array( $this, 'edit_category_form_fields' ) );
-			add_action ( 'edited_category', array( $this, 'edited_category' ) );
+			add_action ( 'edit_category_form_fields', array( 'WPEX_Category_Meta', 'edit_category_form_fields' ) );
+			add_action ( 'edited_category', array( 'WPEX_Category_Meta', 'edited_category' ) );
 		}
 
 		/**
@@ -34,7 +34,7 @@ if ( ! class_exists( 'WPEX_Category_Meta' ) ) {
 		 * @access public
 		 * @since  2.1.0
 		 */
-		public function edit_category_form_fields( $tag ) {
+		public static function edit_category_form_fields( $tag ) {
 
 			// Get term id
 			$tag_id    = $tag->term_id;
@@ -49,7 +49,7 @@ if ( ! class_exists( 'WPEX_Category_Meta' ) ) {
 					<option value="" <?php selected( $layout ) ?>><?php esc_html_e( 'Default', 'total' ); ?></option>
 					<option value="right-sidebar" <?php selected( $layout, 'right-sidebar' ) ?>><?php esc_html_e( 'Right Sidebar', 'total' ); ?></option>
 					<option value="left-sidebar" <?php selected( $layout, 'left-sidebar' ) ?>><?php esc_html_e( 'Left Sidebar', 'total' ); ?></option>
-					<option value="full-width" <?php selected( $layout, 'full-width' ) ?>><?php esc_html_e( 'Full Width', 'total' ); ?></option>
+					<option value="full-width" <?php selected( $layout, 'full-width' ) ?>><?php esc_html_e( 'No Sidebar', 'total' ); ?></option>
 				</select>
 			</td>
 			</tr>
@@ -184,7 +184,7 @@ if ( ! class_exists( 'WPEX_Category_Meta' ) ) {
 		 * @access public
 		 * @since  2.1.0
 		 */
-		public function edited_category( $term_id ) {
+		public static function edited_category( $term_id ) {
 			if ( isset( $_POST['term_meta'] ) ) {
 				$tag_id    = $term_id;
 				$term_meta = get_option( "category_$tag_id" );

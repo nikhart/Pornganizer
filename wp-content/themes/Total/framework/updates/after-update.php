@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Updates
- * @version 3.4.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -35,19 +35,6 @@ function wpex_after_update() {
 	/*-------------------------------------------------------------------------------*/
 	$old_version = get_option( 'total_version' );
 	$old_version = $old_version ? $old_version : '2.1.3'; // Version is required and was added in v2.1.3
-
-	/*-------------------------------------------------------------------------------*/
-	/* -  Migrate OLD redux options
-	/*-------------------------------------------------------------------------------*/
-	if ( version_compare( '1.6.0', $initial_version, '>' )
-		&& ! get_option( 'wpex_customizer_migration_complete' )
-		&& get_option( 'wpex_options' )
-	) {
-		require_once( $dir .'redux-migrate.php' );
-		update_option( 'wpex_customizer_migration_complete', 'completed' );
-	} else {
-		update_option( 'wpex_customizer_migration_complete', 'completed' );
-	}
 
 	/*-------------------------------------------------------------------------------*/
 	/* - Functions that will always run after update
@@ -174,6 +161,33 @@ function wpex_after_update() {
 			remove_theme_mod( 'fixed_header' );
 		}
 		remove_theme_mod( 'shink_fixed_header' );
+	}
+
+	/*-------------------------------------------------------------------------------*/
+	/* -  UPDATE: 3.5.0
+	/*-------------------------------------------------------------------------------*/
+	if ( version_compare( '3.5.0', $old_version, '>' ) ) {
+
+		// Update page composer based on settings
+		$composer = array( 'content' );
+		if ( wpex_get_mod( 'page_featured_image' ) ) {
+			unset( $composer[0] );
+			$composer[] = 'media';
+			$composer[] = 'content';
+		}
+		if ( wpex_get_mod( 'social_share_pages' ) ) {
+			$composer[] = 'share';
+		}
+		if ( wpex_get_mod( 'page_comments' ) ) {
+			$composer[] = 'comments';
+		}
+		$composer = implode( ',', $composer );
+		set_theme_mod( 'page_composer', $composer );
+
+		remove_theme_mod( 'page_featured_image' );
+		remove_theme_mod( 'social_share_pages' );
+		remove_theme_mod( 'page_comments' );
+
 	}
 
 	/*-------------------------------------------------------------------------------*/

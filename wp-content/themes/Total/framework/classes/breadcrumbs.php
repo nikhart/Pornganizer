@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -38,7 +38,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 		 */
 		public function display( $echo = true ) {
 			if ( $echo ) {
-				echo $this->output; // No user input here so no need to escape
+				echo $this->output; // Sanitized via loop
 			} else {
 				return $this->output;
 			}
@@ -108,7 +108,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 				$home_page = get_page( $wp_query->get_queried_object_id() );
 				if ( is_object( $home_page ) ) {
 					$trail = array_merge( $trail, $this->get_post_parents( $home_page->post_parent, '' ) );
-					$trail['trail_end'] = '<span itemprop="title">'. get_the_title( $home_page->ID ) .'</span>';
+					$trail['trail_end'] = '<span itemprop="title">'. esc_html( get_the_title( $home_page->ID ) ) .'</span>';
 				}
 			}
 
@@ -150,7 +150,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 							$cart_id = wpex_parse_obj_id( wc_get_page_id( 'cart' ), 'page' );
 							if ( $cart_id ) {
 								$cart_title = get_the_title( $cart_id );
-								$trail['cart'] = '<span '. $item_type_scope .' class="trail-type-archive trail-cart"><a href="'. esc_url( get_permalink( $cart_id ) ) .'" title="'. esc_attr( $cart_title ) .'" itemprop="url"><span itemprop="title">'. $cart_title .'</span></a></span>';
+								$trail['cart'] = '<span '. $item_type_scope .' class="trail-type-archive trail-cart"><a href="'. esc_url( get_permalink( $cart_id ) ) .'" title="'. esc_attr( $cart_title ) .'" itemprop="url"><span itemprop="title">'. esc_html( $cart_title ) .'</span></a></span>';
 							}
 						}
 
@@ -167,7 +167,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						$page_permalink = get_permalink( $page_id );
 						$page_name      = get_the_title( $page_id );
 						if ( $page_permalink && $page_name ) {
-							$trail['blog'] = '<span '. $item_type_scope .' class="trail-blog-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. $page_name .'</span></a></span>';
+							$trail['blog'] = '<span '. $item_type_scope .' class="trail-blog-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $page_name ) .'</span></a></span>';
 						}
 					}
 
@@ -194,7 +194,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						$page_permalink = get_permalink( $page_id );
 						$page_name      = get_the_title( $page_id );
 						if ( $page_permalink && $page_name ) {
-							$trail['portfolio'] = '<span '. $item_type_scope .' class="trail-portfolio-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. $page_name .'</span></a></span>';
+							$trail['portfolio'] = '<span '. $item_type_scope .' class="trail-portfolio-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $page_name ) .'</span></a></span>';
 						}
 					}
 
@@ -214,7 +214,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						$page_permalink = get_permalink( $page_id );
 						$page_name      = get_the_title( $page_id );
 						if ( $page_permalink && $page_name ) {
-							$trail['staff'] = '<span '. $item_type_scope .' class="trail-staff-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. $page_name .'</span></a></span>';
+							$trail['staff'] = '<span '. $item_type_scope .' class="trail-staff-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $page_name ) .'</span></a></span>';
 						}
 					}
 
@@ -234,7 +234,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						$page_permalink = get_permalink( $page_id );
 						$page_name      = get_the_title( $page_id );
 						if ( $page_permalink && $page_name ) {
-							$trail['testimonials'] = '<span '. $item_type_scope .' class="trail-testimonials-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. $page_name .'</span></a></span>';
+							$trail['testimonials'] = '<span '. $item_type_scope .' class="trail-testimonials-url"> <a href="'. esc_url( $page_permalink ) .'" title="'. esc_attr( $page_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $page_name ) .'</span></a></span>';
 						}
 					}
 
@@ -255,7 +255,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 
 					// Add shop page to product post
 					if ( $shop_url && $shop_title ) {
-						$trail['shop'] = '<span '. $item_type_scope .'><a href="'. esc_url( $shop_url ) .'" title="'. esc_attr( $shop_title ) .'" itemprop="url"><span itemprop="title">'. $shop_title .'</span></a></span>';
+						$trail['shop'] = '<span '. $item_type_scope .'><a href="'. esc_url( $shop_url ) .'" title="'. esc_attr( $shop_title ) .'" itemprop="url"><span itemprop="title">'. esc_html( $shop_title ) .'</span></a></span>';
 					}
 
 					// Add categories to product post
@@ -269,7 +269,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						$cart_id = wpex_parse_obj_id( wc_get_page_id( 'cart' ) );
 						if ( $cart_id ) {
 							$cart_title = get_the_title( $cart_id );
-							$trail['cart'] = '<span '. $item_type_scope .'><a href="'. esc_url( get_permalink( $cart_id ) ) .'" title="'. esc_attr( $cart_title ) .'" itemprop="url"><span itemprop="title">'. $cart_title .'</span></a></span>';
+							$trail['cart'] = '<span '. $item_type_scope .'><a href="'. esc_url( get_permalink( $cart_id ) ) .'" title="'. esc_attr( $cart_title ) .'" itemprop="url"><span itemprop="title">'. esc_html( $cart_title ) .'</span></a></span>';
 						}
 					}
 
@@ -293,7 +293,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 					// If archive page exists add to trail
 					if ( ! empty( $post_type_object->has_archive ) && ! is_singular( 'product' ) ) {
 
-						$trail['post_type_archive'] = '<span '. $item_type_scope .' class="trail-type-archive"><a href="'. esc_url( get_post_type_archive_link( $post_type ) ) .'" title="'. esc_attr( $post_type_object->labels->name ) .'" itemprop="url"><span itemprop="title">'. $post_type_object->labels->name .'</span></a></span>';
+						$trail['post_type_archive'] = '<span '. $item_type_scope .' class="trail-type-archive"><a href="'. esc_url( get_post_type_archive_link( $post_type ) ) .'" title="'. esc_attr( $post_type_object->labels->name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $post_type_object->labels->name ) .'</span></a></span>';
 
 					} else {
 
@@ -316,7 +316,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 					if ( $trim_title = wpex_get_mod( 'breadcrumbs_title_trim' ) ) {
 						$post_title = wp_trim_words( $post_title, $trim_title );
 					}
-					$trail['trail_end'] = $post_title;
+					$trail['trail_end'] = esc_html( $post_title );
 				}
 
 			}
@@ -335,13 +335,10 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 					if ( function_exists( 'is_shop' ) && is_shop() ) {
 						global $woocommerce;
 						if ( sizeof( $woocommerce->cart->cart_contents ) > 0 ) {
-							$cart_id = wc_get_page_id( 'cart' );
-							if ( function_exists( 'icl_object_id' ) ) {
-								$cart_id = icl_object_id( $cart_id, 'page' );
-							}
+							$cart_id    = wpex_parse_obj_id( wc_get_page_id( 'cart' ), 'page' );
 							$cart_title = get_the_title( $cart_id );
 							if ( $cart_id ) {
-								$trail['cart'] = '<span '. $item_type_scope .' class="trail-type-archive"><a href="'. esc_url( get_permalink( $cart_id ) ) .'" title="'. esc_attr( $cart_title ) .'" itemprop="url"><span itemprop="title">'. $cart_title .'</span></a></span>';
+								$trail['cart'] = '<span '. $item_type_scope .' class="trail-type-archive"><a href="'. esc_url( get_permalink( $cart_id ) ) .'" title="'. esc_attr( $cart_title ) .'" itemprop="url"><span itemprop="title">'. esc_html( $cart_title ) .'</span></a></span>';
 							}
 						}
 
@@ -350,7 +347,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 
 						// Add shop page title to trail end
 						if ( $shop_data['title'] ) {
-							$trail['trail_end'] = $shop_data['title'];
+							$trail['trail_end'] = esc_html( $shop_data['title'] );
 						}
 						
 					}
@@ -366,7 +363,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 							$trail['topics'] = '<span '. $item_type_scope .'><a href="'. esc_url( $forums_link ) .'" title="'. esc_attr( $forum_name ) .'" itemprop="url">'. esc_html( $forum_name ) .'</a></span>';
 						}
 
-						$trail['trail_end'] = $post_type_object->labels->name;
+						$trail['trail_end'] = esc_html( $post_type_object->labels->name );
 
 					// All other post type archives
 					} else {
@@ -390,7 +387,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						}
 
 						// Add post type name to trail end
-						$trail['trail_end'] = $post_type_object->labels->name;
+						$trail['trail_end'] = esc_html( $post_type_object->labels->name );
 
 					}
 					
@@ -402,7 +399,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 				elseif ( ! is_search() && ( is_tax() || is_category() || is_tag() ) ) {
 
 					// Get some taxonomy variables
-					$term = $wp_query->get_queried_object();
+					$term     = $wp_query->get_queried_object();
 					$taxonomy = get_taxonomy( $term->taxonomy );
 					
 					// Link to main portfolio page
@@ -410,15 +407,11 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						&& wpex_is_portfolio_tax()
 						&& $portfolio_page = wpex_get_mod( 'portfolio_page' )
 					) {
+						$portfolio_page = intval( wpex_parse_obj_id( $portfolio_page, 'page' ) );
 						$portfolio_url  = get_permalink( $portfolio_page );
 						$portfolio_name = get_the_title( $portfolio_page );
-						if ( function_exists( 'icl_object_id' ) ) {
-							$portfolio_page = icl_object_id( $portfolio_page, 'page' );
-							$portfolio_url  = get_permalink( $portfolio_page );
-							$portfolio_name = get_the_title( $portfolio_page );
-						}
 						if ( $portfolio_url ) {
-							$trail['portfolio'] = '<span '. $item_type_scope .' class="trail-portfolio-url"><a href="'. esc_url( $portfolio_url ) .'" title="'. esc_attr( $portfolio_name ) .'" itemprop="url"><span itemprop="title">'. $portfolio_name .'</span></a></span>';
+							$trail['portfolio'] = '<span '. $item_type_scope .' class="trail-portfolio-url"><a href="'. esc_url( $portfolio_url ) .'" title="'. esc_attr( $portfolio_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $portfolio_name ) .'</span></a></span>';
 						}
 					}
 					
@@ -427,13 +420,11 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						&& wpex_is_staff_tax()
 						&& $staff_page = wpex_get_mod( 'staff_page' )
 					) {
-						if ( function_exists( 'icl_object_id' ) ) {
-							$staff_page = icl_object_id( $staff_page, 'page' );
-						}
+						$staff_page = intval( wpex_parse_obj_id( $staff_page, 'page' ) );
 						$staff_url  = get_permalink( $staff_page );
 						$staff_name = get_the_title( $staff_page );
 						if ( $staff_url ) {
-							$trail['staff'] = '<span '. $item_type_scope .' class="trail-staff-url"><a href="'. esc_url( $staff_url ) .'" title="'. esc_attr( $staff_name ) .'" itemprop="url"><span itemprop="title">'. $staff_name .'</span></a></span>';
+							$trail['staff'] = '<span '. $item_type_scope .' class="trail-staff-url"><a href="'. esc_url( $staff_url ) .'" title="'. esc_attr( $staff_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $staff_name ) .'</span></a></span>';
 						}
 					}
 					
@@ -442,15 +433,11 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						&& wpex_is_testimonials_tax()
 						&& $testimonials_page = wpex_get_mod( 'testimonials_page' )
 					) {
-						$testimonials_url   = get_permalink( $testimonials_page );
-						$testimonials_name  = get_the_title( $testimonials_page );
-						if ( function_exists( 'icl_object_id' ) ) {
-							$testimonials_page  = icl_object_id( $testimonials_page, 'page' );
-							$testimonials_url   = get_permalink( $testimonials_page );
-							$testimonials_name  = get_the_title( $testimonials_page );
-						}
+						$testimonials_page = intval( wpex_parse_obj_id( $testimonials_page, 'page' ) );
+						$testimonials_url  = get_permalink( $testimonials_page );
+						$testimonials_name = get_the_title( $testimonials_page );
 						if ( $testimonials_url ) {
-							$trail['testimonials'] = '<span '. $item_type_scope .' class="trail-testimonials-url"><a href="'. esc_url( $testimonials_url ) .'" title="'. esc_attr( $testimonials_name ) .'" itemprop="url"><span itemprop="title">'. $testimonials_name .'</span></a></span>';
+							$trail['testimonials'] = '<span '. $item_type_scope .' class="trail-testimonials-url"><a href="'. esc_url( $testimonials_url ) .'" title="'. esc_attr( $testimonials_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $testimonials_name ) .'</span></a></span>';
 						}
 					}
 
@@ -464,7 +451,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 
 						// Add shop link
 						if ( $shop_url && $shop_title ) {
-							$trail['shop'] = '<span '. $item_type_scope .' class="trail-shop"><a href="'. esc_url( $shop_url ) .'" title="'. esc_attr( $shop_title ) .'" itemprop="url"><span itemprop="title">'. $shop_title .'</span></a></span>';
+							$trail['shop'] = '<span '. $item_type_scope .' class="trail-shop"><a href="'. esc_url( $shop_url ) .'" title="'. esc_attr( $shop_title ) .'" itemprop="url"><span itemprop="title">'. esc_html( $shop_title ) .'</span></a></span>';
 						}
 
 					}
@@ -472,14 +459,10 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 					// Display main blog page on Categories & archives
 					if ( is_category() || is_tag() ) {
 						if ( $blog_page = wpex_get_mod( 'blog_page' ) ) {
-							$blog_url   = get_permalink( $blog_page );
-							$blog_name  = get_the_title( $blog_page );
-							if ( function_exists( 'icl_object_id' ) ) {
-								$blog_page  = icl_object_id( $blog_page, 'page' );
-								$blog_url   = get_permalink( $blog_page );
-								$blog_name  = get_the_title( $blog_page );
-							}
-							$trail['blog'] = '<span '. $item_type_scope .' class="trail-blog-url"><a href="'. esc_url( $blog_url ) .'" title="'. esc_attr( $blog_name ) .'" itemprop="url"><span itemprop="title">'. $blog_name .'</span></a></span>';
+							$blog_page = intval( wpex_parse_obj_id( $blog_page, 'page' ) );
+							$blog_url  = get_permalink( $blog_page );
+							$blog_name = get_the_title( $blog_page );
+							$trail['blog'] = '<span '. $item_type_scope .' class="trail-blog-url"><a href="'. esc_url( $blog_url ) .'" title="'. esc_attr( $blog_name ) .'" itemprop="url"><span itemprop="title">'. esc_html( $blog_name ) .'</span></a></span>';
 						}
 					}
 
@@ -506,7 +489,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 					}
 
 					// Add term name to trail end
-					$trail['trail_end'] = $term->name;
+					$trail['trail_end'] = esc_html( $term->name );
 
 				}
 
@@ -531,7 +514,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 					}
 
 					// Add the author's display name to the trail end.
-					$trail['trail_end'] = get_the_author_meta( 'display_name', get_query_var( 'author' ) );
+					$trail['trail_end'] = esc_html( get_the_author_meta( 'display_name', get_query_var( 'author' ) ) );
 
 				}
 
@@ -542,17 +525,17 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 
 					// Display minute and hour
 					if ( get_query_var( 'minute' ) && get_query_var( 'hour' ) ) {
-						$trail['trail_end'] = get_the_time( 'g:i a' );
+						$trail['trail_end'] = esc_html( get_the_time( 'g:i a' ) );
 					}
 
 					// Display minute only
 					elseif ( get_query_var( 'minute' ) ) {
-						$trail['trail_end'] = sprintf( esc_html__( 'Minute %1$s', 'total' ), get_the_time( 'i' ) );
+						$trail['trail_end'] = esc_html( sprintf( esc_html__( 'Minute %1$s', 'total' ), get_the_time( 'i' ) ) );
 					}
 
 					// Display hour only
 					elseif ( get_query_var( 'hour' ) ) {
-						$trail['trail_end'] = get_the_time( 'g a' );
+						$trail['trail_end'] = esc_html( get_the_time( 'g a' ) );
 					}
 
 				}
@@ -579,7 +562,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						$trail['month'] = '<a href="'. esc_url( get_month_link( get_the_time( 'Y' ), get_the_time( 'm' ) ) ) .'" title="'. esc_attr( $title ) .'" itemprop="url">'. esc_html( $title ) .'</a>';
 
 						// Display Time
-						$trail['trail_end'] = date_i18n( 'j', strtotime( get_the_time( 'j' ) ) );
+						$trail['trail_end'] = esc_html( date_i18n( 'j', strtotime( get_the_time( 'j' ) ) ) );
 
 					}
 
@@ -591,7 +574,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 						$trail['year'] = '<a href="'. esc_url( get_year_link( get_the_time( 'Y' ) ) ) .'" title="'. esc_attr( $title ) .'" itemprop="url">'. esc_html( $title ) .'</a>';
 
 						// Display week
-						$trail['trail_end'] = sprintf( esc_html__( 'Week %1$s', 'total' ), get_the_time( 'W' ) );
+						$trail['trail_end'] = esc_html( sprintf( esc_html__( 'Week %1$s', 'total' ), get_the_time( 'W' ) ) );
 
 					}
 
@@ -604,7 +587,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 
 					// Year archive
 					elseif ( is_year() ) {
-						$trail['trail_end'] = date_i18n( 'Y', strtotime( get_the_time( 'Y' ) ) );
+						$trail['trail_end'] = esc_html( date_i18n( 'Y', strtotime( get_the_time( 'Y' ) ) ) );
 					}
 
 				}
@@ -614,14 +597,16 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 			/*  - Search
 			/*-----------------------------------------------------------------------------------*/
 			elseif ( is_search() ) {
-				$trail['trail_end'] = sprintf( esc_html__( 'Search results for &quot;%1$s&quot;', 'total' ), esc_html( get_search_query() ) );
+				$trail['trail_end'] = esc_html( sprintf( __( 'Search results for &quot;%1$s&quot;', 'total' ), get_search_query() ) );
 			}
 
 			/*-----------------------------------------------------------------------------------*/
 			/*  - 404
 			/*-----------------------------------------------------------------------------------*/
 			elseif ( is_404() ) {
-				$trail['trail_end'] = wpex_get_mod( 'error_page_title' ) ? wpex_get_mod( 'error_page_title' ) : esc_html__( '404 Not Found', 'total' );
+				$trail_end = wpex_get_translated_theme_mod( 'error_page_title' );
+				$trail_end = $trail_end ? $trail_end : esc_html__( '404 Not Found', 'total' );
+				$trail['trail_end'] = esc_html( $trail_end );
 			}
 
 			/*-----------------------------------------------------------------------------------*/
@@ -641,11 +626,22 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 			// Return trail
 			if ( $trail && is_array( $trail ) ) {
 
-				$classes = 'site-breadcrumbs wpex-clr';
-				$classes .= ' position-'. wpex_get_mod( 'breadcrumbs_position', 'default' );
+				// Breadcrumbs position
+				$position = wpex_get_mod( 'breadcrumbs_position' );
+
+				// Breadcrumbs classes
+				$classes = array( 'site-breadcrumbs', 'wpex-clr' );
+				if ( $position && 'default' != $position ) {
+					$classes[] = 'position-'. $position;
+				} else {
+					$classes[] = 'has-js-fix';
+				}
+
+				$classes = apply_filters( 'wpex_breadcrumbs_classes', $classes );
+				$classes = implode( ' ', $classes );
 
 				// Open Breadcrumbs
-				$breadcrumb = '<nav class="'. $classes .'"><div class="breadcrumb-trail">';
+				$breadcrumb = '<nav class="'. esc_attr( $classes ) .'"><span class="breadcrumb-trail">';
 
 				// Separator HTML
 				$separator = '<span class="sep"> '. $separator .' </span>';
@@ -654,7 +650,7 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 				$breadcrumb .= implode( $separator, $trail );
 
 				// Close breadcrumbs
-				$breadcrumb .= '</div></nav>';
+				$breadcrumb .= '</span></nav>';
 
 			}
 
@@ -673,6 +669,14 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 			// Make sure taxonomy exists
 			if ( ! $taxonomy || ! taxonomy_exists( $taxonomy ) ) {
 				return null;
+			}
+
+			// Terms empty by default
+			$terms = apply_filters( 'wpex_breadcrumbs_terms', null, $taxonomy );
+
+			// Return terms if filtered
+			if ( $terms ) {
+				return $terms;
 			}
 
 			// Get terms
@@ -885,27 +889,27 @@ if ( ! class_exists( 'WPEX_Breadcrumbs' ) ) {
 		 */
 		private function get_shop_data( $return = '' ) {
 
-			// Check if wc_get_page_id function exists
-			if ( ! function_exists( 'wc_get_page_id' ) ) {
-				return;
-			}
-
-			// Define data var
+			// Define data
 			$data = array(
+				'id'    => '',
 				'url'   => '',
 				'title' => '',
 			);
 
+			// If wc_get_page_id function doesn't exist return empty data array
+			if ( ! function_exists( 'wc_get_page_id' ) ) {
+				return $data;
+			}
+
 			// Get Woo Shop ID
 			$id = wc_get_page_id( 'shop' );
 
-			// Translate ID for WPML
-			if ( function_exists( 'icl_object_id' ) ) {
-				$id = icl_object_id( $id, 'page' );
-			}
+			// Translate ID
+			$id = intval( wpex_parse_obj_id( $id, 'page' ) );
 
 			// Get shop url and title
-			$data['url'] = get_permalink( $id );
+			$data['id']    = $id;
+			$data['url']   = get_permalink( $id );
 			$data['title'] = apply_filters( 'wpex_breadcrumbs_shop_title', get_the_title( $id ) );
 
 			// Return data
@@ -931,7 +935,7 @@ function wpex_display_breadcrumbs() {
 
 	// Custom breadcrumbs
 	if ( $custom_breadcrumbs = apply_filters( 'wpex_custom_breadcrumbs', null ) ) {
-		echo $custom_breadcrumbs;
+		echo wp_kses_post( $custom_breadcrumbs );
 		return;
 	}
 

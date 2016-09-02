@@ -6,7 +6,7 @@
  * @subpackage Partials
  * @version 3.3.0
  *
- * @todo Add support for post featured video
+ * @todo Add support for post featured video ? No one has requested it yet.
  */
 
 // Exit if accessed directly

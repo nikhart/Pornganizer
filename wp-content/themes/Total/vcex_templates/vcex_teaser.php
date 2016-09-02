@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,40 +17,52 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' )
+	|| ! function_exists( 'vc_shortcode_custom_css_class' )
+	|| ! function_exists( 'vc_build_link' )
+) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output var
+$output = '';
+
 // Get and extract shortcode attributes
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_teaser', $atts ) );
 
 // Add main Classes
-$wrap_classes = 'vcex-teaser';
+$wrap_classes = array( 'vcex-teaser' );
 if ( $css_animation ) {
-	$wrap_classes .= $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $style ) {
-	$wrap_classes .= ' vcex-teaser-'. $style;
+	$wrap_classes[] = 'vcex-teaser-'. $style;
 }
 if ( $classes ) {
-	$wrap_classes .= $this->getExtraClass( $classes );
+	$wrap_classes[] = vcex_get_extra_class( $classes );
 }
 if ( $visibility ) {
-	$wrap_classes .= ' '. $visibility;
+	$wrap_classes[] = $visibility;
 }
 if ( $hover_animation ) {
-	$wrap_classes .= ' '. wpex_hover_animation_class( $hover_animation );
+	$wrap_classes[] = wpex_hover_animation_class( $hover_animation );
 	vcex_enque_style( 'hover-animations' );
 }
 if ( 'two' == $style ) {
-	$wrap_classes .= ' wpex-bg-gray';
-	$wrap_classes .= ' wpex-padding-20';
-	$wrap_classes .= ' wpex-bordered';
-	$wrap_classes .= ' wpex-rounded';
+	$wrap_classes[] = 'wpex-bg-gray';
+	$wrap_classes[] = 'wpex-padding-20';
+	$wrap_classes[] = 'wpex-bordered';
+	$wrap_classes[] = 'wpex-rounded';
 } elseif ( 'three' == $style ) {
-	$wrap_classes .= ' wpex-bg-gray';
-	$wrap_classes .= ' wpex-bordered';
+	$wrap_classes[] = 'wpex-bg-gray';
+	$wrap_classes[] = 'wpex-bordered';
 } elseif ( 'four' == $style ) {
-	$wrap_classes .= ' wpex-bordered';
+	$wrap_classes[] = 'wpex-bordered';
 }
 if ( $css ) {
-	$wrap_classes .= ' '. vc_shortcode_custom_css_class( $css );
+	$wrap_classes[] = vc_shortcode_custom_css_class( $css );
 }
 
 // Add inline style for main div
@@ -92,19 +104,20 @@ if ( 'three' == $style || 'four' == $style ) {
 // Match Height Inline JS
 if ( false !== strpos( $classes, 'equal-height-content' ) ) {
 	vcex_inline_js( 'equal_height_content' );
-} ?>
+}
 
-<div class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrap_style; ?>>
+// Output shortcode
+$output .= '<div class="'. implode( ' ', $wrap_classes ) .'"'. vcex_get_unique_id( $unique_id ) . $wrap_style .'>';
 
-	<?php
-	// Video
-	if ( $video ) : ?>
-		<div class="<?php echo $media_classes; ?> responsive-video-wrap">
-			<?php echo wp_oembed_get( $video ); ?>
-		</div>
-	<?php endif; ?>
+	// Display video
+	if ( $video ) :
 
-	<?php
+		$output .= '<div class="'. $media_classes .' responsive-video-wrap">';
+			$output .= wp_oembed_get( $video );
+		$output .= '</div>';
+
+	endif;
+
 	// Check for and sanitize URL
 	if ( $url && '||' != $url ) :
 
@@ -136,11 +149,10 @@ if ( false !== strpos( $classes, 'equal-height-content' ) ) {
 		}
 		if ( 'local' == $url_target ) {
 			$url_classes .= ' local-scroll-link';
-		} ?>
+		}
 
-	<?php endif; ?>
+	endif;
 
-	<?php
 	// Image
 	if ( $image ) :
 
@@ -157,28 +169,33 @@ if ( false !== strpos( $classes, 'equal-height-content' ) ) {
 		}
 		if ( 'stretch' == $img_style ) {
 			$image_classes .= ' stretch-image';
-		} ?>
+		}
 
-		<figure class="<?php echo $image_classes; ?>">
-			<?php
+		$output .= '<figure class="'. $image_classes .'">';
+
 			// Open URl
-			if ( $url ) { ?>
-				<a href="<?php echo esc_url( $url ); ?>" title="<?php echo esc_attr( $url_title ); ?>" class="<?php echo $url_classes; ?>"<?php echo $url_target; ?>>
-			<?php } ?>
-				<?php
+			if ( $url ) {
+
+				$output .= '<a href="'. esc_url( $url ) .'" title="'. esc_attr( $url_title ) .'" class="'. $url_classes .'"'. $url_target .'>';
+
+			 }
 				// Display image
-				wpex_post_thumbnail( array(
+				$output .= wpex_get_post_thumbnail( array(
 					'attachment' => $image,
-					'size'       => 'wpex_custom',
+					'crop'       => $img_crop,
+					'size'       => $img_size,
 					'width'      => $img_width,
 					'height'     => $img_height,
-				) ); ?>
-			<?php if ( $url ) echo '</a>'; ?>
-		</figure>
+				) );
 
-	<?php endif; ?>
+			if ( $url ) {
+				$output .= '</a>';
+			}
 
-	<?php
+		$output .= '</figure>';
+
+	endif;
+
 	// Content
 	if ( $content || $heading ) :
 
@@ -187,16 +204,14 @@ if ( false !== strpos( $classes, 'equal-height-content' ) ) {
 			'margin'     => $content_margin,
 			'padding'    => $content_padding,
 			'background' => $content_background,
-
 		);
 		if ( $border_radius && ( 'three' == $style || 'four' == $style ) ) {
 			$content_style['border_radius'] = $border_radius;
 		}
-		$content_style = vcex_inline_style( $content_style ); ?>
+		$content_style = vcex_inline_style( $content_style );
 
-		<div class="<?php echo $content_classes; ?>"<?php echo $content_style; ?>>
+		$output .= '<div class="'. $content_classes .'"'. $content_style .'>';
 
-			<?php
 			/// Heading
 			if ( $heading ) :
 
@@ -214,23 +229,27 @@ if ( false !== strpos( $classes, 'equal-height-content' ) ) {
 					'font_weight'    => $heading_weight,
 					'letter_spacing' => $heading_letter_spacing,
 					'text_transform' => $heading_transform,
-				) ); ?>
+				) );
 
-				<<?php echo $heading_type; ?> class="vcex-teaser-heading wpex-em-16px no-margin"<?php echo $heading_style; ?>>
-					<?php
+				$output .= '<'. $heading_type .' class="vcex-teaser-heading wpex-em-16px no-margin"'. $heading_style .'>';
+
 					// Open URl
-					if ( $url ) { ?>
-						<a href="<?php echo $url; ?>" title="<?php echo esc_attr( $url_title ); ?>" class="<?php echo $url_classes; ?>"<?php echo $url_target; ?>>
-					<?php } ?>
-						<?php echo $heading; ?>
-					<?php
+					if ( $url ) {
+
+						$output .= '<a href="'. $url .'" title="'. esc_attr( $url_title ) .'" class="'. $url_classes .'"'. $url_target .'>';
+
+					}
+						$output .= $heading;
+
 					// Close URL
-					if ( $url ) echo '</a>'; ?>
-				</<?php echo $heading_type; ?>>
+					if ( $url ) {
+						$output .= '</a>';
+					}
 
-			<?php endif; ?>
+				$output .= '</'. $heading_type .'>';
 
-			<?php
+			endif;
+
 			// Content
 			if ( $content ) :
 				
@@ -238,16 +257,18 @@ if ( false !== strpos( $classes, 'equal-height-content' ) ) {
 					'font_size'   => $content_font_size,
 					'color'       => $content_color,
 					'font_weight' => $content_font_weight,
-				) ); ?>
+				) );
 
-				<div class="vcex-teaser-text remove-last-p-margin clr"<?php echo $text_style; ?>>
-					<?php echo do_shortcode( wpautop( $content ) ); ?>
-				</div><!-- .vcex-teaser-text -->
+				$output .= '<div class="vcex-teaser-text remove-last-p-margin clr"'. $text_style .'>';
+					$output .= do_shortcode( wpautop( $content ) );
+				$output .= '</div>';
 
-			<?php endif; ?>
+			endif;
 
-		</div><!-- .vcex-teaser-content -->
+		$output .= '</div>';
 
-	<?php endif; ?>
+	endif;
 
-</div><!-- .vcex-teaser -->
+$output .= '</div>';
+
+echo $output;

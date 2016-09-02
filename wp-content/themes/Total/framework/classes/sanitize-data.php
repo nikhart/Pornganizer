@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 class WPEX_Sanitize_Data {
@@ -20,6 +20,23 @@ class WPEX_Sanitize_Data {
 			return $this->$type( $data );
 		} else {
 			return $data;
+		}
+	}
+
+	/**
+	 * Boolean
+	 *
+	 * @since 2.0.0
+	 */
+	private function boolean( $data ) {
+		if ( ! $data ) {
+			return false;
+		}
+		if ( 'true' == $data || 'yes' == $data ) {
+			return true;
+		}
+		if ( 'false' == $data || 'no' == $data ) {
+			return false;
 		}
 	}
 
@@ -143,7 +160,7 @@ class WPEX_Sanitize_Data {
 	 * @since 3.3.0
 	 */
 	private function html( $data ) {
-		return htmlspecialchars_decode( wp_kses_post( $data ) );
+		return wp_kses_post( $data );
 	}
 
 	/**
@@ -164,6 +181,56 @@ class WPEX_Sanitize_Data {
 				'data'   => array(),
 			),
 		) );
+	}
+
+	/**
+	 * Image from setting
+	 *
+	 * @since 3.5.0
+	 */
+	private function image_src_from_mod( $data ) {
+		if ( is_numeric( $data ) ) {
+			$data = wp_get_attachment_image_src( $data, 'full' );
+			$data = $data[0];
+		} else {
+			$data = esc_url( $data );
+		}
+		return $data;
+	}
+
+	/**
+	 * Background Style
+	 *
+	 * @since 3.5.0
+	 */
+	private function background_style_css( $data ) {
+		if ( $data == 'stretched' ) {
+			return '-webkit-background-size: cover;
+					-moz-background-size: cover;
+					-o-background-size: cover;
+					background-size: cover;
+					background-position: center center;
+					background-attachment: fixed;
+					background-repeat: no-repeat;';
+		} elseif ( $data == 'cover' ) {
+			return 'background-position: center center;
+					-webkit-background-size: cover;
+					-moz-background-size: cover;
+					-o-background-size: cover;
+					background-size: cover;';
+		} elseif ( $data == 'repeat' ) {
+			return 'background-repeat:repeat;';
+		} elseif ( $data == 'repeat-y' ) {
+			return 'background-position: center center;background-repeat:repeat-y;';
+		} elseif ( $data == 'fixed' ) {
+			return 'background-repeat: no-repeat; background-position: center center; background-attachment: fixed;';
+		} elseif ( $data == 'fixed-top' ) {
+			return 'background-repeat: no-repeat; background-position: center top; background-attachment: fixed;';
+		} elseif ( $data == 'fixed-bottom' ) {
+			return 'background-repeat: no-repeat; background-position: center bottom; background-attachment: fixed;';
+		} else {
+			return 'background-repeat:'. $data .';';
+		}
 	}
 
 	/**

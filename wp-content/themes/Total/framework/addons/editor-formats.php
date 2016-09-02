@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_Editor_Formats' ) ) {
+
 	class WPEX_Editor_Formats {
 
 		/**
@@ -22,7 +23,7 @@ if ( ! class_exists( 'WPEX_Editor_Formats' ) ) {
 		 * @since 2.1.0
 		 */
 		public function __construct() {
-			add_filter( 'tiny_mce_before_init', array( $this, 'settings' ) );
+			add_filter( 'tiny_mce_before_init', array( 'WPEX_Editor_Formats', 'add_formats' ) );
 		}
 
 		/**
@@ -30,7 +31,7 @@ if ( ! class_exists( 'WPEX_Editor_Formats' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function settings( $settings ) {
+		public static function add_formats( $settings ) {
 
 			// General
 			$items = apply_filters( 'wpex_tiny_mce_formats_items', array(
@@ -170,5 +171,7 @@ if ( ! class_exists( 'WPEX_Editor_Formats' ) ) {
 		}
 
 	}
+
+	new WPEX_Editor_Formats();
+
 }
-$wpex_editor_formats = new WPEX_Editor_Formats();

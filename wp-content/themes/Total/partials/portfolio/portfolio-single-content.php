@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.0.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -12,6 +12,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 } ?>
 
-<article class="entry clr"<?php wpex_schema_markup( 'entry_content' ); ?>>
-	<?php the_content(); ?>
-</article><!-- .entry clr -->
+<article class="entry clr"<?php wpex_schema_markup( 'entry_content' ); ?>><?php the_content(); ?></article>

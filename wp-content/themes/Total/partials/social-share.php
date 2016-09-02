@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.5
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -19,7 +19,7 @@ if ( ! wpex_global_obj( 'has_social_share' ) || post_password_required() ) {
 
 // Custom social share shortcode
 if ( $custom_social = apply_filters( 'wpex_custom_social_share', false ) ) {
-	echo do_shortcode( $custom_social );
+	echo do_shortcode( wp_kses_post( $custom_social ) );
 	return;
 }
 
@@ -31,11 +31,17 @@ if ( empty( $sites ) ) {
 	return;
 }
 
+// Get post ID
+if ( is_page() || is_singular() || wpex_is_woo_shop() ) {
+	$post_id = wpex_global_obj( 'post_id' );
+} else {
+	$post_id = get_the_ID();
+}
+
 // Declare main vars
 $position = wpex_social_share_position();
 $style    = wpex_social_share_style();
 $heading  = wpex_social_share_heading();
-$post_id  = wpex_global_obj( 'post_id' );
 $url      = apply_filters( 'wpex_social_share_url', get_permalink( $post_id ) );
 $title    = html_entity_decode( wpex_get_esc_title() );
 
@@ -85,7 +91,7 @@ $summary = wpex_get_excerpt( array(
 				$handle = wpex_get_mod( 'social_share_twitter_handle' ); ?>
 
 				<li class="share-twitter">
-					<a href="http://twitter.com/share?text=<?php echo rawurlencode( $title ); ?>&amp;url=<?php echo rawurlencode( esc_url( $url ) ); ?><?php if ( $handle ) echo '&amp;via='. esc_attr( $handle ); ?>" title="<?php esc_html_e( 'Share on Twitter', 'total' ); ?>" onclick="javascript:window.open(this.href, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;">
+					<a href="https://twitter.com/share?text=<?php echo rawurlencode( $title ); ?>&amp;url=<?php echo rawurlencode( esc_url( $url ) ); ?><?php if ( $handle ) echo '&amp;via='. esc_attr( $handle ); ?>" title="<?php esc_html_e( 'Share on Twitter', 'total' ); ?>" onclick="javascript:window.open(this.href, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;">
 						<span class="fa fa-twitter"></span>
 						<span class="social-share-button-text"><?php esc_html_e( 'Tweet', 'total' ); ?></span>
 					</a>
@@ -96,7 +102,7 @@ $summary = wpex_get_excerpt( array(
 			elseif ( 'facebook' == $site ) { ?>
 
 				<li class="share-facebook">
-					<a href="http://www.facebook.com/share.php?u=<?php echo rawurlencode( esc_url( $url ) ); ?>" title="<?php esc_html_e( 'Share on Facebook', 'total' ); ?>" onclick="javascript:window.open(this.href, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;">
+					<a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo rawurlencode( esc_url( $url ) ); ?>" title="<?php esc_html_e( 'Share on Facebook', 'total' ); ?>" onclick="javascript:window.open(this.href, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;">
 						<span class="fa fa-facebook"></span>
 						<span class="social-share-button-text"><?php esc_html_e( 'Share', 'total' ); ?></span>
 					</a>
@@ -129,7 +135,7 @@ $summary = wpex_get_excerpt( array(
 			elseif ( 'linkedin' == $site ) { ?>
 
 				<li class="share-linkedin">
-					<a href="http://www.linkedin.com/shareArticle?mini=true&amp;url=<?php echo rawurlencode( esc_url( $url ) ); ?>&amp;title=<?php echo rawurlencode( $title ); ?>&amp;summary=<?php echo rawurlencode( $summary ); ?>&amp;source=<?php echo esc_url( home_url( '/' ) ); ?>" title="<?php esc_html_e( 'Share on LinkedIn', 'total' ); ?>" onclick="javascript:window.open(this.href, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;">
+					<a href="https://www.linkedin.com/shareArticle?mini=true&amp;url=<?php echo rawurlencode( esc_url( $url ) ); ?>&amp;title=<?php echo rawurlencode( $title ); ?>&amp;summary=<?php echo rawurlencode( $summary ); ?>&amp;source=<?php echo esc_url( home_url( '/' ) ); ?>" title="<?php esc_html_e( 'Share on LinkedIn', 'total' ); ?>" onclick="javascript:window.open(this.href, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');return false;">
 						<span class="fa fa-linkedin"></span>
 						<span class="social-share-button-text"><?php esc_html_e( 'Share', 'total' ); ?></span>
 					</a>

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.3.4
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -17,6 +17,15 @@ if ( is_admin() ) {
 	return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// Define output var
+$output = '';
+
 // Deprecated Attributes
 if ( ! empty( $atts['term_slug'] ) && empty( $atts['include_categories']) ) {
 	$atts['include_categories'] = $atts['term_slug'];
@@ -28,7 +37,7 @@ $atts['taxonomy']  = 'testimonials_category';
 $atts['tax_query'] = '';
 
 // Extract shortcode atts
-extract( vc_map_get_attributes( $this->getShortcode(), $atts ) );
+extract( vc_map_get_attributes( 'vcex_testimonials_slider', $atts ) );
 
 // Posts per page
 $posts_per_page = $count;
@@ -73,7 +82,7 @@ if ( $wpex_query->have_posts() ) :
 	// Image classes
 	$img_classes = '';
 	if ( ( $img_width || $img_height ) || 'wpex_custom' != $img_size ) {
-		$img_classes = 'remove-dims';
+		$img_classes .= 'remove-dims';
 	}
 
 	// Wrap classes
@@ -91,7 +100,7 @@ if ( $wpex_query->have_posts() ) :
 		$wrap_classes[] = 'vcex-background-'. $background_style;
 	}
 	if ( $css_animation ) {
-		$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+		$wrap_classes[] = vcex_get_css_animation( $css_animation );
 	}
 	if ( $visibility ) {
 		$wrap_classes[] = $visibility;
@@ -144,15 +153,15 @@ if ( $wpex_query->have_posts() ) :
 	// Image settings & style
 	$img_style = vcex_inline_style( array(
 		'border_radius' => $img_border_radius,
-	), false ); ?>
+	), false );
 
-	<div class="<?php echo esc_attr( $wrap_classes ); ?>"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrap_style; ?>>
+	// Start output
+	$output .= '<div class="'. esc_attr( $wrap_classes ) .'"'. vcex_get_unique_id( $unique_id ) .''. $wrap_style .'>';
 
-		<div class="wpex-slider slider-pro"<?php echo $slider_data; ?>>
+		$output .= '<div class="wpex-slider slider-pro"'. $slider_data .'>';
 
-			<div class="wpex-slider-slides sp-slides">
+			$output .= '<div class="wpex-slider-slides sp-slides">';
 
-				<?php
 				// Store posts in an array for use with the thumbnails later
 				$posts_cache = array();
 
@@ -162,38 +171,30 @@ if ( $wpex_query->have_posts() ) :
 					// Get post from query
 					$wpex_query->the_post();
 
-					// Create new post object
-					$testimonial = new stdClass();
-
-					// Get post
-					$post = get_post();
-
-					// Get post data
-					$testimonial->ID      = $post->ID;
-					$testimonial->content = $post->post_content;
-					$testimonial->author  = get_post_meta( get_the_ID(), 'wpex_testimonial_author', true );
-					$testimonial->company = get_post_meta( get_the_ID(), 'wpex_testimonial_company', true );
-					$testimonial->url     = get_post_meta( get_the_ID(), 'wpex_testimonial_url', true );
+					// Get post data and make available in $atts array
+					$atts['post_id']           = get_the_ID();
+					$atts['post_content']      = get_the_content();
+					$atts['post_meta_author']  = get_post_meta( $atts['post_id'], 'wpex_testimonial_author', true );
+					$atts['post_meta_company'] = get_post_meta( $atts['post_id'], 'wpex_testimonial_company', true );
+					$atts['post_meta_url']     = get_post_meta( $atts['post_id'], 'wpex_testimonial_url', true );
 
 					// Store post ids
-					$posts_cache[] = $post->ID;
+					$posts_cache[] = $atts['post_id'];
 
 					// Testimonial start
-					if ( '' != $testimonial->content ) : ?>
+					if ( '' != $atts['post_content'] ) :
 
-						<div class="wpex-slider-slide sp-slide">
+						$output .= '<div class="wpex-slider-slide sp-slide">';
 
-							<div class="vcex-testimonials-fullslider-inner textcenter clr">
+							$output .= '<div class="vcex-testimonials-fullslider-inner textcenter clr">';
 
-								<?php
 								// Author avatar
-								if ( 'yes' == $display_author_avatar && has_post_thumbnail( $testimonial->ID ) ) : ?>
+								if ( 'yes' == $display_author_avatar && has_post_thumbnail( $atts['post_id'] ) ) :
 
-									<div class="vcex-testimonials-fullslider-avatar">
+									$output .= '<div class="vcex-testimonials-fullslider-avatar">';
 
-										<?php
 										// Output thumbnail
-										wpex_post_thumbnail( array(
+										$output .= wpex_get_post_thumbnail( array(
 											'size'   => $img_size,
 											'crop'   => $img_crop,
 											'width'  => $img_width,
@@ -201,115 +202,123 @@ if ( $wpex_query->have_posts() ) :
 											'alt'    => wpex_get_esc_title(),
 											'style'  => $img_style,
 											'class'  => $img_classes,
-										) ); ?>
+										) );
 
-									</div><!-- .vcex-testimonials-fullslider-avatar -->
+									$output .= '</div>';
 
-								<?php endif; ?>
+								endif;
 
-								<?php
 								// Custom Excerpt
 								if ( 'true' == $excerpt ) :
 
 									if ( 'true' == $read_more ) {
-										$read_more_text = $read_more_text ? $read_more_text : esc_html__( 'read more', 'total' );
-										$read_more_link = '&hellip;<a href="'. get_permalink() .'" title="'. $read_more_text .'">'. $read_more_text .'<span>&rarr;</span></a>';
-									} else {
-										$read_more_link = '&hellip;';
-									} ?>
 
-									<div class="entry remove-last-p-margin wpex-fw-300 clr"<?php echo $slide_style; ?>>
-										<?php wpex_excerpt( array (
+										$read_more_text = $read_more_text ? esc_html( $read_more_text ) : esc_html__( 'read more', 'total' );
+										$read_more_link = '&hellip;<a href="'. get_permalink() .'" title="'. $read_more_text .'">'. $read_more_text .'<span>&rarr;</span></a>';
+
+									} else {
+
+										$read_more_link = '&hellip;';
+
+									}
+
+									$output .= '<div class="entry remove-last-p-margin wpex-fw-300 clr"'. $slide_style .'>';
+										$output .= wpex_get_excerpt( array (
 											'length' => intval( $excerpt_length ),
 											'more'   => $read_more_link,
-										) ); ?>
-									</div>
+										) );
+									$output .= '</div>';
 
-								<?php
 								// Full content
-								else : ?>
+								else :
 
-									<div class="entry remove-last-p-margin wpex-fw-300 clr"<?php echo $slide_style; ?>><?php the_content(); ?></div>
+									$output .= '<div class="entry remove-last-p-margin wpex-fw-300 clr"'. $slide_style .'>';
+									$output .= apply_filters( 'the_content', get_the_content() );
+									$output .= '</div>';
 								
-								<?php endif;
+								endif;
 
 								// Author name
-								if ( 'yes' == $display_author_name || 'true' == $display_author_company ) : ?>
+								if ( 'yes' == $display_author_name || 'true' == $display_author_company ) :
 
-									<div class="vcex-testimonials-fullslider-author wpex-fs-14px clr">
+									$output .= '<div class="vcex-testimonials-fullslider-author wpex-fs-14px clr">';
 
-										<?php
 										// Display author name
 										if ( 'yes' == $display_author_name ) {
-											echo $testimonial->author;
-										} ?>
+											$output .= $atts['post_meta_author'];
+										}
 
-										<?php
 										// Display company
-										if ( $testimonial->company && 'true' == $display_author_company ) {
-											if ( $testimonial->url ) { ?>
-												<a href="<?php echo esc_url( $testimonial->url ); ?>" class="vcex-testimonials-fullslider-company display-block" title="<?php echo esc_attr( $company ); ?>" target="_blank"><?php echo $testimonial->company; ?></a>
-											<?php } else { ?>
-												<div class="vcex-testimonials-fullslider-company"><?php echo $testimonial->company; ?></div>
-											<?php }
-										} ?>
+										if ( $atts['post_meta_company'] && 'true' == $display_author_company ) {
+											if ( $atts['post_meta_url'] ) {
 
-									</div><!-- .vcex-testimonials-fullslider-author -->
+												$output .= '<a href="'. esc_url( $atts['post_meta_url'] ) .'" class="vcex-testimonials-fullslider-company display-block" title="'. esc_attr( $atts['post_meta_company'] ) .'" target="_blank">'. esc_html( $atts['post_meta_company'] ) .'</a>';
 
-								<?php endif; ?>
+											} else {
 
-							</div><!-- .entry -->
+												$output .= '<div class="vcex-testimonials-fullslider-company">'. esc_html( $atts['post_meta_company'] ) .'</div>';
 
-						</div><!-- .wpex-slider-slide sp-slide -->
+											}
+										}
 
-					<?php endif; ?>
+										// Display rating
+										if ( 'true' == $rating && $atts['post_rating'] = gds_get_star_rating( '', $atts['post_id'] ) ) {
 
-				<?php endwhile; ?>
+											$output .= '<div class="vcex-testimonials-fullslider-rating clr">'. $atts['post_rating'] .'</div>';
 
-			</div><!-- .wpex-slider-slides -->
+										}
 
-			<?php if ( 'true' == $control_thumbs ) : ?>
+									$output .= '</div>';
 
-				<div class="sp-nc-thumbnails">
+								endif;
 
-					<?php foreach ( $posts_cache as $post_id ) : ?>
+							$output .= '</div>';
 
-						<?php
+						$output .= '</div>';
+
+					endif;
+
+				endwhile;
+
+			$output .= '</div>';
+
+			if ( 'true' == $control_thumbs ) :
+
+				$output .= '<div class="sp-nc-thumbnails">';
+
+					foreach ( $posts_cache as $post_id ) :
+
 						// Output thumbnail image
-						wpex_post_thumbnail( array(
+						$output .= wpex_get_post_thumbnail( array(
 							'attachment' => get_post_thumbnail_id( $post_id ),
 							'size'       => $img_size,
 							'crop'       => $img_crop,
 							'width'      => $img_width,
 							'height'     => $img_height,
 							'class'      => 'sp-nc-thumbnail',
-						) ); ?>
+						) );
 
-					<?php endforeach; ?>
+					endforeach;
 
-				</div><!-- .sp-nc-thumbnailss -->
+				$output .= '</div>';
 
-			<?php endif; ?>
+			endif;
 
-		</div><!-- .wpex-slider -->
+		$output .= '</div>';
 
-	</div><!-- .vcex-testimonials-fullslider -->
-
-	<?php
-	// Remove post object from memory
-	$post = null;
+	$output .= '</div>';
 
 	// Reset the post data to prevent conflicts with WP globals
-	wp_reset_postdata(); ?>
+	wp_reset_postdata();
 
-<?php
+	// Echo output
+	echo $output;
+
 // If no posts are found display message
-else : ?>
+else :
 
-	<?php
 	// Display no posts found error if function exists
-	echo vcex_no_posts_found_message( $atts ); ?>
+	echo vcex_no_posts_found_message( $atts );
 
-<?php
 // End post check
-endif; ?>
+endif;

@@ -10,13 +10,14 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.5
+ * @version 3.5.3
  */
 
 /*-------------------------------------------------------------------------------*/
 /* [ Table of contents ]
 /*-------------------------------------------------------------------------------*
 
+	# Templates
 	# General
 	# Sanitize Data
 	# Parse HTML
@@ -39,6 +40,52 @@
 	# Staff
 	# Testimonials
 	# Other
+
+/*-------------------------------------------------------------------------------*/
+/* [ Templates ]
+/*-------------------------------------------------------------------------------*/
+
+/**
+ * Get Template Part
+ *
+ * @since 3.5.0
+ */
+function wpex_template_parts() {
+	return apply_filters( 'wpex_template_parts', array(
+
+		'togglebar' => 'partials/togglebar/togglebar-layout',
+		'topbar'    => 'partials/topbar/topbar-layout',
+
+		'header'       => 'partials/header/header-layout',
+		'header_logo'  => 'partials/header/header-logo',
+		'header_menu'  => 'partials/header/header-menu',
+		'header_aside' => 'partials/header/header-aside',
+
+		'page_header'            => 'partials/page-header',
+		'page_header_title'      => 'partials/page-header-title',
+		'page_header_subheading' => 'partials/page-header-subheading',
+
+		'footer_callout' => 'partials/footer/footer-callout',
+		'footer'         => 'partials/footer/footer-layout',
+		'footer_widgets' => 'partials/footer/footer-widgets',
+		'footer_bottom'  => 'partials/footer/footer-bottom',
+
+	) );
+}
+
+/**
+ * Get Template Part
+ *
+ * @since 3.5.0
+ */
+function wpex_get_template_part( $part = '' ) {
+	if ( $part ) {
+		$parts = wpex_template_parts();
+		if ( isset( $parts[$part] ) ) {
+			get_template_part( $parts[$part] );
+		}
+	}
+}
 
 /*-------------------------------------------------------------------------------*/
 /* [ General ]
@@ -98,7 +145,7 @@ function wpex_recommended_plugins() {
 		'revslider'            => array(
 			'name'             => 'Revolution Slider',
 			'slug'             => 'revslider',
-			'version'          => '5.2.4.1',
+			'version'          => '5.2.6',
 			'source'           => $plugins_dir .'revslider.zip',
 			'required'         => false,
 			'force_activation' => false,
@@ -106,7 +153,7 @@ function wpex_recommended_plugins() {
 		'LayerSlider'          => array(
 			'name'             => 'LayerSlider',
 			'slug'             => 'LayerSlider',
-			'version'          => '5.6.5',
+			'version'          => '5.6.9',
 			'source'           => $plugins_dir .'LayerSlider.zip',
 			'required'         => false,
 			'force_activation' => false,
@@ -135,10 +182,7 @@ function wpex_recommended_plugins() {
  * @since 3.3.4
  */
 function wpex_vc_is_supported() {
-	if ( WPEX_VC_ACTIVE
-		&& defined( 'WPB_VC_VERSION' )
-		&& version_compare( WPB_VC_VERSION, WPEX_VC_SUPPORTED_VERSION, '>=' )
-	) {
+	if ( defined( 'WPB_VC_VERSION' ) && version_compare( WPB_VC_VERSION, WPEX_VC_SUPPORTED_VERSION, '>=' ) ) {
 		return true;
 	}
 }
@@ -151,8 +195,7 @@ function wpex_vc_is_supported() {
 function wpex_theme_post_types() {
 	$post_types = array( 'portfolio', 'staff', 'testimonials' );
 	$post_types = array_combine( $post_types, $post_types );
-	$post_types = apply_filters( 'wpex_theme_post_types', $post_types );
-	return $post_types;
+	return apply_filters( 'wpex_theme_post_types', $post_types );
 }
 
 /**
@@ -203,7 +246,11 @@ function wpex_get_permalink( $post_id = '' ) {
  * @since 2.0.0
  */
 function wpex_get_custom_permalink() {
-	return esc_url( get_post_meta( get_the_ID(), 'wpex_post_link', true ) );
+	$custom_link = get_post_meta( get_the_ID(), 'wpex_post_link', true );
+	if ( $custom_link ) {
+		$custom_link = ( 'home_url' == $custom_link ) ? esc_url( home_url( '/' ) ) : $custom_link;
+		return $custom_link;
+	}
 }
 
 /**
@@ -292,8 +339,12 @@ function wpex_grid_class( $col = '4' ) {
  */
 function wpex_heading( $args = array() ) {
 
+	// Define output
+	$output = '';
+
 	// Defaults
 	$defaults = array(
+		'echo'          => true,
 		'apply_filters' => '',
 		'content'       => '',
 		'tag'           => 'h2',
@@ -306,7 +357,7 @@ function wpex_heading( $args = array() ) {
 	}
 
 	// Parse args
-	wp_parse_args( $args, $defaults );
+	$args = wp_parse_args( $args, $defaults );
 
 	// Extract args
 	extract( $args );
@@ -324,13 +375,17 @@ function wpex_heading( $args = array() ) {
 	}
 
 	// Turn classes into space seperated string
-	$classes = implode( ' ', $classes ); ?>
+	$classes = implode( ' ', $classes );
 
-	<<?php echo esc_attr( $tag ); ?> class="<?php echo esc_attr( $classes ); ?>">
-		<span class="text"><?php echo $content; ?></span>
-	</<?php echo esc_attr( $tag ); ?>>
+	$output .= '<'. esc_attr( $tag ) .' class="'. esc_attr( $classes ) .'">';
+		$output .= '<span class="text">'. $content .'</span>';
+	$output .= '</'. esc_attr( $tag ) .'>';
 
-<?php
+	if ( $echo ) {
+		echo $output;
+	} else {
+		return $output;
+	}
 }
 
 /**
@@ -482,12 +537,24 @@ function wpex_get_widget_areas() {
 /*-------------------------------------------------------------------------------*/
 
 /**
+ * Removes http: protocol from URL if is_ssl() returns true
+ *
+ * @since 3.5.3
+ */
+function wpex_url_ssl_sanitize( $url = false ) {
+	if ( $url && is_ssl() ) {
+		$url = str_replace( 'http://', '//', $url );
+	}
+	return $url;
+}
+
+/**
  * Echo escaped post title
  *
  * @since 2.0.0
  */
-function wpex_esc_title() {
-	echo wpex_get_esc_title();
+function wpex_esc_title( $post = '' ) {
+	echo wpex_get_esc_title( $post );
 }
 
 /**
@@ -495,8 +562,11 @@ function wpex_esc_title() {
  *
  * @since 1.5.4
  */
-function wpex_get_esc_title() {
-	return esc_attr( the_title_attribute( 'echo=0' ) );
+function wpex_get_esc_title( $post = '' ) {
+	return the_title_attribute( array(
+		'echo' => false,
+		'post' => $post,
+	) );
 }
 
 /**
@@ -531,7 +601,9 @@ function wpex_esc_html( $val = null, $fallback = null ) {
  * @since 3.3.5
  */
 function wpex_intval( $val = null, $fallback = null ) {
-	if ( $val = intval( $val ) ) {
+	if ( 0 == $val ) {
+		return 0; // Some settings may need this
+	} elseif ( $val = intval( $val ) ) {
 		return $val;
 	} else {
 		return $fallback;
@@ -554,7 +626,7 @@ function wpex_parse_html( $tag = null, $attrs = null, $close_tag = true, $filter
 		}
 		$output = '<'. $tag;
 		foreach ( $attrs as $key => $val ) {
-			$output .= ' '. $key .'="'. $val .'"';
+			$output .= ' '. $key .'="'. esc_attr( $val ) .'"';
 		}
 		$output .= '>';
 		if ( $close_tag ) {
@@ -584,6 +656,12 @@ function wpex_parse_attrs( $attrs = null ) {
 				continue;
 			}
 
+			// Sanitize ID
+			if ( 'id' == $key ) {
+				$val = trim ( str_replace( '#', '', $val ) );
+				$val = str_replace( ' ', '', $val );
+			}
+
 			// Sanitize targets
 			if ( 'target' == $key ) {
 				if ( 'blank' == $val
@@ -597,7 +675,7 @@ function wpex_parse_attrs( $attrs = null ) {
 
 			// Add attribute to output
 			if ( $val ) {
-				$output .= ' '. $key .'="'. $val .'"';
+				$output .= ' '. $key .'="'. esc_attr( $val ) .'"';
 			}
 		}
 
@@ -633,15 +711,36 @@ function wpex_entry_blocks() {
  * @since 3.2.0
  */
 function wpex_single_blocks() {
-	return apply_filters( 'wpex_'. get_post_type() .'_single_blocks', array(
-		'media'       => 'media',
-		'title'       => 'title',
-		'meta'        => 'meta',
-		'content'     => 'content',
-		'page-links'  => 'page-links',
-		'share'       => 'share',
-		'comments'    => 'comments',
-	) );
+
+	// Pages
+	if ( is_page() ) {
+		$blocks = wpex_get_mod( 'page_composer', array( 'content' ) );
+	}
+
+	// Custom Types
+	else {
+		$blocks = array( 'media', 'title', 'meta', 'content', 'page-links', 'share', 'comments' );
+	}
+
+	// Convert to array
+	if ( ! is_array( $blocks ) ) {
+		$blocks = explode( ',', $blocks );
+	}
+
+	// Combine
+	$blocks = $blocks ? array_combine( $blocks, $blocks ) : array();
+
+	// Apply filters for tweaking
+	$blocks = apply_filters( 'wpex_'. get_post_type() .'_single_blocks', $blocks );
+
+	// Sanitize & return blocks
+	if ( $blocks ) {
+
+		// Return blocks
+		return $blocks;
+
+	}
+
 }
 
 /**
@@ -668,7 +767,7 @@ function wpex_single_meta_blocks() {
  * @since 3.0.0
  */
 function wpex_schema_markup( $location ) {
-	echo wpex_sanitize_data( wpex_get_schema_markup( $location ), 'html' );
+	echo wpex_get_schema_markup( $location );
 }
 
 /**
@@ -883,6 +982,8 @@ function wpex_get_post_video_html( $video = '' ) {
 	// Display using apply_filters if it's self-hosted
 	else {
 
+		$video = ( is_numeric( $video ) ) ? wp_get_attachment_url( $video ) : $video;
+
 		$video = apply_filters( 'the_content', $video );
 
 		// Add responsive video wrap for youtube/vimeo embeds
@@ -942,6 +1043,15 @@ function wpex_get_post_audio( $id = '' ) {
 }
 
 /**
+ * Echo post audio HTML
+ *
+ * @since 2.0.0
+ */
+function wpex_post_audio_html( $audio = '' ) {
+	echo wpex_get_post_audio_html( $audio );
+}
+
+/**
  * Returns post audio
  *
  * @since 2.0.0
@@ -951,7 +1061,7 @@ function wpex_get_post_audio_html( $audio = '' ) {
 	// Get audio
 	$audio = $audio ? $audio : wpex_get_post_audio();
 
-	// Return if video is empty
+	// Return if audio is empty
 	if ( ! $audio ) {
 		return;
 	}
@@ -963,6 +1073,7 @@ function wpex_get_post_audio_html( $audio = '' ) {
 
 	// Display using oembed if self-hosted
 	else {
+		$audio = ( is_numeric( $audio ) ) ? wp_get_attachment_url( $audio ) : $audio;
 		return apply_filters( 'the_content', $audio );
 	}
 
@@ -1360,13 +1471,20 @@ function wpex_get_post_thumbnail( $args = array() ) {
 		'class'         => '',
 		'return'        => 'html',
 		'style'         => '',
-		'retina'        => wpex_global_obj( 'retina' ),
+		'retina'        => wpex_global_obj( 'retina' ), // Check if retina is enabled
 		'schema_markup' => false,
 		'placeholder'   => false,
+		'lazy_load'     => false, // Used for sliders
+		'apply_filters' => '',
 	);
 
 	// Parse args
 	$args = wp_parse_args( $args, $defaults );
+
+	// Apply filters if instance is defined
+	if ( $args['apply_filters'] ) {
+		$args = apply_filters( $args['apply_filters'] );
+	}
 
 	// Extract args
 	extract( $args );
@@ -1501,7 +1619,11 @@ function wpex_get_post_thumbnail( $args = array() ) {
 				}
 
 				// Return img
-				return '<img src="'. esc_url( $image['url'] ) .'" width="'. esc_attr( $image['width'] ) .'" height="'. esc_attr( $image['height'] ) .'"'. $html .' />';
+				if ( $lazy_load ) {
+					return '<img src="'. get_template_directory_uri() .'/images/blank.gif" data-src="'. esc_url( $image['url'] ) .'" width="'. esc_attr( $image['width'] ) .'" height="'. esc_attr( $image['height'] ) .'"'. $html .' />';
+				} else {
+					return '<img src="'. esc_url( $image['url'] ) .'" width="'. esc_attr( $image['width'] ) .'" height="'. esc_attr( $image['height'] ) .'"'. $html .' />';
+				}
 
 			}
 
@@ -1566,16 +1688,20 @@ function wpex_get_lightbox_image( $attachment = '' ) {
 
 	// If attachment is empty lets set it to the post thumbnail id
 	if ( ! $attachment ) {
-		$attachment = get_post_thumbnail_id();
+		if ( 'attachment' == get_post_type() ) {
+			$attachment = get_the_ID();
+		} else {
+			$attachment = get_post_thumbnail_id();
+		}
 	}
 
 	// If the attachment is an ID lets get the URL
 	if ( is_numeric( $attachment ) ) {
 		$image = $attachment;
 	} elseif ( is_array( $attachment ) ) {
-		return $attachment[0];
+		return esc_url( $attachment[0] );
 	} else {
-		return $attachment;
+		return esc_url( $attachment );
 	}
 
 	// Set default size
@@ -1667,20 +1793,20 @@ function wpex_get_social_button_class( $style = 'default' ) {
 
 	// Minimal
 	elseif ( 'minimal' == $style ) {
-		$style = 'wpex-social-btn-minimal';
+		$style = 'wpex-social-btn-minimal wpex-social-color-hover';
 	} elseif ( 'minimal-rounded' == $style ) {
-		$style = 'wpex-social-btn-minimal wpex-semi-rounded';
+		$style = 'wpex-social-btn-minimal wpex-social-color-hover wpex-semi-rounded';
 	} elseif ( 'minimal-round' == $style ) {
-		$style = 'wpex-social-btn-minimal wpex-round';
+		$style = 'wpex-social-btn-minimal wpex-social-color-hover wpex-round';
 	}
 
 	// Flat
 	elseif ( 'flat' == $style ) {
-		$style = 'wpex-social-btn-flat wpex-bg-gray';
+		$style = 'wpex-social-btn-flat wpex-social-color-hover wpex-bg-gray';
 	} elseif ( 'flat-rounded' == $style ) {
-		$style = 'wpex-social-btn-flat wpex-semi-rounded';
+		$style = 'wpex-social-btn-flat wpex-social-color-hover wpex-semi-rounded';
 	} elseif ( 'flat-round' == $style ) {
-		$style = 'wpex-social-btn-flat wpex-round';
+		$style = 'wpex-social-btn-flat wpex-social-color-hover wpex-round';
 	}
 
 	// Flat Color
@@ -1710,11 +1836,11 @@ function wpex_get_social_button_class( $style = 'default' ) {
 
 	// Black + Color Hover
 	elseif ( 'black-ch' == $style ) {
-		$style = 'wpex-social-btn-black-ch';
+		$style = 'wpex-social-btn-black-ch wpex-social-bg-hover';
 	} elseif ( 'black-ch-rounded' == $style ) {
-		$style = 'wpex-social-btn-black-ch wpex-semi-rounded';
+		$style = 'wpex-social-btn-black-ch wpex-social-bg-hover wpex-semi-rounded';
 	} elseif ( 'black-ch-round' == $style ) {
-		$style = 'wpex-social-btn-black-ch wpex-round';
+		$style = 'wpex-social-btn-black-ch wpex-social-bg-hover wpex-round';
 	}
 
 	// Graphical
@@ -1724,6 +1850,15 @@ function wpex_get_social_button_class( $style = 'default' ) {
 		$style = 'wpex-social-bg wpex-social-btn-graphical wpex-semi-rounded';
 	} elseif ( 'graphical-round' == $style ) {
 		$style = 'wpex-social-bg wpex-social-btn-graphical wpex-round';
+	}
+
+	// Rounded
+	elseif ( 'bordered' == $style ) {
+		$style = 'wpex-social-btn-bordered wpex-social-border wpex-social-color';
+	} elseif ( 'bordered-rounded' == $style ) {
+		$style = 'wpex-social-btn-bordered wpex-social-border wpex-semi-rounded wpex-social-color';
+	} elseif ( 'bordered-round' == $style ) {
+		$style = 'wpex-social-btn-bordered wpex-social-border wpex-round wpex-social-color';
 	}
 
 	// Apply filters & return style
@@ -1872,11 +2007,14 @@ function wpex_add_search_to_menu ( $items, $args ) {
 	$items .= '<li class="search-toggle-li wpex-menu-extra">';
 		$items .= '<a href="#" class="site-search-toggle'. $class .'">';
 			$items .= '<span class="link-inner">';
-				$items .= '<span class="fa fa-search"></span>';
+				$text = esc_html__( 'Search', 'total' );
+				$text = apply_filters( 'wpex_header_search_text', $text );
 				if ( 'six' == $header_style ) {
-					$text = esc_html__( 'Search', 'total' );
-					$text = apply_filters( 'wpex_header_search_text', $text );
+					$items .= '<span class="fa fa-search"></span>';
 					$items .= '<span class="wpex-menu-search-text">'. $text .'</span>';
+				} else {
+					$items .= '<span class="wpex-menu-search-text">'. $text .'</span>';
+					$items .= '<span class="fa fa-search" aria-hidden="true"></span>';
 				}
 			$items .= '</span>';
 		$items .= '</a>';
@@ -2035,10 +2173,24 @@ add_filter( 'mce_buttons', 'wpex_style_select' );
  * @since 3.1.1
  */
 function wpex_parse_obj_id( $id = '', $type = 'page' ) {
-	if ( $id && function_exists( 'icl_object_id' ) ) {
-		$id = icl_object_id( $id, $type );
+
+	// WPML Check
+	if ( WPEX_WPML_ACTIVE ) {
+		$id = apply_filters( 'wpml_object_id', $id, $type, true );
 	}
+
+	// Polylang check
+	if ( function_exists( 'pll_get_post' ) ) {
+		if ( 'page' == $type || 'post' == $type ) {
+			$id = pll_get_post( $pageid );
+		} elseif ( 'term' == $type && function_exists( 'pll_get_term' ) ) {
+			$id = pll_get_term( $id );
+		}
+	}
+
+	// Return ID
 	return $id;
+
 }
 
 /**
@@ -2144,7 +2296,7 @@ function wpex_get_portfolio_singular_name() {
  */
 function wpex_get_portfolio_menu_icon() {
 	$icon = wpex_get_mod( 'portfolio_admin_icon' );
-	$icon = $icon ? $icon : 'portfolio';
+	$icon = $icon ? esc_html( $icon ) : 'portfolio';
 	return $icon;
 }
 
@@ -2181,7 +2333,7 @@ function wpex_get_staff_singular_name() {
  */
 function wpex_get_staff_menu_icon() {
 	$icon = wpex_get_mod( 'staff_admin_icon' );
-	$icon = $icon ? $icon : 'groups';
+	$icon = $icon ? esc_html( $icon ) : 'groups';
 	return $icon;
 }
 
@@ -2218,13 +2370,74 @@ function wpex_get_testimonials_singular_name() {
  */
 function wpex_get_testimonials_menu_icon() {
 	$icon = wpex_get_mod( 'testimonials_admin_icon' );
-	$icon = $icon ? $icon : 'format-status';
+	$icon = $icon ? esc_html( $icon ) : 'format-status';
 	return $icon;
 }
 
 /*-------------------------------------------------------------------------------*/
 /* [ Other ]
 /*-------------------------------------------------------------------------------*/
+
+/**
+ * Get star rating
+ *
+ * @since 3.5.3
+ */
+function gds_get_star_rating( $rating = '', $post_id = '' ) {
+
+	// Post id
+	$post_id = $post_id ? $post_id : get_the_ID();
+
+	// Define rating
+	$rating = $rating ? $rating : get_post_meta( $post_id, 'wpex_post_rating', true );
+
+	// Return if no rating
+	if ( ! $rating ) {
+		return false;
+	}
+
+	// Sanitize
+	else {
+		$rating = abs( $rating );
+	}
+
+	$output = '';
+
+	// Star fonts
+	$full_star  = '<span class="fa fa-star"></span>';
+	$half_star  = '<span class="fa fa-star-half-full"></span>';
+	$empty_star = '<span class="fa fa-star-o"></span>';
+
+	// Integers
+	if ( ( is_numeric( $rating ) && ( intval( $rating ) == floatval( $rating ) ) ) ) {
+		$output = str_repeat( $full_star, $rating );
+		if ( $rating < 5 ) {
+			$output .= str_repeat( $empty_star, 5 - $rating );
+		}
+		
+	// Fractions
+	} else {
+		$rating = intval( $rating );
+		$output = str_repeat( $full_star, $rating );
+		$output .= $half_star;
+		if ( $rating < 5 ) {
+			$output .= str_repeat( $empty_star, 4 - $rating );
+		}
+	}
+
+	// Return output
+	return $output;
+
+}
+
+/**
+ * Returns string version of WP core get_post_class
+ *
+ * @since 3.5.0
+ */
+function wpex_get_post_class( $class = '', $post_id = null ) {
+	return 'class="' . implode( ' ', get_post_class( $class, $post_id ) ) . '"';
+}
 
 /**
  * Check if the header supports aside content
@@ -2276,8 +2489,13 @@ function wpex_minify_css( $css = '' ) {
  *
  * @since 3.4.0
  */
- function wpex_remove_class_filter( $hook_name = '', $class_name ='', $method_name = '', $priority = 0 ) {
+function wpex_remove_class_filter( $hook_name = '', $class_name ='', $method_name = '', $priority = 0 ) {
 	global $wp_filter;
+
+	// Make sure class exists
+	if ( ! class_exists( $class_name ) ) {
+		return false;
+	}
 	
 	// Take only filters on right hook name and priority
 	if ( !isset($wp_filter[$hook_name][$priority]) || !is_array($wp_filter[$hook_name][$priority]) ) {
@@ -2295,6 +2513,5 @@ function wpex_minify_css( $css = '' ) {
 		}
 		
 	}
-	
 	return false;
 }

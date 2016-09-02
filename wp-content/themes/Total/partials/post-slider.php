@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.0.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -27,29 +27,32 @@ $slider_alt = get_post_meta( $post_id, 'wpex_post_slider_mobile_alt', true );
 // Check if alider alternative for mobile custom field has a value
 if ( 'on' == $disable_on_mobile && $slider_alt ) {
 
-// Sanitize slider mobile alt
-if ( is_numeric( $slider_alt ) ) {
-	$slider_alt = wp_get_attachment_image_src( $slider_alt, 'full' );
-	$slider_alt = $slider_alt[0];
-}
+	// Sanitize slider mobile alt
+	if ( is_numeric( $slider_alt ) ) {
+		$slider_alt = wp_get_attachment_image_src( $slider_alt, 'full' );
+		$slider_alt = $slider_alt[0];
+	}
 
-// Cleanup validation for old Redux system
-if ( is_array( $slider_alt ) && ! empty( $slider_alt['url'] ) ) {
-	$slider_alt = $slider_alt['url'];
-}
+	// Cleanup validation for old Redux system
+	if ( is_array( $slider_alt ) && ! empty( $slider_alt['url'] ) ) {
+		$slider_alt = $slider_alt['url'];
+	}
 
-// Mobile slider alternative link
-$slider_alt_url = get_post_meta( $post_id, 'wpex_post_slider_mobile_alt_url', true );
+	// Mobile slider alternative link
+	$slider_alt_link = get_post_meta( $post_id, 'wpex_post_slider_mobile_alt_url', true );
 
-// Mobile slider alternative link target
-if ( $slider_alt_target = get_post_meta( $post_id, 'wpex_post_slider_mobile_alt_url_target', true ) ) {
-	$slider_alt_target = 'target="_'. $slider_alt_target .'"';
-}
+	// Mobile slider alternative link target
+	if ( $slider_alt_target = get_post_meta( $post_id, 'wpex_post_slider_mobile_alt_url_target', true ) ) {
+		$slider_alt_target = 'target="_'. $slider_alt_target .'"';
+	}
+
 }
 
 // Otherwise set all vars to empty
 else {
-$slider_alt = $slider_alt_url = $slider_alt_target = NULL;;
+
+	$slider_alt = $slider_alt_link = $slider_alt_target = '';
+
 }
 
 // Slider classes
@@ -57,7 +60,7 @@ $classes = array( 'page-slider', 'clr' );
 $classes = apply_filters( 'wpex_post_slider_classes', $classes );
 $classes = implode( ' ', $classes ); ?>
 
-<div class="<?php echo $classes; ?>">
+<div class="<?php echo esc_attr( $classes ); ?>">
 
 	<?php
 	// Mobile slider
@@ -65,15 +68,15 @@ $classes = implode( ' ', $classes ); ?>
 
 		<div class="page-slider-mobile hidden-desktop clr">
 		
-			<?php if ( $slider_alt_url ) : ?>
+			<?php if ( $slider_alt_link ) : ?>
 
-				<a href="<?php echo esc_url( $slider_alt_url ); ?>" title=""<?php echo $slider_alt_target; ?>>
-					<img src="<?php echo $slider_alt; ?>" class="page-slider-mobile-alt" alt="<?php echo the_title(); ?>" />
+				<a href="<?php echo esc_url( $slider_alt_link ); ?>" title=""<?php echo $slider_alt_target; ?>>
+					<img src="<?php echo esc_url( $slider_alt ); ?>" class="page-slider-mobile-alt" alt="<?php wpex_esc_title(); ?>" />
 				</a>
 
 			<?php else : ?>
 
-				<img src="<?php echo $slider_alt; ?>" class="page-slider-mobile-alt" alt="<?php echo the_title(); ?>" />
+				<img src="<?php echo esc_url( $slider_alt ); ?>" class="page-slider-mobile-alt" alt="<?php wpex_esc_title(); ?>" />
 
 			<?php endif; ?>
 
@@ -82,21 +85,29 @@ $classes = implode( ' ', $classes ); ?>
 	<?php endif; ?>
 
 	<?php
-	// Disable slider on mobile
-	if ( 'on' == $disable_on_mobile ) { ?>
+	// Open hidden on mobile wrap
+	if ( 'on' == $disable_on_mobile ) {
 
-		<div class="visible-desktop clr">
+		echo '<div class="visible-desktop clr">';
 		
-	<?php } ?>
+	}
 
-		<?php echo do_shortcode( $slider ); ?>
+	// Output slider
+	echo do_shortcode( wp_kses_post( $slider ) );
 
-	<?php if ( 'on' == $disable_on_mobile ) echo '</div>'; ?>
+	// Close hidden on mobile wrap
+	if ( 'on' == $disable_on_mobile ) {
+
+		echo '</div>';
+
+	} ?>
 
 </div><!-- .page-slider -->
 
-<?php if ( $margin = get_post_meta( $post_id, 'wpex_post_slider_bottom_margin', true ) ) : ?>
+<?php
+// Add slider margin
+if ( $margin = get_post_meta( $post_id, 'wpex_post_slider_bottom_margin', true ) ) {
 
-	<div style="height:<?php echo intval( $margin ); ?>px;"></div>
+	echo '<div style="height:'. intval( $margin ) .'px;"></div>';
 
-<?php endif; ?>
+}

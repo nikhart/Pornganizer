@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -29,9 +29,17 @@ if ( ! class_exists( 'WPEX_Remove_Post_Type_Slugs' ) ) {
 		 * @since 2.0.0
 		 */
 		public function __construct() {
-			$this->post_types = array( 'portfolio', 'staff', 'testimonials' );
-			add_filter( 'post_type_link', array( $this, 'remove_slugs' ), 10, 3 );
-			add_action( 'pre_get_posts', array( $this, 'post_type_trick' ) );
+			add_filter( 'post_type_link', array( 'WPEX_Remove_Post_Type_Slugs', 'remove_slugs' ), 10, 3 );
+			add_action( 'pre_get_posts', array( 'WPEX_Remove_Post_Type_Slugs', 'post_type_trick' ) );
+		}
+
+		/**
+		 * Returns array of types to alter
+		 *
+		 * @since 3.5.0
+		 */
+		private static function get_types() {
+			return array( 'portfolio', 'staff', 'testimonials' );
 		}
 
 		/**
@@ -39,10 +47,13 @@ if ( ! class_exists( 'WPEX_Remove_Post_Type_Slugs' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function remove_slugs( $post_link, $post, $leavename ) {
+		public static function remove_slugs( $post_link, $post, $leavename ) {
+
+			// Get types
+			$types = self::get_types();
 
 			// If not part of the theme post types return default post link
-			if ( ! in_array( $post->post_type, $this->post_types ) || 'publish' != $post->post_status ) {
+			if ( ! in_array( $post->post_type, $types ) || 'publish' != $post->post_status ) {
 				return $post_link;
 			}
 
@@ -76,7 +87,7 @@ if ( ! class_exists( 'WPEX_Remove_Post_Type_Slugs' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function post_type_trick( $query ) {
+		public static function post_type_trick( $query ) {
 
 			// Only noop the main query
 			if ( ! $query->is_main_query() ) {
@@ -88,10 +99,13 @@ if ( ! class_exists( 'WPEX_Remove_Post_Type_Slugs' ) ) {
 				return;
 			}
 
+			// Get types
+			$types = self::get_types();
+
 			// 'name' will be set if post permalinks are just post_name, otherwise the page rule will match
 			if ( ! empty( $query->query['name'] ) ) {
 				$array = array( 'post', 'page' );
-				$array = array_merge( $array, $this->post_types );
+				$array = array_merge( $array, $types );
 				$query->set( 'post_type', $array );
 			}
 		}

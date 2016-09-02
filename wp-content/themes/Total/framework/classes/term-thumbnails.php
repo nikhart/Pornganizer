@@ -4,16 +4,13 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.4
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-// Global var for class
-global $wpex_term_thumbnails;
 
 // Start Class
 if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
@@ -25,9 +22,9 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 * @since 2.1.0
 		 */
 		public function __construct() {
-			add_action( 'admin_init', array( $this, 'admin_init' ) );
-			add_filter( 'wpex_page_header_style',  array( $this, 'page_header_style' ) );
-			add_filter( 'wpex_page_header_background_image',  array( $this, 'page_header_bg' ) );
+			add_action( 'admin_init', array( 'WPEX_Term_Thumbnails', 'admin_init' ) );
+			add_filter( 'wpex_page_header_style', array( 'WPEX_Term_Thumbnails', 'page_header_style' ) );
+			add_filter( 'wpex_page_header_background_image', array( 'WPEX_Term_Thumbnails', 'page_header_bg' ) );
 		}
 
 		/**
@@ -35,7 +32,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function admin_init() {
+		public static function admin_init() {
 
 			// Get taxonomies
 			$taxonomies = apply_filters( 'wpex_thumbnail_taxonomies', get_taxonomies() );
@@ -49,16 +46,16 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 			foreach ( $taxonomies as $taxonomy ) {
 
 				// Add forms
-				add_action( $taxonomy . '_add_form_fields', array( $this, 'add_form_fields' ) );
-				add_action( $taxonomy . '_edit_form_fields', array( $this, 'edit_form_fields' ) );
+				add_action( $taxonomy . '_add_form_fields', array( 'WPEX_Term_Thumbnails', 'add_form_fields' ) );
+				add_action( $taxonomy . '_edit_form_fields', array( 'WPEX_Term_Thumbnails', 'edit_form_fields' ) );
 				
 				// Add columns
-				add_filter( 'manage_edit-'. $taxonomy .'_columns', array( $this, 'admin_columns' ) );
-				add_filter( 'manage_'. $taxonomy .'_custom_column', array( $this, 'admin_column' ), 10, 3 );
+				add_filter( 'manage_edit-'. $taxonomy .'_columns', array( 'WPEX_Term_Thumbnails', 'admin_columns' ) );
+				add_filter( 'manage_'. $taxonomy .'_custom_column', array( 'WPEX_Term_Thumbnails', 'admin_column' ), 10, 3 );
 
 				// Save forms
-				add_action( 'created_'. $taxonomy, array( $this, 'save_forms' ), 10, 3 );
-				add_action( 'edit_'. $taxonomy, array( $this, 'save_forms' ), 10, 3 );
+				add_action( 'created_'. $taxonomy, array( 'WPEX_Term_Thumbnails', 'save_forms' ), 10, 3 );
+				add_action( 'edit_'. $taxonomy, array( 'WPEX_Term_Thumbnails', 'save_forms' ), 10, 3 );
 
 			}
 
@@ -69,7 +66,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function add_form_fields() {
+		public static function add_form_fields() {
 
 			// Enqueue media for media selector
 			wp_enqueue_media();
@@ -169,7 +166,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function edit_form_fields( $term ) {
+		public static function edit_form_fields( $term ) {
 
 			// Enqueue media for media selector
 			wp_enqueue_media();
@@ -292,7 +289,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function add_term_data( $term_id, $key, $data ) {
+		public static function add_term_data( $term_id, $key, $data ) {
 
 			// Validate data
 			if ( empty( $term_id ) || empty( $data ) || empty( $key ) ) {
@@ -315,7 +312,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function remove_term_data( $term_id, $key ) {
+		public static function remove_term_data( $term_id, $key ) {
 
 			// Validate data
 			if ( empty( $term_id ) || empty( $key ) ) {
@@ -340,16 +337,16 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function update_thumbnail( $term_id, $thumbnail_id ) {
+		public static function update_thumbnail( $term_id, $thumbnail_id ) {
 
 			// Add thumbnail
 			if ( ! empty( $thumbnail_id ) ) {
-				$this->add_term_data( $term_id, 'thumbnail', $thumbnail_id );
+				self::add_term_data( $term_id, 'thumbnail', $thumbnail_id );
 			}
 
 			// Delete thumbnail
 			else {
-				$this->remove_term_data( $term_id, 'thumbnail' );
+				self::remove_term_data( $term_id, 'thumbnail' );
 			}
 
 
@@ -360,16 +357,16 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function update_page_header_img( $term_id, $display ) {
+		public static function update_page_header_img( $term_id, $display ) {
 			
 			// Add option
 			if ( ! empty( $display ) ) {
-				$this->add_term_data( $term_id, 'page_header_bg', $display );
+				self::add_term_data( $term_id, 'page_header_bg', $display );
 			}
 
 			// Remove option
 			else {
-				$this->remove_term_data( $term_id, 'page_header_bg' );
+				self::remove_term_data( $term_id, 'page_header_bg' );
 			}
 
 		}
@@ -379,12 +376,12 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function save_forms( $term_id, $tt_id = '', $taxonomy = '' ) {
+		public static function save_forms( $term_id, $tt_id = '', $taxonomy = '' ) {
 			if ( isset( $_POST['wpex_term_thumbnail'] ) ) {
-				$this->update_thumbnail( $term_id, $_POST['wpex_term_thumbnail'] );
+				self::update_thumbnail( $term_id, $_POST['wpex_term_thumbnail'] );
 			}
 			if ( isset( $_POST['wpex_term_page_header_image'] ) ) {
-				$this->update_page_header_img( $term_id, $_POST['wpex_term_page_header_image'] );
+				self::update_page_header_img( $term_id, $_POST['wpex_term_page_header_image'] );
 			}
 		}
 
@@ -393,7 +390,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function admin_columns( $columns ) {
+		public static function admin_columns( $columns ) {
 			$columns['wpex-term-thumbnail-col'] = esc_attr__( 'Thumbnail', 'total' );
 			return $columns;
 		}
@@ -403,11 +400,11 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function admin_column( $columns, $column, $id ) {
+		public static function admin_column( $columns, $column, $id ) {
 
 			// Add thumbnail to columns
 			if ( 'wpex-term-thumbnail-col' == $column ) {
-				if ( $thumbnail_id = $this->get_term_thumbnail_id( $id, 'thumbnail_id', true ) ) {
+				if ( $thumbnail_id = self::get_term_thumbnail_id( $id, 'thumbnail_id', true ) ) {
 					$image = wp_get_attachment_image_src( $thumbnail_id, 'thumbnail' );
 					$image = $image[0];
 				} else {
@@ -426,7 +423,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function get_term_thumbnail_id( $term_id = null ) {
+		public static function get_term_thumbnail_id( $term_id = null ) {
 
 			// Get term id if not defined and is tax
 			$term_id = $term_id ? $term_id : get_queried_object()->term_id;
@@ -452,7 +449,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function term_has_page_header_bg( $term_id = '' ) {
+		public static function term_has_page_header_bg( $term_id = '' ) {
 
 			// Get term id if not defined and is tax
 			$term_id = $term_id ? $term_id : get_queried_object()->term_id;
@@ -483,13 +480,13 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function page_header_style( $style ) {
+		public static function page_header_style( $style ) {
 
 			// Return background-image for taxonomies where it's enabled and defined
-			if ( $this->is_tax_archive() && $this->term_has_page_header_bg() ) {
+			if ( self::is_tax_archive() && self::term_has_page_header_bg() ) {
 
 				// Get term thumbnail
-				$term_thumbnail = $this->get_term_thumbnail_id();
+				$term_thumbnail = self::get_term_thumbnail_id();
 
 				// Set style to background if term_thumbnail exists
 				if ( $term_thumbnail ) {
@@ -508,13 +505,13 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function page_header_bg( $image ) {
+		public static function page_header_bg( $image ) {
 
 			// Only check on tax pages
-			if ( $this->is_tax_archive() ) {
+			if ( self::is_tax_archive() ) {
 
 				// Get term thumbnail
-				$term_thumbnail = $this->get_term_thumbnail_id();
+				$term_thumbnail = self::get_term_thumbnail_id();
 
 				// Set style to background if term_thumbnail exists
 				if ( $term_thumbnail ) {
@@ -534,7 +531,7 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function is_tax_archive() {
+		public static function is_tax_archive() {
 			if ( ! is_search() && ( is_tax() || is_category() || is_tag() ) ) {
 				return true;
 			}
@@ -542,14 +539,12 @@ if ( ! class_exists( 'WPEX_Term_Thumbnails' ) ) {
 
 	}
 }
-$wpex_term_thumbnails = new WPEX_Term_Thumbnails();
+new WPEX_Term_Thumbnails();
 
 // Helper functions
 function wpex_get_term_thumbnail_id( $term_id = null ) {
-	global $wpex_term_thumbnails;
-	if ( $wpex_term_thumbnails ) {
-		$id = $wpex_term_thumbnails->get_term_thumbnail_id( $term_id );
-		return $id;
+	if ( $term_id ) {
+		return WPEX_Term_Thumbnails::get_term_thumbnail_id( $term_id );
 	} else {
 		// Get term id if not defined and is tax
 		$term_id = $term_id ? $term_id : get_queried_object()->term_id;

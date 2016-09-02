@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Functions
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 class VCEX_Inline_Style {
@@ -39,6 +39,19 @@ class VCEX_Inline_Style {
 	 */
 	private function parse_display( $value ) {
 		$this->style[] = 'display:'.$value.';';
+	}
+
+	/**
+	 * Float
+	 *
+	 * @since 3.5.0
+	 */
+	private function parse_float( $value ) {
+		if ( 'center' == $value ) {
+			$this->style[] = 'margin-right:auto;margin-left:auto;float:none;';
+		} else {
+			$this->style[] = 'float:'.$value.';';
+		}
 	}
 
 	/**
@@ -280,7 +293,9 @@ class VCEX_Inline_Style {
 	 * @since 2.0.0
 	 */
 	private function parse_opacity( $value ) {
-		$this->style[] = 'opacity:'. wpex_sanitize_data( $value, 'opacity' ) .';';
+		if ( $opacity = wpex_sanitize_data( $value, 'opacity' ) ) {
+			$this->style[] = 'opacity:'. $opacity .';-moz-opacity:'. $opacity .';-webkit-opacity:'. $opacity .';';
+		}
 	}
 
 	/**
@@ -405,6 +420,24 @@ class VCEX_Inline_Style {
 	 */
 	private function parse_left( $value ) {
 		$this->style[] = 'left:'. wpex_sanitize_data( $value, 'px-pct' ) .';';
+	}
+
+	/**
+	 * Style
+	 *
+	 * @since 3.5.0
+	 */
+	private function parse_font_style( $value ) {
+		$this->style[] = 'font-style:'. esc_html( $value ) .';';
+	}
+
+	/**
+	 * Text Decoration
+	 *
+	 * @since 3.5.0
+	 */
+	private function parse_text_decoration( $value ) {
+		$this->style[] = 'text-decoration:'. esc_html( $value ) .';';
 	}
 
 	/**

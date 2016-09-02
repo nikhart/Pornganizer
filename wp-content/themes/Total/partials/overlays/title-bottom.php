@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -15,8 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Only used for inside position
 if ( 'inside_link' != $position ) {
 	return;
-} ?>
+}
 
-<div class="overlay-title-bottom theme-overlay textcenter">
-	<span class="title"><?php the_title(); ?></span>
-</div>
+// Get post title
+$title = isset( $args['post_title'] ) ? $args['post_title'] : get_the_title();
+
+// Output
+echo '<div class="overlay-title-bottom theme-overlay textcenter"><span class="title">'. $title .'</span></div>';

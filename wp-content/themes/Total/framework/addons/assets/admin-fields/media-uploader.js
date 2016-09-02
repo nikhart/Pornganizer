@@ -12,7 +12,11 @@
 		wp.media.editor.send.attachment = function(props, attachment){
 			if ( _custom_media ) {
 				$( id ).val( attachment.id );
-				var $preview = button.parent().find('.wpex-media-live-preview img');
+				var $preview = button.parent().find( '.wpex-media-live-preview img' );
+				var $remove  = button.parent().find( '.wpex-media-remove' );
+				if ( $remove.length ) {
+					$remove.show();
+				}
 				if ( $preview.length ) {
 					$preview.attr( 'src', attachment.url );
 				} else {
@@ -30,6 +34,22 @@
 
 	$( '.add_media' ).on('click', function() {
 		_custom_media = false;
+	} );
+
+	$( '.wpex-media-remove' ).each( function( index ) {
+		var $this     = $( this );
+		var $input    = $this.parent().find( '.wpex-media-input' );
+		var $inputVal = $input.val();
+		var $preview  = $this.parent().find('.wpex-media-live-preview');
+		if ( $inputVal ) {
+			$this.show();
+		}
+		$this.on('click', function() {
+			$input.val( '' );
+			$preview.find( 'img' ).remove();
+			$this.hide();
+			return false;
+		} );
 	} );
 
 } ) ( jQuery );

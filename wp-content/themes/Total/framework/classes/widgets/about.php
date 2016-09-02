@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Widgets
- * @version 3.3.3
+ * @version 3.5.3
  */
 
 // Prevent direct file access
@@ -55,51 +55,72 @@ if ( ! class_exists( 'WPEX_About_Widget' ) ) {
 		 */
 		public function widget( $args, $instance ) {
 
+			// Define output variable
+			$output = '';
+
 			// Widget options
 			$title       = isset( $instance['title'] ) ? apply_filters( 'widget_title', $instance['title'] ) : '';
 			$image       = isset( $instance['image'] ) ? esc_url( $instance['image'] ) : '';
 			$description = isset( $instance['description'] ) ? $instance['description'] : '';
+			$alignment   = isset( $instance['alignment'] ) ? $instance['alignment'] : '';
+			$wpautop     = isset( $instance['wpautop'] ) ? $instance['wpautop'] : '';
 
 			// Before widget hook
-			echo $args['before_widget']; ?>
+			echo $args['before_widget'];
 
-				<?php
 				// Display widget title
-				if ( $title ) {
-					echo $args['before_title'] . $title . $args['after_title'];
-				} ?>
+				if ( $title ) :
 
-				<div class="wpex-about-widget wpex-clr">
+					$output .= $args['before_title'];
+						$output .= $title;
+					$output .= $args['after_title'];
 
-					<?php
+				endif;
+
+				// Wrap classes
+				$classes = 'wpex-about-widget wpex-clr';
+				if ( $alignment ) {
+					$classes .= ' text'. $alignment;
+				}
+
+				// Begin widget wrap
+				$output .= '<div class="'. $classes .'">';
+
 					// Display the image
 					if ( $image ) :
 
 						// Image classes
 						$img_style = isset( $instance['img_style'] ) ? $instance['img_style'] : '';
-						$img_class = ( 'round' == $img_style || 'rounded' == $img_style ) ? ' class="wpex-'. $img_style .'"' : ''; ?>
+						$img_class = ( 'round' == $img_style || 'rounded' == $img_style ) ? ' class="wpex-'. $img_style .'"' : '';
 
-						<div class="wpex-about-widget-image">
-							<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>"<?php echo $img_class; ?> />
-						</div><!-- .wpex-about-widget-description -->
+						$output .= '<div class="wpex-about-widget-image">';
+							$output .= '<img src="'. $image .'" alt="'. esc_attr( $title ) .'"'. $img_class .' />';
+						$output .= '</div>';
 
-					<?php endif; ?>
+					endif;
 
-					<?php
 					// Display the description
-					if ( $description ) : ?>
+					if ( $description ) :
 
-						<div class="wpex-about-widget-description wpex-clr">
-							<?php echo wpex_sanitize_data( $description, 'html' ); ?>
-						</div><!-- .wpex-about-widget-description -->
+						$output .= '<div class="wpex-about-widget-description wpex-clr">';
+							if ( 'on' == $wpautop ) {
+								$output .= wpautop( wp_kses_post( $description ) );
+							} else {
+								$output .= wp_kses_post( $description );
+							}
+						$output .= '</div>';
 
-					<?php endif; ?>
+					endif;
 
-				</div><!-- .mailchimp-widget -->
+				// Close widget wrap
+				$output .= '</div>';
 
-			<?php
 			// After widget hook
-			echo $args['after_widget'];
+			$output .= $args['after_widget'];
+
+			// Echo output
+			echo $output;
+
 		}
 
 		/**
@@ -119,6 +140,8 @@ if ( ! class_exists( 'WPEX_About_Widget' ) ) {
 			$instance['image']       = strip_tags( $new_instance['image'] );
 			$instance['img_style']   = strip_tags( $new_instance['img_style'] );
 			$instance['description'] = wpex_sanitize_data( $new_instance['description'], 'html' );
+			$instance['alignment']   = strip_tags( $new_instance['alignment'] );
+			$instance['wpautop']     = ! empty( $new_instance['wpautop'] ) ? 'on' : '';
 			return $instance;
 		}
 
@@ -136,7 +159,8 @@ if ( ! class_exists( 'WPEX_About_Widget' ) ) {
 				'image'       => '',
 				'img_style'   => 'plain',
 				'description' => '',
-
+				'wpautop'     => '',
+				'alignment'   => '',
 			) );
 			extract( $instance ); ?>
 			
@@ -144,11 +168,13 @@ if ( ! class_exists( 'WPEX_About_Widget' ) ) {
 				<label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_html_e( 'Title', 'total' ); ?>:</label> 
 				<input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
 			</p>
+
 			<p>
 				<label for="<?php echo esc_attr( $this->get_field_id( 'image' ) ); ?>"><?php esc_html_e( 'Image URL', 'total' ); ?>:</label> 
 				<input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'image' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'image' ) ); ?>" type="text" value="<?php echo esc_attr( $image ); ?>" style="margin-bottom:10px;" />
 				<input class="wpex-widget-upload-button button button-secondary" type="button" value="<?php esc_html_e( 'Upload Image', 'total' ); ?>" />
 			</p>
+
 			<p><label for="<?php echo esc_attr( $this->get_field_id( 'img_style' ) ); ?>"><?php esc_html_e( 'Image Style', 'total' ); ?>:</label>
 				<select id="<?php echo esc_attr( $this->get_field_id( 'img_style' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'img_style' ) ); ?>" class="widefat">
 					<option value="plain" <?php selected( $img_style, 'plain' ) ?>><?php esc_html_e( 'Plain', 'total' ); ?></option>
@@ -156,10 +182,26 @@ if ( ! class_exists( 'WPEX_About_Widget' ) ) {
 					<option value="round" <?php selected( $img_style, 'round' ) ?>><?php esc_html_e( 'Round', 'total' ); ?></option>
 				</select>
 			</p>
+
 			<p>
 				<label for="<?php echo esc_attr( $this->get_field_id( 'description' ) ); ?>"><?php esc_html_e( 'Description:','total' ); ?></label>
 				<textarea class="widefat" rows="5" cols="20" id="<?php echo esc_attr( $this->get_field_id( 'description' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'description' ) ); ?>"><?php echo wpex_sanitize_data( $instance['description'], 'html' ); ?></textarea>
 			</p>
+
+			<p>
+				<input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'wpautop' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'wpautop' ) ); ?>" type="checkbox" <?php checked( 'on', $wpautop, true ); ?> />
+				<label for="<?php echo esc_attr( $this->get_field_id( 'wpautop' ) ); ?>"><?php esc_html_e( 'Automatically add paragraphs','total' ); ?></label>
+			</p>
+
+			<p><label for="<?php echo esc_attr( $this->get_field_id( 'alignment' ) ); ?>"><?php esc_html_e( 'Alignment', 'total' ); ?>:</label>
+				<select id="<?php echo esc_attr( $this->get_field_id( 'alignment' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'alignment' ) ); ?>" class="widefat">
+					<option value="" <?php selected( $alignment, '' ) ?>><?php esc_html_e( 'Default', 'total' ); ?></option>
+					<option value="left" <?php selected( $alignment, 'left' ) ?>><?php esc_html_e( 'Left', 'total' ); ?></option>
+					<option value="center" <?php selected( $alignment, 'center' ) ?>><?php esc_html_e( 'Center', 'total' ); ?></option>
+					<option value="right" <?php selected( $alignment, 'right' ) ?>><?php esc_html_e( 'Right', 'total' ); ?></option>
+				</select>
+			</p>
+
 			<script type="text/javascript">
 				(function($) {
 					"use strict";

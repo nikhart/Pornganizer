@@ -4,8 +4,28 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.4.0
+ * @version 3.5.3
  */
+
+/**
+ * Returns array of image background styles
+ *
+ * @since 3.5.0
+ */
+function wpex_get_bg_img_styles() {
+	return array(
+		''             => esc_html__( 'Default', 'total' ),
+		'cover'        => esc_html__( 'Cover', 'total' ),
+		'stretched'    => esc_html__( 'Fixed Cover', 'total' ),
+		'repeat'       => esc_html__( 'Repeat', 'total' ),
+		'fixed-top'    => esc_html__( 'Fixed Top', 'total' ),
+		'fixed'        => esc_html__( 'Fixed Center', 'total' ),
+		'fixed-bottom' => esc_html__( 'Fixed Bottom', 'total' ),
+		'repeat-x'     => esc_html__( 'Repeat-x', 'total' ),
+		'repeat-y'     => esc_html__( 'Repeat-y', 'total' ),
+		'repeat-y'     => esc_html__( 'Repeat-y', 'total' ),
+	);
+}
 
 /**
  * Returns array of dropdown styles
@@ -18,6 +38,35 @@ function wpex_get_menu_dropdown_styles() {
 		'minimal-sq' => esc_html__( 'Minimal', 'total' ),
 		'minimal'    => esc_html__( 'Minimal - Rounded', 'total' ),
 		'black'      => esc_html__( 'Black', 'total' ),
+	) );
+}
+
+/**
+ * Array of carousel arrow positions
+ *
+ * @since 3.5.3
+ */
+function wpex_carousel_arrow_positions() {
+	return apply_filters( 'wpex_carousel_arrow_positions', array(
+		'default' => __( 'Default', 'total' ),
+		'left'    => __( 'Left', 'total' ) ,
+	 	'center'  => __( 'Center', 'total' ),
+		'right'   => __( 'Right', 'total' ),
+		'abs'     => __( 'Absolute', 'total' ),
+	) );
+}
+
+/**
+ * Array of carousel arrow styles
+ *
+ * @since 3.5.3
+ */
+function wpex_carousel_arrow_styles() {
+	return apply_filters( 'wpex_carousel_arrow_styles', array(
+		''       => esc_html__( 'Default', 'total' ),
+		'min'    => esc_html__( 'Minimal', 'total' ),
+		'border' => esc_html__( 'Border', 'total' ),
+		'circle' => esc_html__( 'Circle', 'total' ),
 	) );
 }
 
@@ -155,6 +204,10 @@ function wpex_topbar_social_options() {
 			'label' => 'Tripadvisor',
 			'icon_class' => 'fa fa-tripadvisor',
 		),
+		'twitch' => array(
+			'label' => 'Twitch',
+			'icon_class' => 'fa fa-twitch',
+		),
 		'rss'  => array(
 			'label' => esc_html__( 'RSS', 'total' ),
 			'icon_class' => 'fa fa-rss',
@@ -287,6 +340,7 @@ function wpex_column_gaps() {
 	return apply_filters( 'wpex_column_gaps', array(
 		''     => esc_html__( 'Default', 'total' ),
 		'none' => '0px',
+		'1'    => '1px',
 		'5'    => '5px',
 		'10'   => '10px',
 		'15'   => '15px',
@@ -401,9 +455,23 @@ function wpex_image_hovers() {
 }
 
 /**
+ * Text decorations
+ *
+ * @since 1.6.2
+ */
+function wpex_text_decorations() {
+	return apply_filters( 'wpex_text_decorations', array(
+		''             => esc_html__( 'Default', 'total' ),
+		'underline'    => esc_html__( 'Underline', 'total' ),
+		'overline'     => esc_html__( 'Overline','total' ),
+		'line-through' => esc_html__( 'Line-through', 'total' ),
+	) );
+}
+
+/**
  * Font Weights
  *
- * @since Total 1.6.2
+ * @since 1.6.2
  */
 function wpex_font_weights() {
 	return apply_filters( 'wpex_font_weights', array(
@@ -589,5 +657,8 @@ function wpex_social_button_styles() {
 		'graphical'          => esc_html__( 'Graphical', 'total' ),
 		'graphical-rounded'  => esc_html__( 'Graphical Rounded', 'total' ),
 		'graphical-round'    => esc_html__( 'Graphical Round', 'total' ),
+		'bordered'           => esc_html__( 'Bordered', 'total' ),
+		'bordered-rounded'   => esc_html__( 'Bordered Rounded', 'total' ),
+		'bordered-round'     => esc_html__( 'Bordered Round', 'total' ),
 	) );
 }

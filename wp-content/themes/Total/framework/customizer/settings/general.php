@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Customizer
- * @version 3.3.5
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -13,16 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // BG styles
-$bg_styles = array(
-	'stretched' => esc_html__( 'Stretched', 'total' ),
-	'repeat' => esc_html__( 'Repeat', 'total' ),
-	'fixed-top' => esc_html__( 'Fixed Top', 'total' ),
-	'fixed' => esc_html__( 'Fixed Center', 'total' ),
-	'fixed-bottom' => esc_html__( 'Fixed Bottom', 'total' ),
-	'repeat-x' => esc_html__( 'Repeat-x', 'total' ),
-	'repeat-y' => esc_html__( 'Repeat-y', 'total' ),
-	'repeat-y' => esc_html__( 'Repeat-y', 'total' ),
-);
+$bg_styles = wpex_get_bg_img_styles();
 
 // Accent Colors
 $this->sections['wpex_accent_colors'] = array(
@@ -50,7 +41,7 @@ $this->sections['wpex_accent_colors'] = array(
 
 // Background
 $patterns_url = WPEX_THEME_URI .'/images/patterns/';
-$this->sections['wpex_background_background'] = array(
+$this->sections['wpex_background'] = array(
 	'title'  => esc_html__( 'Site Background', 'total' ),
 	'panel'  => 'wpex_general',
 	'desc' => esc_html__( 'Here you can alter the global site background. It is highly recommended that you first set the site layout to "Boxed" under the Layout options.', 'total' ),
@@ -184,15 +175,6 @@ $this->sections['wpex_social_sharing'] = array(
 			'control' => array(
 				'label' => esc_html__( 'Twitter Handle', 'total' ),
 				'type' => 'text',
-				'active_callback' => 'wpex_has_social_share_sites',
-			),
-		),
-		'social_share_pages' => array(
-			'id' => 'social_share_pages',
-			'default' => false,
-			'control' => array(
-				'label' => esc_html__( 'Enable for Pages', 'total' ),
-				'type' => 'checkbox',
 				'active_callback' => 'wpex_has_social_share_sites',
 			),
 		),
@@ -425,6 +407,12 @@ $this->sections['wpex_page_header'] = array(
 );
 
 // Pages
+$blocks = apply_filters( 'wpex_page_single_blocks', array(
+	'media'    => esc_html__( 'Media', 'total' ),
+	'content'  => esc_html__( 'Content', 'total' ),
+	'share'    => esc_html__( 'Social Share', 'total' ),
+	'comments' => esc_html__( 'Comments', 'total' ),
+) );
 $this->sections['wpex_pages'] = array(
 	'title'  => esc_html__( 'Pages', 'total' ),
 	'panel'  => 'wpex_general',
@@ -446,19 +434,14 @@ $this->sections['wpex_pages'] = array(
 				'type' => 'checkbox',
 			),
 		),
-		'page_comments' => array(
-			'id' => 'page_comments',
-			'default' => false,
+		array(
+			'id' => 'page_composer',
+			'default' => 'content',
 			'control' => array(
-				'label' => esc_html__( 'Comments on Pages', 'total' ),
-				'type' => 'checkbox',
-			),
-		),
-		'page_featured_image' => array(
-			'id' => 'page_featured_image',
-			'control' => array(
-				'label' => esc_html__( 'Display Featured Images', 'total' ),
-				'type' => 'checkbox',
+				'label' => esc_html__( 'Post Layout Elements', 'total' ),
+				'type' => 'wpex-sortable',
+				'choices' => $blocks,
+				'desc' => esc_html__( 'Click and drag and drop elements to re-order them.', 'total' ),
 			),
 		),
 	),
@@ -649,6 +632,124 @@ $this->sections['wpex_scroll_top'] = array(
 			'inline_css' => array(
 				'target' => '#site-scroll-top:hover',
 				'alter' => 'border-color',
+			),
+		),
+	),
+);
+
+// Forms
+$this->sections['wpex_pagination'] = array(
+	'title' => esc_html__( 'Pagination', 'total' ),
+	'panel' => 'wpex_general',
+	'settings' => array(
+		'pagination_align' => array(
+			'id' => 'pagination_align',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'select',
+				'default' => 'left',
+				'label' => esc_html__( 'Align', 'total' ),
+				'choices' => array(
+					'left' => esc_html__( 'Left', 'total' ),
+					'center' => esc_html__( 'Center', 'total' ),
+					'right' => esc_html__( 'Right', 'total' ),
+				),
+			),
+		),
+		'pagination_font_size' => array(
+			'id' => 'pagination_font_size',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'text',
+				'label' => esc_html__( 'Font Size', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => 'ul.page-numbers, .page-links',
+				'alter' => 'font-size',
+			),
+		),
+		'pagination_border_width' => array(
+			'id' => 'pagination_border_width',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'text',
+				'label' => esc_html__( 'Border Width', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => 'ul .page-numbers a, a.page-numbers, span.page-numbers, .page-links span, .page-links a > span',
+				'alter' => 'border-width',
+			),
+		),
+		'pagination_border_color' => array(
+			'id' => 'pagination_border_color',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'color',
+				'label' => esc_html__( 'Border Color', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => 'ul .page-numbers a, a.page-numbers, span.page-numbers, .page-links span, .page-links a > span',
+				'alter' => 'border-color',
+			),
+		),
+		'pagination_border_hover_color' => array(
+			'id' => 'pagination_border_hover_color',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'color',
+				'label' => esc_html__( 'Border Color: Hover', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => '.page-numbers a:hover, .page-numbers.current, .page-numbers.current:hover, .page-links span, .page-links a > span:hover',
+				'alter' => 'border-color',
+			),
+		),
+		'pagination_color' => array(
+			'id' => 'pagination_color',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'color',
+				'label' => esc_html__( 'Color', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => 'ul .page-numbers a, a.page-numbers, span.page-numbers, .page-links span, .page-links a > span',
+				'alter' => 'color',
+			),
+		),
+		'pagination_hover_color' => array(
+			'id' => 'pagination_hover_color',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'color',
+				'label' => esc_html__( 'Color: Hover', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => '.page-numbers a:hover, .page-numbers.current, .page-numbers.current:hover, .page-links span, .page-links a > span:hover',
+				'alter' => 'color',
+			),
+		),
+		'pagination_bg' => array(
+			'id' => 'pagination_bg',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'color',
+				'label' => esc_html__( 'Background', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => 'ul .page-numbers a, a.page-numbers, span.page-numbers, .page-links span, .page-links a > span',
+				'alter' => 'background',
+			),
+		),
+		'pagination_hover_bg' => array(
+			'id' => 'pagination_hover_bg',
+			'transport' => 'postMessage',
+			'control' => array(
+				'type' => 'color',
+				'label' => esc_html__( 'Background: Hover', 'total' ),
+			),
+			'inline_css' => array(
+				'target' => '.page-numbers a:hover, .page-numbers.current, .page-numbers.current:hover, .page-links span, .page-links a > span:hover',
+				'alter' => 'background',
 			),
 		),
 	),

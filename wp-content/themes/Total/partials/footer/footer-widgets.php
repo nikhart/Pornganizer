@@ -25,7 +25,8 @@ if ( '1' == $columns ) {
 if ( $gap ) {
 	$wrap_classes[] = 'gap-'. $gap;
 }
-$wrap_classes = implode( ' ', $wrap_classes ); ?>
+$wrap_classes = implode( ' ', $wrap_classes );
+$wrap_classes = apply_filters( 'wpex_footer_widget_row_classes', $wrap_classes ); ?>
 
 <div id="footer-widgets" class="wpex-row <?php echo esc_attr( $wrap_classes ); ?>">
 

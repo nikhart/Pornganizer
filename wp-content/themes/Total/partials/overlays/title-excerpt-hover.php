@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -26,17 +26,23 @@ $excerpt = wpex_get_excerpt( array(
 ) );
 
 // Make sure excerpt isn't too long when custom
-if ( strlen( $excerpt ) > $excerpt_length ) {
+if ( '-1' != $excerpt_length && $excerpt && ( strlen( $excerpt ) > $excerpt_length ) ) {
 	$excerpt = wp_trim_words( $excerpt, $excerpt_length );
-} ?>
+}
 
-<div class="overlay-title-excerpt-hover overlay-hide theme-overlay">
-	<div class="overlay-title-excerpt-hover-inner clr">
-		<div class="overlay-title-excerpt-hover-text clr">
-			<h3 class="overlay-title-excerpt-hover-title"><?php the_title(); ?></h3>
-			<?php if ( $excerpt ) : ?>
-				<div class="overlay-title-excerpt-hover-excerpt"><?php echo $excerpt; ?></div>
-			<?php endif; ?>
-		</div>
-	</div>
-</div>
+// Get title
+$title = isset( $args['post_title'] ) ? $args['post_title'] : get_the_title();
+
+// Output overlay
+$output = '<div class="overlay-title-excerpt-hover overlay-hide theme-overlay textcenter">';
+	$output .= '<div class="overlay-table clr">';
+		$output .= '<div class="overlay-table-cell clr">';
+			$output .= '<div class="overlay-title">'. esc_html( $title ) .'</div>';
+			if ( $excerpt ) {
+				$output .= '<div class="overlay-excerpt">'. $excerpt .'</div>';
+			}
+		$output .= '</div>';
+	$output .= '</div>';
+$output .= '</div>';
+
+echo $output;

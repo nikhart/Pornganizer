@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -12,14 +12,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Global var for class
-global $wpex_ilightbox;
-
 // Start Class
 if ( ! class_exists( 'WPEX_iLightbox' ) ) {
-	
+
 	class WPEX_iLightbox {
-		public $active_skin;
 
 		/**
 		 * Main constructor
@@ -28,24 +24,19 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 		 */
 		public function __construct() {
 
-			// Get and define active skin
-			$skin = wpex_get_mod( 'lightbox_skin' );
-			$skin = $skin ? $skin : 'minimal';
-			$this->active_skin = apply_filters( 'wpex_lightbox_skin', $skin );
-
 			// Define lightbox stylesheets
-			add_action( 'wp_enqueue_scripts', array( $this, 'register_style_sheets' ), 20 );
+			add_action( 'wp_enqueue_scripts', array( 'WPEX_iLightbox', 'register_style_sheets' ), 20 );
 
 			// Load scripts
 			if ( wpex_get_mod( 'lightbox_auto' ) ) {
-				add_action( 'wp_enqueue_scripts', array( $this, 'load_stylesheet_always' ), 40 );
+				add_action( 'wp_enqueue_scripts', array( 'WPEX_iLightbox', 'load_stylesheet_always' ), 40 );
 			}
 
 			// Add to localize array
-			add_filter( 'wpex_localize_array', array( $this, 'localize' ) );
+			add_filter( 'wpex_localize_array', array( 'WPEX_iLightbox', 'localize' ) );
 
 			// Add customizer settings
-			add_filter( 'wpex_customizer_sections', array( $this, 'customizer_settings' ) );
+			add_filter( 'wpex_customizer_sections', array( 'WPEX_iLightbox', 'customizer_settings' ) );
 
 		}
 
@@ -54,13 +45,23 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function localize( $array ) {
-			
-			// Add lightbox settings to array
+		public static function active_skin() {
+			$skin = wpex_get_mod( 'lightbox_skin' );
+			$skin = $skin ? $skin : 'minimal';
+			return apply_filters( 'wpex_lightbox_skin', $skin );
+		}
+
+		/**
+		 * Localize scripts
+		 *
+		 * @since 2.1.0
+		 */
+		public static function localize( $array ) {
 			$array['iLightbox'] = array(
 				'auto' => wpex_get_mod( 'lightbox_auto', false ),
 				'skin' => wpex_global_obj( 'lightbox_skin' ),
 				'path' => 'horizontal',
+				'infinite' => true,
 				'controls' => array(
 					'arrows' => wpex_get_mod( 'lightbox_arrows', true ),
 					'thumbnail' => wpex_get_mod( 'lightbox_thumbnails', true ),
@@ -88,28 +89,8 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 					'hide' => 'mouseleave',
 					'buttons' => false,
 				),
-				/*'social' => array(
-					'buttons' => array(
-						'facebook' => array(
-							'text' => 'Facebook'
-						),
-						'twitter' => array(
-							'text' => 'Twitter'
-						),
-						'googleplus' => array(
-							'text' => 'Google Plus'
-						),
-						'pinterest' => array(
-							'text'   => 'Pinterest',
-							'source' => 'https://www.pinterest.com/pin/create/button/?url={URL}',
-						),
-					),
-				),*/
 			);
-	
-			// Return array
 			return $array;
-
 		}
 
 		/**
@@ -136,7 +117,7 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function skin_style( $skin = null ) {
+		public static function skin_style( $skin = null ) {
 
 			// Sanitize skin
 			$skin = $skin ? $skin : wpex_ilightbox_skin();
@@ -169,13 +150,10 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function register_style_sheets() {
-
-			// Register skins
+		public static function register_style_sheets() {
 			foreach( self::skins() as $key => $val ) {
-				wp_register_style( 'wpex-ilightbox-'. $key, $this->skin_style( $key ), false, WPEX_THEME_VERSION );
+				wp_register_style( 'wpex-ilightbox-'. $key, self::skin_style( $key ), false, WPEX_THEME_VERSION );
 			}
-
 		}
 
 		/**
@@ -183,8 +161,8 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function load_stylesheet_always() {
-			wp_enqueue_style( 'wpex-ilightbox-'. $this->active_skin, false, WPEX_THEME_VERSION );
+		public static function load_stylesheet_always() {
+			wp_enqueue_style( 'wpex-ilightbox-'. self::active_skin(), false, WPEX_THEME_VERSION );
 		}
 
 		/**
@@ -192,7 +170,7 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function load_css() {
+		public static function load_css() {
 			self::enqueue_style();
 		}
 
@@ -203,7 +181,7 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 		 *
 		 * @since 2.1.0
 		 */
-		public function customizer_settings( $sections ) {
+		public static function customizer_settings( $sections ) {
 			$sections['wpex_lightbox'] = array(
 				'title' => esc_html__( 'Lightbox', 'total' ),
 				'panel' => 'wpex_general',
@@ -274,7 +252,7 @@ if ( ! class_exists( 'WPEX_iLightbox' ) ) {
 	}
 
 }
-$wpex_ilightbox = new WPEX_iLightbox();
+new WPEX_iLightbox();
 
 
 /* Helper functions
@@ -295,13 +273,7 @@ function wpex_ilightbox_skins() {
  * @since 1.3.3
  */
 function wpex_ilightbox_skin() {
-	global $wpex_ilightbox;
-	if ( $wpex_ilightbox ) {
-		return $wpex_ilightbox->active_skin;
-	} else {
-		$wpex_ilightbox = new WPEX_iLightbox;
-		return $wpex_ilightbox->active_skin;
-	}
+	return WPEX_iLightbox::active_skin();
 }
 
 /**

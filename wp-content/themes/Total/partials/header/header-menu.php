@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.4.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -19,14 +19,10 @@ $menu_location = wpex_global_obj( 'header_menu_location' );
 $ms_global_menu = apply_filters( 'wpex_ms_global_menu', false );
 
 // Display menu if defined
-if ( has_nav_menu( $menu_location ) || $ms_global_menu ) : 
-
-	// Get classes for the header menu
-	$wrap_classes  = wpex_header_menu_classes( 'wrapper' );
-	$inner_classes = wpex_header_menu_classes( 'inner' );
+if ( has_nav_menu( $menu_location ) || $ms_global_menu ) :
 
 	// Menu arguments
-	$menu_args = array(
+	$menu_args = apply_filters( 'wpex_header_menu_args', array(
 		'theme_location' => $menu_location,
 		'menu_class'     => 'dropdown-menu sf-menu',
 		'container'      => false,
@@ -34,7 +30,7 @@ if ( has_nav_menu( $menu_location ) || $ms_global_menu ) :
 		'link_before'    => '<span class="link-inner">',
 		'link_after'     => '</span>',
 		'walker'         => new WPEX_Dropdown_Walker_Nav_Menu(),
-	);
+	) );
 
 	// Check for custom menu
 	if ( $menu = wpex_custom_menu() ) {
@@ -43,9 +39,9 @@ if ( has_nav_menu( $menu_location ) || $ms_global_menu ) :
 
 	<?php wpex_hook_main_menu_before(); ?>
 
-	<div id="site-navigation-wrap" class="<?php echo $wrap_classes; ?>">
+	<div id="site-navigation-wrap" class="<?php echo wpex_header_menu_classes( 'wrapper' );; ?>">
 
-		<nav id="site-navigation" class="<?php echo $inner_classes; ?>"<?php wpex_schema_markup( 'site_navigation' ); ?>>
+		<nav id="site-navigation" class="<?php echo wpex_header_menu_classes( 'inner' ); ?>"<?php wpex_schema_markup( 'site_navigation' ); ?>>
 
 			<?php wpex_hook_main_menu_top(); ?>
 

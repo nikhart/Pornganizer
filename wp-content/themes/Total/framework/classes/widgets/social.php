@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Widgets
- * @version 3.3.3
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start class
 if ( ! class_exists( 'WPEX_Social_Widget' ) ) {
+
 	class WPEX_Social_Widget extends WP_Widget {
 
 		/**
@@ -24,12 +25,20 @@ if ( ! class_exists( 'WPEX_Social_Widget' ) ) {
 		 * @since 1.0.0
 		 */
 		public function __construct() {
+
+			// Define widget
 			$branding = wpex_get_theme_branding();
 			$branding = $branding ? $branding . ' - ' : '';
 			parent::__construct(
 				'wpex_social_widget',
 				$branding . esc_attr__( 'Image Icons Social Widget', 'total' )
 			);
+
+			// Load scripts
+			if ( is_admin() ) {
+				add_action( 'admin_enqueue_scripts', array( 'WPEX_Social_Widget', 'scripts' ) );
+			}
+
 		}
 
 		/**
@@ -235,58 +244,27 @@ if ( ! class_exists( 'WPEX_Social_Widget' ) ) {
 			</ul>
 		<?php
 		}
+
+		/**
+		 * Load scripts for this widget
+		 *
+		 */
+		public static function scripts( $hook ) {
+
+			if ( $hook != 'widgets.php' ) {
+				return;
+			}
+
+			$dir = get_template_directory_uri() .'/framework/classes/widgets/assets/';
+
+			wp_enqueue_style( 'total-social-widget', $dir .'total-social-widget.css' );
+			wp_enqueue_script( 'total-social-widget', $dir .'total-social-widget.js', array( 'jquery' ), false, true );
+
+		}
+
 	}
+
 }
 
 // Register the widget
 register_widget( 'WPEX_Social_Widget' );
-
-// Widget Styles
-if ( ! function_exists( 'wpex_social_widget_style' ) ) {
-	function wpex_social_widget_style() { ?>
-		<style>
-		.wpex-social-widget-services-list { padding-top: 10px; }
-		.wpex-social-widget-services-list li { cursor: move; background: #fafafa; padding: 10px; border: 1px solid #e5e5e5; margin-bottom: 10px; }
-		.wpex-social-widget-services-list li p { margin: 0 }
-		.wpex-social-widget-services-list li label { margin-bottom: 3px; display: block; color: #222; }
-		.wpex-social-widget-services-list .placeholder { border: 1px dashed #e3e3e3 }
-		</style>
-	<?php
-	}
-}
-
-// Widget AJAX functions
-function load_wpex_social_widget_scripts() {
-	if ( ! is_admin() ) {
-		return; // extra check
-	}
-	global $pagenow;
-	if ( $pagenow == "widgets.php" ) {
-		add_action( 'admin_head', 'wpex_social_widget_style' );
-		add_action( 'admin_footer', 'add_new_wpex_social_ajax_trigger' );
-		function add_new_wpex_social_ajax_trigger() { ?>
-			<script type="text/javascript" >
-				jQuery(document).ready(function($) {
-					jQuery(document).ajaxSuccess(function(e, xhr, settings) { //fires when widget saved
-						var widget_id_base = 'wpex_social_widget';
-						if(settings.data.search( 'action=save-widget' ) != -1 && settings.data.search( 'id_base=' + widget_id_base) != -1) {
-							wpexSortServices();
-						}
-					});
-					function wpexSortServices() {
-						jQuery( '.wpex-social-widget-services-list' ).each( function() {
-							var id = jQuery(this).attr( 'id' );
-							$( '#'+ id).sortable({
-								placeholder: "placeholder",
-								opacity: 0.6
-							});
-						});
-					}
-					wpexSortServices();
-				});
-			</script>
-		<?php
-		}
-	}
-}
-add_action( 'admin_init', 'load_wpex_social_widget_scripts' );

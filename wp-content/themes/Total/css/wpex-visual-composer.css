@@ -6,28 +6,10 @@
  Theme URI : http://www.wpexplorer.com
 
 /*------------------------------------------------------------------
-[Table of contents]
-
-# Fixes
-# Main Tweaks
-# Button
-# Custom Headings
-# Call To Action
-# Columns
-# Widgets
-# Tabs
-# Tours
-# Toggles
-# Accordions
-# Font Smoothing
-# Accent Color
-# Responsiveness
-
-/*------------------------------------------------------------------
 [# Fixes]
 -------------------------------------------------------------------*/
 
-/*accordion line-height*/
+/* Accordion line-height */
 .ui-helper-reset { line-height: 1.65; }
 
 /* Fixes issue where you can't edit a parallax row in front-end editor */
@@ -50,6 +32,13 @@
 .vc_empty .wpb_column { float: none }
 .compose-mode .visible-in-composer { display: block !important }
 .vc_row.wpex-parallax-bg-wrap { background-image: none !important }
+
+/* Fixes for overlays */
+.vc_row { position: relative; }
+.wpex-vc-columns-wrap,
+.vc_parallax > *,
+.compose-mode .vc_element,
+.view-mode .vc_element{ z-index: 2; }
 
 /*remove default vc margins - IMPORTANT So users can select their own margins in the composer */
 .wpb_row,

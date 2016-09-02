@@ -19,7 +19,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Templates
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -29,15 +29,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Core Constants
 define( 'TOTAL_THEME_ACTIVE', true );
-define( 'WPEX_THEME_VERSION', '3.4.0' );
-define( 'WPEX_VC_SUPPORTED_VERSION', '4.11.2' );
+define( 'WPEX_THEME_VERSION', '3.5.3' );
+define( 'WPEX_VC_SUPPORTED_VERSION', '4.12' );
 
-// Make sure we have a global var of the class
-global $wpex_theme_setup;
+define( 'WPEX_THEME_DIR', get_template_directory() );
+define( 'WPEX_THEME_URI', get_template_directory_uri() );
 
 // Start up class
 class WPEX_Theme_Setup {
-	private $template_dir;
 
 	/**
 	 * Main Theme Class Constructor
@@ -50,11 +49,8 @@ class WPEX_Theme_Setup {
 	 */
 	public function __construct() {
 
-		// Define template directory
-		$this->template_dir = get_template_directory();
-
 		// Perform actions after updating => These run on init hook
-		require_once( $this->template_dir .'/framework/updates/after-update.php' );
+		require_once( WPEX_THEME_DIR .'/framework/updates/after-update.php' );
 
 		// Define globals
 		global $wpex_theme, $wpex_theme_mods;
@@ -65,162 +61,177 @@ class WPEX_Theme_Setup {
 		// Functions used to retrieve theme mods.
 		// Loaded early so it can be used on all hooks.
 		// Requires $wpex_theme_mods global var to be defined first => look up!
-		require_once( $this->template_dir .'/framework/get_mods.php' );
+		require_once( WPEX_THEME_DIR .'/framework/get_mods.php' );
 
 		// Include conditional functions early so we can use them anywhere
-		require_once( $this->template_dir .'/framework/conditionals.php' );
+		require_once( WPEX_THEME_DIR .'/framework/conditionals.php' );
 
 		// Include global object class early so it can be used anywhere needed.
 		// This is important because when inserting VC modules we must re-run the class object at times
-		require_once( $this->template_dir .'/framework/classes/global-object.php' );
+		require_once( WPEX_THEME_DIR .'/framework/classes/global-object.php' );
 
 		// Define constants
-		add_action( 'after_setup_theme', array( $this, 'constants' ), 0 );
+		add_action( 'after_setup_theme', array( 'WPEX_Theme_Setup', 'constants' ), 0 );
 
 		// Load all core theme function files
 		// Load Before classes and addons so we can make use of them
-		add_action( 'after_setup_theme', array( $this, 'include_functions' ), 1 );
+		add_action( 'after_setup_theme', array( 'WPEX_Theme_Setup', 'include_functions' ), 1 );
 
 		// Load all the theme addons - must run on this hook!!!
-		add_action( 'after_setup_theme', array( $this, 'addons' ), 2 );
+		add_action( 'after_setup_theme', array( 'WPEX_Theme_Setup', 'addons' ), 2 );
 
 		// Load configuration classes (post types & 3rd party plugins)
 		// Must load first so it can use hooks defined in the classes
-		add_action( 'after_setup_theme', array( $this, 'configs' ), 3 );
+		add_action( 'after_setup_theme', array( 'WPEX_Theme_Setup', 'configs' ), 3 );
 
 		// Load framework classes
-		add_action( 'after_setup_theme', array( $this, 'classes' ), 4 );
+		add_action( 'after_setup_theme', array( 'WPEX_Theme_Setup', 'classes' ), 4 );
 
 		// Setup theme => add_theme_support, register_nav_menus, load_theme_textdomain, etc
 		// Must run on 10 priority or else child theme locale will be overritten
-		add_action( 'after_setup_theme', array( $this, 'theme_setup' ), 10 );
+		add_action( 'after_setup_theme', array( 'WPEX_Theme_Setup', 'theme_setup' ), 10 );
 
 		// Defines hooks and runs actions
 		// @todo move to 'wp' hook since it's not needed so early? Would break a lot of snippets...
-		add_action( 'init', array( $this, 'hooks_actions' ), 0 );
+		add_action( 'init', array( 'WPEX_Theme_Setup', 'hooks_actions' ), 0 );
 
 		// Populate the global object
 		// Must be done early on to prevent issues with plugins altering templates
 		// But must run after WP has loaded so conditionals work
-		add_action( 'template_redirect', array( $this, 'global_object' ), 0 );
+		add_action( 'template_redirect', array( 'WPEX_Theme_Setup', 'global_object' ), 0 );
 
 		// Run after switch theme
-		add_action( 'after_switch_theme', array( $this, 'after_switch_theme' ) );
-
-		// Load scripts in the WP admin
-		add_action( 'admin_enqueue_scripts', array( $this, 'admin_scripts' ) );
-
-		// Load theme CSS
-		add_action( 'wp_enqueue_scripts', array( $this, 'theme_css' ) );
-
-		// Gravity Forms CSS
-		add_action( 'wp_enqueue_scripts', array( $this, 'gravity_forms_css' ), 40 );
-
-		// Load RTL CSS right before responsive
-		add_action( 'wp_enqueue_scripts', array( $this, 'rtl_css' ), 98 );
-
-		// Load responsive CSS - must be added last
-		add_action( 'wp_enqueue_scripts', array( $this, 'responsive_css' ), 99 );
-
-		// Load theme js
-		add_action( 'wp_enqueue_scripts', array( $this, 'theme_js' ) );
+		add_action( 'after_switch_theme', array( 'WPEX_Theme_Setup', 'after_switch_theme' ) );
 
 		// Load custom widgets
 		if ( wpex_get_mod( 'custom_widgets_enable', true ) ) {
-			add_action( 'widgets_init', array( $this, 'custom_widgets' ), 10 );
+			add_action( 'widgets_init', array( 'WPEX_Theme_Setup', 'custom_widgets' ), 10 );
 		}
-
-		// Add meta viewport tag to header
-		add_action( 'wp_head', array( $this, 'meta_viewport' ), 1 );
-
-		// Add theme meta generator
-		add_action( 'wp_head', array( $this, 'theme_meta_generator' ), 1 );
-
-		// Add an X-UA-Compatible header
-		add_filter( 'wp_headers', array( $this, 'x_ua_compatible_headers' ) );
-
-		// Browser dependent CSS
-		add_action( 'wp_head', array( $this, 'browser_dependent_css' ) );
-
-		// Loads html5 shiv script
-		add_action( 'wp_head', array( $this, 'html5_shiv' ) );
-
-		// Outputs custom CSS to the head
-		add_action( 'wp_head', array( $this, 'custom_css' ), 9999 );
-
-		// Outputs custom CSS for the admin
-		add_action( 'admin_head', array( $this, 'admin_inline_css' ) );
 
 		// register sidebar widget areas
-		add_action( 'widgets_init', array( $this, 'register_sidebars' ) );
+		add_action( 'widgets_init', array( 'WPEX_Theme_Setup', 'register_sidebars' ) );
 
 		// Add gallery metabox to portfolio
-		add_filter( 'wpex_gallery_metabox_post_types', array( $this, 'add_gallery_metabox' ), 10 );
+		add_filter( 'wpex_gallery_metabox_post_types', array( 'WPEX_Theme_Setup', 'add_gallery_metabox' ), 10 );
 
 		// Define the directory URI for the gallery metabox calss
-		add_filter( 'wpex_gallery_metabox_dir_uri', array( $this, 'gallery_metabox_dir_uri' ) );
+		add_filter( 'wpex_gallery_metabox_dir_uri', array( 'WPEX_Theme_Setup', 'gallery_metabox_dir_uri' ) );
 
-		// Alter tagcloud widget to display all tags with 1em font size
-		add_filter( 'widget_tag_cloud_args', array( $this, 'widget_tag_cloud_args' ) );
+		/** Admin only actions **/
+		if ( is_admin() ) {
 
-		// Alter WP categories widget to display count inside a span
-		add_filter( 'wp_list_categories', array( $this, 'wp_list_categories_args' ) );
+			// Load scripts in the WP admin
+			add_action( 'admin_enqueue_scripts', array( 'WPEX_Theme_Setup', 'admin_scripts' ) );
 
-		// Exclude categories from the blog page
-		add_filter( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
+			// Outputs custom CSS for the admin
+			add_action( 'admin_head', array( 'WPEX_Theme_Setup', 'admin_inline_css' ) );
 
-		// Add new social profile fields to the user dashboard
-		add_filter( 'user_contactmethods', array( $this, 'add_user_social_fields' ) );
+			// Add new social profile fields to the user dashboard
+			add_filter( 'user_contactmethods', array( 'WPEX_Theme_Setup', 'add_user_social_fields' ) );
 
-		// Add a responsive wrapper to the WordPress oembed output
-		add_filter( 'embed_oembed_html', array( $this, 'add_responsive_wrap_to_oembeds' ), 99, 4 );
+			// Remove wpex_term_data when a term is removed
+			add_action( 'delete_term', array( 'WPEX_Theme_Setup', 'delete_term' ), 5 );
 
-		// Allow for the use of shortcodes in the WordPress excerpt
-		add_filter( 'the_excerpt', 'shortcode_unautop' );
-		add_filter( 'the_excerpt', 'do_shortcode' );
+		/** Non Admin actions **/
+		} else {
 
-		// Make sure the wp_get_attachment_url() function returns correct page request (HTTP or HTTPS)
-		add_filter( 'wp_get_attachment_url', array( $this, 'honor_ssl_for_attachments' ) );
+			// Load theme CSS
+			add_action( 'wp_enqueue_scripts', array( 'WPEX_Theme_Setup', 'theme_css' ) );
 
-		// Tweak the default password protection output form
-		add_filter( 'the_password_form', array( $this, 'custom_password_protected_form' ) );
+			// Gravity Forms CSS
+			add_action( 'wp_enqueue_scripts', array( 'WPEX_Theme_Setup', 'gravity_forms_css' ), 40 );
 
-		// Exclude posts with custom links from the next and previous post links
-		add_filter( 'get_previous_post_join', array( $this, 'prev_next_join' ) );
-		add_filter( 'get_next_post_join', array( $this, 'prev_next_join' ) );
-		add_filter( 'get_previous_post_where', array( $this, 'prev_next_where' ) );
-		add_filter( 'get_next_post_where', array( $this, 'prev_next_where' ) );
+			// Load RTL CSS right before responsive
+			add_action( 'wp_enqueue_scripts', array( 'WPEX_Theme_Setup', 'rtl_css' ), 98 );
 
-		// Redirect posts with custom links
-		add_filter( 'template_redirect', array( $this, 'redirect_custom_links' ) );
+			// Load responsive CSS - must be added last
+			add_action( 'wp_enqueue_scripts', array( 'WPEX_Theme_Setup', 'responsive_css' ), 99 );
 
-		// Remove wpex_term_data when a term is removed
-		add_action( 'delete_term', array( $this, 'delete_term' ), 5 );
+			// Load theme js => High priority so after js_composer
+			add_action( 'wp_enqueue_scripts', array( 'WPEX_Theme_Setup', 'theme_js' ) );
 
-		// Remove emoji scripts
-		if ( wpex_get_mod( 'remove_emoji_scripts_enable', true ) ) {
-			remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
-			remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
-			remove_action( 'wp_print_styles', 'print_emoji_styles' );
-			remove_action( 'admin_print_styles', 'print_emoji_styles' );
-		}
+			// Exclude categories from the blog page
+			add_action( 'pre_get_posts', array( 'WPEX_Theme_Setup', 'pre_get_posts' ) );
 
-		// Adds classes the post class
-		add_filter( 'post_class', array( $this, 'post_class' ) );
+			// Redirect posts with custom links
+			add_filter( 'template_redirect', array( 'WPEX_Theme_Setup', 'redirect_custom_links' ) );
 
-		// Add schema markup to the authors post link
-		add_filter( 'the_author_posts_link', array( $this, 'the_author_posts_link' ) );
+			// Add meta viewport tag to header
+			add_action( 'wp_head', array( 'WPEX_Theme_Setup', 'meta_viewport' ), 1 );
 
-		// Move Comment textarea form field back to bottom
-		add_filter( 'comment_form_fields', array( $this, 'move_comment_form_fields' ) );
+			// Add theme meta generator
+			add_action( 'wp_head', array( 'WPEX_Theme_Setup', 'theme_meta_generator' ), 1 );
 
-		// Disable WP responsive images if retina is enabled
-		if ( wpex_is_retina_enabled() ) {
-			add_filter( 'wp_calculate_image_srcset', array( $this, 'disable_wp_responsive_images' ) );
-		}
+			// Add an X-UA-Compatible header
+			add_filter( 'wp_headers', array( 'WPEX_Theme_Setup', 'x_ua_compatible_headers' ) );
 
-		// Disable canonical redirect on the homepage when using pagination via VC modules
-		add_filter( 'redirect_canonical', array( $this, 'home_pagination_fix' ) );
+			// Browser dependent CSS
+			add_action( 'wp_head', array( 'WPEX_Theme_Setup', 'browser_dependent_css' ) );
+
+			// Loads html5 shiv script
+			add_action( 'wp_head', array( 'WPEX_Theme_Setup', 'html5_shiv' ) );
+
+			// Outputs custom CSS to the head
+			add_action( 'wp_head', array( 'WPEX_Theme_Setup', 'custom_css' ), 9999 );
+
+			// Alter tagcloud widget to display all tags with 1em font size
+			add_filter( 'widget_tag_cloud_args', array( 'WPEX_Theme_Setup', 'widget_tag_cloud_args' ) );
+
+			// Alter WP categories widget to display count inside a span
+			add_filter( 'wp_list_categories', array( 'WPEX_Theme_Setup', 'wp_list_categories_args' ) );
+
+			// Add a responsive wrapper to the WordPress oembed output
+			add_filter( 'embed_oembed_html', array( 'WPEX_Theme_Setup', 'oembed_html' ), 99, 4 );
+
+			// Allow for the use of shortcodes in the WordPress excerpt
+			add_filter( 'the_excerpt', 'shortcode_unautop' );
+			add_filter( 'the_excerpt', 'do_shortcode' );
+
+			// Make sure the wp_get_attachment_url() function returns correct page request (HTTP or HTTPS)
+			add_filter( 'wp_get_attachment_url', array( 'WPEX_Theme_Setup', 'honor_ssl_for_attachments' ) );
+
+			// Tweak the default password protection output form
+			add_filter( 'the_password_form', array( 'WPEX_Theme_Setup', 'custom_password_protected_form' ) );
+
+			// Exclude posts with custom links from the next and previous post links
+			add_filter( 'get_previous_post_join', array( 'WPEX_Theme_Setup', 'prev_next_join' ) );
+			add_filter( 'get_next_post_join', array( 'WPEX_Theme_Setup', 'prev_next_join' ) );
+			add_filter( 'get_previous_post_where', array( 'WPEX_Theme_Setup', 'prev_next_where' ) );
+			add_filter( 'get_next_post_where', array( 'WPEX_Theme_Setup', 'prev_next_where' ) );
+
+			// Remove emoji scripts
+			if ( wpex_get_mod( 'remove_emoji_scripts_enable', true ) ) {
+				remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+				remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
+				remove_action( 'wp_print_styles', 'print_emoji_styles' );
+				remove_action( 'admin_print_styles', 'print_emoji_styles' );
+			}
+
+			// Adds classes the post class
+			add_filter( 'post_class', array( 'WPEX_Theme_Setup', 'post_class' ) );
+
+			// Add schema markup to the authors post link
+			add_filter( 'the_author_posts_link', array( 'WPEX_Theme_Setup', 'the_author_posts_link' ) );
+
+			// Move Comment textarea form field back to bottom
+			add_filter( 'comment_form_fields', array( 'WPEX_Theme_Setup', 'move_comment_form_fields' ) );
+
+			// Disable WP responsive images if retina is enabled
+			if ( wpex_is_retina_enabled() ) {
+				add_filter( 'wp_calculate_image_srcset', '__return_false' );
+			}
+
+			// Disable canonical redirect on the homepage when using pagination via VC modules
+			add_filter( 'redirect_canonical', array( 'WPEX_Theme_Setup', 'home_pagination_fix' ) );
+
+			// Filter kses protocols
+			add_filter( 'kses_allowed_protocols' , array( 'WPEX_Theme_Setup', 'kses_allowed_protocols' ) );
+
+			// Filter comment link for smooth scrolling
+			add_filter( 'get_comments_link', array( 'WPEX_Theme_Setup', 'get_comments_link' ), 10, 2 );
+			add_filter( 'respond_link', array( 'WPEX_Theme_Setup', 'get_comments_link' ), 10, 2 );
+
+		} // Non admin functions
 
 	} // End constructor
 
@@ -229,7 +240,7 @@ class WPEX_Theme_Setup {
 	 *
 	 * @since 2.0.0
 	 */
-	public function constants() {
+	public static function constants() {
 
 		// Theme branding
 		define( 'WPEX_THEME_BRANDING', wpex_get_mod( 'theme_branding', 'Total' ) );
@@ -237,10 +248,6 @@ class WPEX_Theme_Setup {
 		// Theme Panel slug
 		define( 'WPEX_THEME_PANEL_SLUG', 'wpex-panel' );
 		define( 'WPEX_ADMIN_PANEL_HOOK_PREFIX', 'theme-panel_page_'. WPEX_THEME_PANEL_SLUG );
-
-		// Paths to the parent theme directory
-		define( 'WPEX_THEME_DIR', $this->template_dir );
-		define( 'WPEX_THEME_URI', get_template_directory_uri() );
 
 		// Javascript and CSS Paths
 		define( 'WPEX_JS_DIR_URI', WPEX_THEME_URI .'/js/' );
@@ -294,24 +301,31 @@ class WPEX_Theme_Setup {
 	 */
 	public static function include_functions() {
 		$dir = WPEX_FRAMEWORK_DIR;
+
+		// Needed in front-end and back-end
+		require_once( $dir .'deprecated.php' );
 		require_once( $dir .'core-functions.php' );
 		require_once( $dir .'arrays.php' );
-		require_once( $dir .'body-classes.php' );
 		require_once( $dir .'fonts.php' );
 		require_once( $dir .'shortcodes/shortcodes.php' );
 		require_once( $dir .'overlays.php' );
-		require_once( $dir .'header-functions.php' );
-		require_once( $dir .'title.php' );
-		require_once( $dir .'page-header.php' );
-		require_once( $dir .'menu-functions.php' );
-		require_once( $dir .'excerpts.php' );
-		require_once( $dir .'blog-functions.php' );
-		require_once( $dir .'pagination.php' );
-		require_once( $dir .'deprecated.php' );
+
+		// Not needed in admin
+		if ( ! is_admin() ) {
+			require_once( $dir .'body-classes.php' );
+			require_once( $dir .'header-functions.php' );
+			require_once( $dir .'title.php' );
+			require_once( $dir .'page-header.php' );
+			require_once( $dir .'menu-functions.php' );
+			require_once( $dir .'excerpts.php' );
+			require_once( $dir .'pagination.php' );
+			require_once( $dir .'blog-functions.php' );
+		}
+		
 	}
 
 	/**
-	 * Theme addons
+	 * Include Theme Panel class which loads various add-on functions
 	 *
 	 * @since 2.0.0
 	 */
@@ -389,7 +403,7 @@ class WPEX_Theme_Setup {
 		}
 
 		// LayerSlider
-		if ( class_exists( 'RevSlider' ) ) {
+		if ( class_exists( 'LS_Sliders' ) ) {
 			require_once( $dir .'config/layerslider.php' );
 		}
 
@@ -628,7 +642,7 @@ class WPEX_Theme_Setup {
 	 *
 	 * @since 1.6.0
 	 */
-	public function meta_viewport() {
+	public static function meta_viewport() {
 
 		// Responsive viewport viewport
 		if ( wpex_global_obj( 'responsive' ) ) {
@@ -664,7 +678,7 @@ class WPEX_Theme_Setup {
 	 * @since 1.6.0
 	 */
 	public static function admin_scripts() {
-		wp_enqueue_style( 'wpex-font-awesome', WPEX_CSS_DIR_URI .'lib/font-awesome.min.css' );
+		wp_enqueue_style( 'wpex-font-awesome', WPEX_CSS_DIR_URI .'lib/font-awesome.min.css', array(), '4.5.0' );
 	}
 
 	/**
@@ -674,32 +688,28 @@ class WPEX_Theme_Setup {
 	 */
 	public static function theme_css() {
 
-		// Front end only
-		if ( is_admin() ) {
-			return;
-		}
-
-		// Define dir
-		$dir = WPEX_CSS_DIR_URI;
-		$theme_version = WPEX_THEME_VERSION;
-
 		// Remove other font awesome scripts
 		wp_deregister_style( 'font-awesome' );
 		wp_deregister_style( 'fontawesome' );
 
 		// Load font awesome script everywhere except the front-end composer because the js_composer already adds it
-		wp_enqueue_style( 'wpex-font-awesome', $dir .'lib/font-awesome.min.css', false, '4.3.0' );
+		wp_enqueue_style( 'wpex-font-awesome', WPEX_CSS_DIR_URI .'lib/font-awesome.min.css', array(), '4.3.0' );
 
 		// Register hover-css
-		wp_register_style( 'wpex-hover-animations', $dir .'lib/hover-css.min.css', false, '2.0.1' );
+		wp_register_style( 'wpex-hover-animations', WPEX_CSS_DIR_URI .'lib/hover-css.min.css', array(), '2.0.1' );
 
 		// LayerSlider
 		if ( function_exists( 'lsSliders' ) ) {
-			wp_enqueue_style( 'wpex-layerslider', $dir .'wpex-layerslider.css', false, $theme_version );
+			wp_enqueue_style( 'wpex-layerslider', WPEX_CSS_DIR_URI .'wpex-layerslider.css', array(), WPEX_THEME_VERSION );
 		}
 
 		// Main Style.css File
-		wp_enqueue_style( 'wpex-style', get_stylesheet_uri(), false, $theme_version );
+		wp_enqueue_style(
+			'wpex-style', // !! IMPORTANT ** Do NOT edit 'wpex-style' *** !!!
+			get_stylesheet_uri(),
+			array(),
+			WPEX_THEME_VERSION
+		);
 
 	}
 
@@ -712,12 +722,7 @@ class WPEX_Theme_Setup {
 		if ( class_exists( 'RGForms' ) ) {
 			global $post;
 			if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'gravityform' ) ) {
-				wp_enqueue_style(
-					'wpex-gravity-forms',
-					WPEX_CSS_DIR_URI .'wpex-gravity-forms.css',
-					false,
-					WPEX_THEME_VERSION
-				);
+				wp_enqueue_style( 'wpex-gravity-forms', WPEX_CSS_DIR_URI .'wpex-gravity-forms.css', array(), WPEX_THEME_VERSION );
 			}
 		}
 	}
@@ -729,7 +734,7 @@ class WPEX_Theme_Setup {
 	 */
 	public static function rtl_css() {
 		if ( is_RTL() ) {
-			wp_enqueue_style( 'wpex-rtl', WPEX_CSS_DIR_URI .'rtl.css', false, WPEX_THEME_VERSION );
+			wp_enqueue_style( 'wpex-rtl', WPEX_CSS_DIR_URI .'rtl.css', array(), WPEX_THEME_VERSION );
 		}
 	}
 
@@ -740,7 +745,7 @@ class WPEX_Theme_Setup {
 	 */
 	public static function responsive_css() {
 		if ( wpex_global_obj( 'responsive' ) ) {
-			wp_enqueue_style( 'wpex-responsive', WPEX_CSS_DIR_URI .'wpex-responsive.css', false, WPEX_THEME_VERSION );
+			wp_enqueue_style( 'wpex-responsive', WPEX_CSS_DIR_URI .'wpex-responsive.css', array(), WPEX_THEME_VERSION );
 		}
 	}
 
@@ -749,12 +754,7 @@ class WPEX_Theme_Setup {
 	 *
 	 * @since 1.6.0
 	 */
-	public function theme_js() {
-
-		// Front end only
-		if ( is_admin() ) {
-			return;
-		}
+	public static function theme_js() {
 
 		// Get js directory uri
 		$dir = WPEX_JS_DIR_URI;
@@ -763,18 +763,10 @@ class WPEX_Theme_Setup {
 		$theme_version = WPEX_THEME_VERSION;
 
 		// Get localized array
-		$localize_array = $this->localize_array();
+		$localize_array = WPEX_Theme_Setup::localize_array();
 
 		// Make sure the core jQuery script is loaded
 		wp_enqueue_script( 'jquery' );
-
-		// Retina.js
-		if ( wpex_is_retina_enabled() ) {
-			wp_enqueue_script( 'wpex-retina', $dir .'retina.js', array( 'jquery' ), '0.0.2', true );
-			wp_localize_script( 'wpex-retina', 'wpexRetina', array(
-				'mode' => wpex_get_mod( 'retina_mode', 1 )
-			) );
-		}
 
 		// Comment reply
 		if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
@@ -783,115 +775,120 @@ class WPEX_Theme_Setup {
 
 		// Load minified js
 		if ( wpex_get_mod( 'minify_js_enable', true ) ) {
-			wp_enqueue_script( 'total-min', $dir .'total-min.js', array( 'jquery' ), $theme_version, true );
-			wp_localize_script( 'total-min', 'wpexLocalize', $localize_array );
+			wp_enqueue_script( 'wpex-core', $dir .'total-min.js', array( 'jquery' ), $theme_version, true );
 		}
 		
 		// Load all non-minified js
 		else {
 
-			// Superfish used for menu dropdowns
-			wp_enqueue_script( 'wpex-superfish', $dir .'lib/superfish.js', array( 'jquery' ), $theme_version, true );
-			wp_enqueue_script( 'wpex-supersubs', $dir .'lib/supersubs.js', array( 'jquery' ), $theme_version, true );
-			wp_enqueue_script( 'wpex-hoverintent', $dir .'lib/hoverintent.js', array( 'jquery' ), $theme_version, true );
+			// Easing
+			wp_enqueue_script( 'easing', $dir .'core/jquery.easing.js', array( 'jquery' ), '1.3.2', true );
 
-			// Page animations
-			wp_enqueue_script( 'wpex-animsition', $dir .'lib/animsition.js', array( 'jquery' ), $theme_version, true );
+			// Superfish used for menu dropdowns
+			wp_enqueue_script( 'wpex-superfish', $dir .'core/superfish.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-supersubs', $dir .'core/supersubs.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-hoverintent', $dir .'core/hoverintent.js', array( 'jquery' ), $theme_version, true );
 
 			// Tooltips
-			wp_enqueue_script( 'wpex-tipsy', $dir .'lib/tipsy.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-tipsy', $dir .'core/tipsy.js', array( 'jquery' ), $theme_version, true );
+
+			// Typed
+			wp_enqueue_script( 'wpex-typed', $dir .'core/typed.js', array( 'jquery' ), $theme_version, true );
 
 			// Checks if images are loaded within an element
-			wp_enqueue_script( 'wpex-images-loaded', $dir .'lib/images-loaded.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-images-loaded', $dir .'core/images-loaded.js', array( 'jquery' ), $theme_version, true );
 
 			// Main masonry script
-			wp_enqueue_script( 'wpex-isotope', $dir .'lib/isotope.js', array( 'jquery' ), '2.2.2', true );
+			wp_enqueue_script( 'wpex-isotope', $dir .'core/isotope.js', array( 'jquery' ), '2.2.2', true );
 
 			// Leaner modal used for search/woo modals: @todo: Replace with CSS+light js
-			wp_enqueue_script( 'wpex-leanner-modal', $dir .'lib/leanner-modal.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-leanner-modal', $dir .'core/leanner-modal.js', array( 'jquery' ), $theme_version, true );
 
 			// Slider Pro
-			wp_enqueue_script( 'wpex-sliderpro', $dir .'lib/jquery.sliderPro.js', array( 'jquery' ), '1.2.5', true );
-			wp_enqueue_script( 'wpex-sliderpro-customthumbnails', $dir .'lib/jquery.sliderProCustomThumbnails.js', array( 'jquery' ), false, true );
+			wp_enqueue_script( 'wpex-sliderpro', $dir .'core/jquery.sliderPro.js', array( 'jquery' ), '1.3', true );
+			wp_enqueue_script( 'wpex-sliderpro-customthumbnails', $dir .'core/jquery.sliderProCustomThumbnails.js', array( 'jquery', 'wpex-sliderpro' ), false, true );
 
 			// Touch Swipe - do we need it?
-			wp_enqueue_script( 'wpex-touch-swipe', $dir .'lib/touch-swipe.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-touch-swipe', $dir .'core/touch-swipe.js', array( 'jquery' ), $theme_version, true );
 
 			// Carousels
-			wp_enqueue_script( 'wpex-owl-carousel', $dir .'lib/owl.carousel.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-owl-carousel', $dir .'core/owl.carousel.js', array( 'jquery' ), $theme_version, true );
 
 			// Used for milestones
-			wp_enqueue_script( 'wpex-count-to', $dir .'lib/count-to.js', array( 'jquery' ), $theme_version, true );
-			wp_enqueue_script( 'wpex-appear', $dir .'lib/appear.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-countUp', $dir .'core/countUp-jquery.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-appear', $dir .'core/appear.js', array( 'jquery' ), $theme_version, true );
 
 			// Mobile menu
-			wp_enqueue_script( 'wpex-sidr', $dir .'lib/sidr.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-sidr', $dir .'core/sidr.js', array( 'jquery' ), $theme_version, true );
 
 			// Custom Selects
-			wp_enqueue_script( 'wpex-custom-select', $dir .'lib/jquery.customSelect.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-custom-select', $dir .'core/jquery.customSelect.js', array( 'jquery' ), $theme_version, true );
 
 			// Equal Heights
-			wp_enqueue_script( 'wpex-equal-heights', $dir .'lib/jquery.wpexEqualHeights.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-equal-heights', $dir .'core/jquery.wpexEqualHeights.js', array( 'jquery' ), $theme_version, true );
 
 			// Mousewheel
-			wp_enqueue_script( 'wpex-mousewheel', $dir .'lib/jquery.mousewheel.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-mousewheel', $dir .'core/jquery.mousewheel.js', array( 'jquery' ), $theme_version, true );
 
 			// Parallax bgs
-			wp_enqueue_script( 'wpex-scrolly', $dir .'lib/scrolly.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-scrolly', $dir .'core/scrolly.js', array( 'jquery' ), $theme_version, true );
 
 			// iLightbox
-			wp_enqueue_script( 'wpex-ilightbox', $dir .'lib/ilightbox.js', array( 'jquery' ), $theme_version, true );
-
-			// Responsive text
-			wp_enqueue_script( 'flowtype', $dir .'lib/flowtype.js', array( 'jquery' ), '1.1', true );
-
-			// WooCommerce quanity buttons
-			if ( WPEX_WOOCOMMERCE_ACTIVE ) {
-				wp_enqueue_script( 'wc-quantity-increment', $dir .'lib/wc-quantity-increment.js', array( 'jquery' ), $theme_version, true );
-			}
+			wp_enqueue_script( 'wpex-ilightbox', $dir .'core/ilightbox.js', array( 'jquery' ), $theme_version, true );
 
 			// Core global functions
-			wp_enqueue_script( 'wpex-functions', $dir .'functions.js', array( 'jquery' ), $theme_version, true );
+			wp_enqueue_script( 'wpex-core', $dir .'functions.js', array( 'jquery' ), $theme_version, true );
 
-			// Localize script
-			wp_localize_script( 'wpex-functions', 'wpexLocalize', $localize_array );
+		}
 
+		// Localize core js
+		wp_localize_script( 'wpex-core', 'wpexLocalize', $localize_array );
+
+		// Retina.js
+		if ( wpex_is_retina_enabled() ) {
+			wp_enqueue_script( 'wpex-retina', $dir .'dynamic/retina.js', array( 'jquery' ), '0.0.2', true );
+			wp_localize_script( 'wpex-retina', 'wpexRetina', array(
+				'mode' => wpex_get_mod( 'retina_mode', 1 )
+			) );
 		}
 
 	}
 
 	/**
 	 * Functions.js localize array
-	 * IMPORTANT: Must be static so we can get array in VC inline_js class
+	 * IMPORTANT: Must be ** static function ** so we can get array in VC inline_js class
 	 *
 	 * @since 3.0.0
 	 */
 	public static function localize_array() {
 
 		// Get Header Style and Mobile meny style
-		$header_style  = wpex_global_obj( 'header_style' );
-		$mm_style      = wpex_global_obj( 'mobile_menu_style' );
-		$mm_breakpoint = intval( wpex_get_mod( 'mobile_menu_breakpoint' ) );
+		$header_style    = wpex_global_obj( 'header_style' );
+		$mm_style        = wpex_global_obj( 'mobile_menu_style' );
+		$mm_toggle_style = wpex_global_obj( 'mobile_menu_toggle_style' );
+		$mm_breakpoint   = intval( wpex_get_mod( 'mobile_menu_breakpoint' ) );
 
 		// Create array
 		$array = array(
-			'isRTL'                  => is_rtl(),
-			'mainLayout'             => wpex_global_obj( 'main_layout' ),
-			'menuSearchStyle'        => wpex_global_obj( 'menu_search_style' ),
-			'siteHeaderStyle'        => $header_style,
-			'superfishDelay'         => 600,
-			'superfishSpeed'         => 'fast',
-			'superfishSpeedOut'      => 'fast',
-			'mobileMenuBreakpoint'   => $mm_breakpoint ? $mm_breakpoint : '960',
-			'mobileMenuStyle'        => $mm_style,
-			'mobileMenuToggleStyle'  => wpex_global_obj( 'mobile_menu_toggle_style' ),
-			'localScrollUpdateHash'  => true,
-			'localScrollSpeed'       => 800,
-			'windowScrollTopSpeed'   => 800,
-			'carouselSpeed'		     => 150,
-			'customSelects'          => '.woocommerce-ordering .orderby, #dropdown_product_cat, .widget_categories select, .widget_archive select, #bbp_stick_topic_select, #bbp_topic_status_select, #bbp_destination_topic, .single-product .variations_form .variations select',
-			'milestoneDecimalFormat' => ',',
-			//'preventTabWindowJump'   => true,
+			'isRTL'                 => is_rtl(),
+			'mainLayout'            => wpex_global_obj( 'main_layout' ),
+			'menuSearchStyle'       => wpex_global_obj( 'menu_search_style' ),
+			'siteHeaderStyle'       => $header_style,
+			'megaMenuJS'            => true,
+			'superfishDelay'        => 600,
+			'superfishSpeed'        => 'fast',
+			'superfishSpeedOut'     => 'fast',
+			'hasMobileMenu'         => wpex_global_obj( 'has_mobile_menu' ),
+			'mobileMenuBreakpoint'  => $mm_breakpoint ? $mm_breakpoint : '960',
+			'mobileMenuStyle'       => $mm_style,
+			'mobileMenuToggleStyle' => $mm_toggle_style,
+			'localScrollUpdateHash' => false,
+			'localScrollSpeed'      => 1000,
+			'localScrollEasing'     => 'easeInOutExpo',
+			'scrollTopSpeed'        => 1000,
+			'scrollTopOffset'       => 100,
+			'carouselSpeed'		    => 150,
+			'customSelects'         => '.woocommerce-ordering .orderby, #dropdown_product_cat, .widget_categories select, .widget_archive select, #bbp_stick_topic_select, #bbp_topic_status_select, #bbp_destination_topic, .single-product .variations_form .variations select',
 		);
 
 		/**** Header params ****/
@@ -913,7 +910,7 @@ class WPEX_Theme_Setup {
 
 				// Shrink sticky header > used for local-scroll offset
 				if ( wpex_global_obj( 'shrink_fixed_header' ) ) {
-					$height = intval( wpex_get_mod( 'fixed_header_shrink_end_height', 50 ) );
+					$height = intval( wpex_get_mod( 'fixed_header_shrink_end_height' ) );
 					$height = $height ? $height + 20 : 70;
 					$array['shrinkHeaderHeight'] = $height;
 				}
@@ -945,13 +942,22 @@ class WPEX_Theme_Setup {
 		// Toggle mobile menu
 		if ( 'toggle' == $mm_style ) {
 			$array['animateMobileToggle'] = true;
+			if ( 'fixedTopNav' != $mm_toggle_style && ( wpex_global_obj( 'has_overlay_header' ) || wpex_get_mod( 'fixed_header_mobile' ) ) ) {
+				$mobileToggleMenuPosition = 'absolute';
+			} else {
+				$mobileToggleMenuPosition =  'static';
+			}
+			$array['mobileToggleMenuPosition'] = $mobileToggleMenuPosition;
 		}
 
 		// Sidr settings
 		if ( 'sidr' == $mm_style ) {
+			$sidr_side = wpex_get_mod( 'mobile_menu_sidr_direction' );
+			$sidr_side = $sidr_side ? $sidr_side : 'left'; // Fallback is crucial
 			$array['sidrSource']         = wpex_global_obj( 'sidr_menu_source' );
 			$array['sidrDisplace']       = wpex_get_mod( 'mobile_menu_sidr_displace', true ) ?  true : false;
-			$array['sidrSide']           = wpex_get_mod( 'mobile_menu_sidr_direction', 'left' );
+			$array['sidrSide']           = $sidr_side;
+			$array['sidrBodyNoScroll']   = false;
 			$array['sidrSpeed']          = 300;
 			$array['sidrDropdownTarget'] = 'arrow';
 		}
@@ -967,7 +973,7 @@ class WPEX_Theme_Setup {
 			$array['fullScreenMobileMenuStyle'] = wpex_get_mod( 'full_screen_mobile_menu_style', 'white' );
 		}
 
-		// Apply filters and return array
+		// Apply filters and return array - sanitization done by wp_localize_script
 		return apply_filters( 'wpex_localize_array', $array );
 	}
 
@@ -1175,8 +1181,8 @@ class WPEX_Theme_Setup {
 	 * @since 1.6.0 
 	 */
 	public static function widget_tag_cloud_args( $args ) {
-		$args['largest']  = '0.923em';
-		$args['smallest'] = '0.923em';
+		$args['largest']  = '0.923';
+		$args['smallest'] = '0.923';
 		$args['unit']     = 'em';
 		return $args;
 	}
@@ -1189,7 +1195,7 @@ class WPEX_Theme_Setup {
 	 */
 	public static function wp_list_categories_args( $links ) {
 		$links = str_replace( '</a> (', '</a> <span class="cat-count-span">(', $links );
-		$links = str_replace( ' )', ' )</span>', $links );
+		$links = str_replace( ')', ')</span>', $links );
 		return $links;
 	}
 
@@ -1200,8 +1206,8 @@ class WPEX_Theme_Setup {
 	 */
 	public static function pre_get_posts( $query ) {
 
-		// Lets not break stuff
-		if ( is_admin() || ! $query->is_main_query() ) {
+		// Only alter main query
+		if ( ! $query->is_main_query() ) {
 			return;
 		}
 
@@ -1213,21 +1219,23 @@ class WPEX_Theme_Setup {
 
 		// Exclude categories from the main blog
 		if ( ( is_home() || is_page_template( 'templates/blog.php' ) ) && $cats = wpex_blog_exclude_categories() ) {
-			set_query_var( 'category__not_in', $cats );
+			$query->set( 'category__not_in', $cats );
 			return;
 		}
 
 		// Category pagination
-		$terms = get_terms( 'category' );
-		if ( ! empty( $terms ) ) {
-			foreach ( $terms as $term ) {
-				if ( is_category( $term->slug ) ) {
-					$term_id    = $term->term_id;
-					$term_data  = get_option( "category_$term_id" );
-					if ( $term_data ) {
-						if ( ! empty( $term_data['wpex_term_posts_per_page'] ) ) {
-							$query->set( 'posts_per_page', $term_data['wpex_term_posts_per_page'] );
-							return;
+		if ( $query->is_category() ) {
+			$terms = get_terms( 'category' );
+			if ( ! empty( $terms ) ) {
+				foreach ( $terms as $term ) {
+					if ( is_category( $term->slug ) ) {
+						$term_id    = $term->term_id;
+						$term_data  = get_option( "category_$term_id" );
+						if ( $term_data ) {
+							if ( ! empty( $term_data['wpex_term_posts_per_page'] ) ) {
+								$query->set( 'posts_per_page', $term_data['wpex_term_posts_per_page'] );
+								return;
+							}
 						}
 					}
 				}
@@ -1280,7 +1288,10 @@ class WPEX_Theme_Setup {
 	 *
 	 * @since 1.6.0
 	 */
-	public static function add_responsive_wrap_to_oembeds( $cache, $url, $attr, $post_ID ) {
+	public static function oembed_html( $cache, $url, $attr, $post_ID ) {
+
+		// Remove frameborder
+		$cache = str_replace( 'frameborder="0"', '', $cache );
 
 		// Supported video embeds
 		$hosts = apply_filters( 'wpex_oembed_responsive_hosts', array(
@@ -1375,7 +1386,10 @@ class WPEX_Theme_Setup {
 	 * @since 2.0.0
 	 */
 	public static function redirect_custom_links() {
-		if ( is_singular() && $custom_link = wpex_get_custom_permalink() ) {
+		if ( ! wpex_vc_is_inline()
+			&& is_singular()
+			&& $custom_link = wpex_get_custom_permalink()
+		) {
 			wp_redirect( $custom_link, 301 );
 		}
 	}
@@ -1423,7 +1437,6 @@ class WPEX_Theme_Setup {
 			|| get_post_meta( $post->ID, 'wpex_post_video_embed', true )
 			|| wpex_post_has_gallery( $post->ID )
 		) {
-			$classes[] = 'format-video';
 			$classes[] = 'has-media';
 		}
 
@@ -1463,15 +1476,6 @@ class WPEX_Theme_Setup {
 	}
 
 	/**
-	 * Disable WP responsive images if retina is enabled
-	 *
-	 * @since 3.3.3
-	 */
-	public static function disable_wp_responsive_images( $sources ) {
-		return false;
-	}
-
-	/**
 	 * Disable canonical redirect on the homepage when using pagination via VC modules
 	 * or when using the blog template on the homepage
 	 *
@@ -1484,5 +1488,28 @@ class WPEX_Theme_Setup {
 		return $redirect_url;
 	}
 
+	/**
+	 * Filters the kses_allowed_protocols for sanitization like esc_url to allow
+	 * specific protocols such as skype calls
+	 *
+	 * @since 3.5.0
+	 */
+	public static function kses_allowed_protocols( $protocols ) {
+		$protocols[] = 'skype';
+		return $protocols;
+	}
+
+	/**
+	 * Filters the comments_link for smoother local scrolling and to
+	 * fix issues with fixed/sticky elements
+	 *
+	 * @since 3.5.0
+	 */
+	public static function get_comments_link( $comments_link, $post_id ) {
+		$hash = get_comments_number( $post_id ) ? '#view_comments' : '#comments_reply';
+		$comments_link = get_permalink( $post_id ) . $hash;
+		return $comments_link;
+	}
+
 }
-$wpex_theme_setup = new WPEX_Theme_Setup; // NEVER CHANGE GLOBAL VAR !!!
+new WPEX_Theme_Setup;

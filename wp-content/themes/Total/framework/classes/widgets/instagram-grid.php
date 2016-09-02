@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Widgets
- * @version 3.3.3
+ * @version 3.5.0
  */
 
 // Prevent direct file access
@@ -35,27 +35,22 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 		/**
 		 * Front-end display of widget.
 		 *
-		 * @see WP_Widget::widget()
 		 * @since 1.0.0
-		 *
-		 *
-		 * @param array $args     Widget arguments.
-		 * @param array $instance Saved values from database.
 		 */
 		public function widget( $args, $instance ) {
 
 			// Args
-			$title    = isset( $instance['title'] ) ? apply_filters( 'widget_title', $instance['title'] ) : '';
-			$username = empty( $instance['username'] ) ? '' : $instance['username'];
-			$number   = empty( $instance['number'] ) ? 9 : $instance['number'];
-			$columns  = empty( $instance['columns'] ) ? '3' : $instance['columns'];
-			$target   = empty( $instance['target'] ) ? ' target="_blank"' : $instance['target'];
+			$title      = isset( $instance['title'] ) ? apply_filters( 'widget_title', $instance['title'] ) : '';
+			$username   = empty( $instance['username'] ) ? '' : $instance['username'];
+			$number     = empty( $instance['number'] ) ? 9 : $instance['number'];
+			$columns    = empty( $instance['columns'] ) ? '3' : $instance['columns'];
+			$target     = empty( $instance['target'] ) ? ' target="_blank"' : $instance['target'];
+			$size       = empty( $instance['size'] ) ? 'thumbnail' : $instance['size'];
+			$responsive = empty( $instance['responsive'] ) ? true : false;
 
-			// Exclude current post
-			if ( is_singular() ) {
-				$exclude = array( get_the_ID() );
-			} else {
-				$exclude = NULL;
+			// Prevent size issues
+			if ( ! in_array( $size, array( 'thumbnail', 'small', 'large', 'original' ) ) ) {
+				$size = 'thumbnail';
 			}
 
 			// Before widget hook
@@ -84,7 +79,8 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 				}
 
 				// Display instagram slider
-				elseif ( is_array( $media_array ) ) { ?>
+				elseif ( is_array( $media_array ) ) {
+					//print_r( $media_array ); ?>
 
 					<div class="wpex-instagram-grid-widget wpex-clr">
 
@@ -93,10 +89,29 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 						<?php
 						$count = 0;
 						foreach ( $media_array as $item ) {
-							$image = ! empty( $item['thumbnail_src'] ) ? $item['thumbnail_src'] : $item['display_src'];
+							$image = isset( $item['display_src'] ) ? $item['display_src'] : '';
+							if ( 'thumbnail' == $size ) {
+								$image = ! empty( $item['thumbnail_src'] ) ? $item['thumbnail_src'] : $image;
+								$image = ! empty( $item['thumbnail'] ) ? $item['thumbnail'] : $image;
+							} elseif ( 'small' == $size ) {
+								$image = ! empty( $item['small'] ) ? $item['small'] : $image;
+							} elseif ( 'large' == $size ) {
+								$image = ! empty( $item['large'] ) ? $item['large'] : $image;
+							} elseif ( 'original' == $size ) {
+								$image = ! empty( $item['original'] ) ? $item['original'] : $image;
+							}
 							if ( $image ) {
 								$count++;
-								echo '<li class="col wpex-clr span_1_of_'. esc_attr( $columns ) .' count-'. esc_attr( $count ) .'">
+								if ( strpos( $item['link'], 'http' ) === false ) {
+									$item['link'] = str_replace( '//', 'https://', $item['link'] );
+								}
+								$classes = 'wpex-clr span_1_of_'. esc_attr( $columns ) .' count-'. esc_attr( $count );
+								if ( 'false' == $responsive ) {
+									$classes .= ' nr-col';
+								} else {
+									$classes .= ' col';
+								}
+								echo '<li class="'. $classes .'">
 										<a href="'. esc_url( $item['link'] ) .'" title="'. esc_attr( $item['description'] ) .'"'. esc_attr( $target ) .'>
 											<img src="'. esc_url( $image ) .'"  alt="'. esc_attr( $item['description'] ) .'" />
 										</a>
@@ -121,55 +136,49 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 		/**
 		 * Sanitize widget form values as they are saved.
 		 *
-		 * @see WP_Widget::update()
 		 * @since 1.0.0
-		 *
-		 * @param array $new_instance Values just sent to be saved.
-		 * @param array $old_instance Previously saved values from database.
-		 *
-		 * @return array Updated safe values to be saved.
 		 */
 		public function update( $new_instance, $old_instance ) {
-
-			// Get instance
-			$instance             = $old_instance;
-			$instance['title']    = strip_tags( $new_instance['title'] );
-			$instance['username'] = isset( $new_instance['username'] ) ? trim( strip_tags( $new_instance['username'] ) ) : '';
-			$instance['number']   = ! empty( $new_instance['number'] ) ? intval( $new_instance['number'] ) : 9;
-			$instance['target']   = $new_instance['target'] == 'blank' ? $new_instance['target'] : '';
-			$instance['columns']  = isset( $new_instance['columns'] ) ? intval( $new_instance['columns'] ) : '';
-
-			// Delete transient
-			if ( isset( $instance['username'] ) ) {
-				delete_transient( 'wpex-instagram-widget-new-'. sanitize_title_with_dashes( $instance['username'] ) );
-			}
-
-			// Return instance
+			$instance               = $old_instance;
+			$instance['title']      = strip_tags( $new_instance['title'] );
+			$instance['size']       = isset( $new_instance['size'] ) ? strip_tags( $new_instance['size'] ) : 'thumbnail';
+			$instance['username']   = isset( $new_instance['username'] ) ? trim( strip_tags( $new_instance['username'] ) ) : '';
+			$instance['number']     = ! empty( $new_instance['number'] ) ? intval( $new_instance['number'] ) : 9;
+			$instance['target']     = $new_instance['target'] == 'blank' ? $new_instance['target'] : '';
+			$instance['columns']    = isset( $new_instance['columns'] ) ? intval( $new_instance['columns'] ) : '';
+			$instance['responsive'] = isset( $new_instance['responsive'] ) ? true : false;
 			return $instance;
-
 		}
 
 		/**
 		 * Back-end widget form.
 		 *
-		 * @see WP_Widget::form()
 		 * @since 1.0.0
-		 *
-		 * @param array $instance Previously saved values from database.
 		 */
 		public function form( $instance ) {
 
 			extract( wp_parse_args( ( array ) $instance, array(
-				'title'    => esc_html__( 'Instagram', 'total' ),
-				'username' => '',
-				'number'   => '9',
-				'columns'  => '3',
-				'target'   => '_self'
+				'title'      => esc_html__( 'Instagram', 'total' ),
+				'username'   => '',
+				'number'     => '9',
+				'columns'    => '3',
+				'target'     => '_self',
+				'size'       => 'thumbnail',
+				'responsive' => ''
 			) ) ); ?>
 			
 			<p><label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_html_e( 'Title', 'total' ); ?>: <input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" /></label></p>
 
 			<p><label for="<?php echo esc_attr( $this->get_field_id( 'username' ) ); ?>"><?php esc_html_e( 'Username', 'total' ); ?>: <input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'username' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'username' ) ); ?>" type="text" value="<?php echo esc_attr( $username ); ?>" /></label></p>
+
+			<p><label for="<?php echo esc_attr( $this->get_field_id( 'size' ) ); ?>"><?php esc_html_e( 'Size', 'total' ); ?>:</label>
+				<select id="<?php echo esc_attr( $this->get_field_id( 'size' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'size' ) ); ?>" class="widefat">
+					<option value="1" <?php selected( 'thumbnail', $size ) ?>><?php esc_html_e( 'Thumbnail', 'total' ); ?></option>
+					<option value="small" <?php selected( 'small', $size ) ?>><?php esc_html_e( 'Small', 'total' ); ?></option>
+					<option value="large" <?php selected( 'large', $size ) ?>><?php esc_html_e( 'Large', 'total' ); ?></option>
+					<option value="original" <?php selected( 'original', $size ) ?>><?php esc_html_e( 'Original', 'total' ); ?></option>
+				</select>
+			</p>
 
 			<p><label for="<?php echo esc_attr( $this->get_field_id( 'columns' ) ); ?>"><?php esc_html_e( 'Columns', 'total' ); ?>:</label>
 				<select id="<?php echo esc_attr( $this->get_field_id( 'columns' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'columns' ) ); ?>" class="widefat">
@@ -178,8 +187,13 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 					<option value="3" <?php selected( '3', $columns ) ?>>3</option>
 					<option value="4" <?php selected( '4', $columns ) ?>>4</option>
 					<option value="5" <?php selected( '5', $columns ) ?>>5</option>
+					<option value="6" <?php selected( '6', $columns ) ?>>6</option>
+					<option value="8" <?php selected( '8', $columns ) ?>>8</option>
+					<option value="10" <?php selected( '10', $columns ) ?>>10</option>
 				</select>
 			</p>
+
+			<p><input name="<?php echo esc_attr( $this->get_field_name( 'responsive' ) ); ?>" type="checkbox" <?php checked( $responsive, true, true ); ?> /><label for="<?php echo esc_attr( $this->get_field_id( 'responsive' ) ); ?>"><?php esc_html_e( 'Responsive', 'total' ); ?></label></p>
 
 			<p><label for="<?php echo esc_attr( $this->get_field_id( 'number' ) ); ?>"><?php esc_html_e( 'Number of photos', 'total' ); ?>: <input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'number' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'number' ) ); ?>" type="text" value="<?php echo esc_attr( $number ); ?>" /></label></p>
 
@@ -190,9 +204,7 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 				</select>
 			</p>
 
-			<p>
-				<strong><?php esc_html_e( 'Cache Notice', 'total' ); ?></strong>:<?php esc_html_e( 'The instagram feed is refreshed every 2 hours. However, you can click the save button below to clear the transient and refresh it instantly.', 'total' ); ?>
-			</p>
+			<p style="background:#f9f9f9;padding:10px;border:1px solid #ededed;"><strong><?php esc_html_e( 'Cache Notice', 'total' ); ?></strong>: <?php esc_html_e( 'The Instagram feed is refreshed every 2 hours.', 'total' ); ?></p>
 
 			<?php
 		}
@@ -289,9 +301,28 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 
 						foreach ( $images as $image ) {
 
-							$image['display_src'] = preg_replace( "/^http:/i", "", $image['display_src'] );
+							$image['thumbnail_src'] = preg_replace( '/^https?\:/i', '', $image['thumbnail_src'] );
+							$image['display_src'] = preg_replace( '/^https?\:/i', '', $image['display_src'] );
 
-							if ( $image['is_video']  == true ) {
+							$image['thumbnail_src'] = preg_replace( '/^https?\:/i', '', $image['thumbnail_src'] );
+							$image['display_src'] = preg_replace( '/^https?\:/i', '', $image['display_src'] );
+
+							// handle both types of CDN url
+							if ( (strpos( $image['thumbnail_src'], 's640x640' ) !== false ) ) {
+								$image['thumbnail'] = str_replace( 's640x640', 's160x160', $image['thumbnail_src'] );
+								$image['small'] = str_replace( 's640x640', 's320x320', $image['thumbnail_src'] );
+							} else {
+								$urlparts = wp_parse_url( $image['thumbnail_src'] );
+								$pathparts = explode( '/', $urlparts['path'] );
+								array_splice( $pathparts, 3, 0, array( 's160x160' ) );
+								$image['thumbnail'] = '//' . $urlparts['host'] . implode('/', $pathparts);
+								$pathparts[3] = 's320x320';
+								$image['small'] = '//' . $urlparts['host'] . implode('/', $pathparts);
+							}
+
+							$image['large'] = $image['thumbnail_src'];
+
+							if ( $image['is_video'] == true ) {
 								$type = 'video';
 							} else {
 								$type = 'image';
@@ -305,7 +336,11 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 								'likes'		    => $image['likes']['count'],
 								'thumbnail_src' => isset( $image['thumbnail_src'] ) ? $image['thumbnail_src'] : '',
 								'display_src'   => $image['display_src'],
-								'type'		    => $type,
+								'thumbnail'	 	=> $image['thumbnail'],
+								'small'         => $image['small'],
+								'large'         => $image['large'],
+								'original'      => $image['display_src'],
+								'type'          => $type,
 							);
 
 						}
@@ -334,13 +369,10 @@ if ( ! class_exists( 'WPEX_Instagram_Grid_Widget' ) ) {
 
 			// No images returned
 			else {
-
 				return new WP_Error( 'no_images', esc_html__( 'Instagram did not return any images.', 'total' ) );
-
 			}
 
 		}
-
 
 	}
 }

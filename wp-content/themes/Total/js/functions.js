@@ -6,7 +6,7 @@
  * Author URI: http://www.wpexplorer.com
  * License: Custom
  * License URI: http://themeforest.net/licenses
- * Version 3.4.0
+ * Version 3.5.3
  */
 
 ( function( $ ) {
@@ -25,7 +25,7 @@
 		},
 
 		/**
-		 * Define & Cache main variables
+		 * Define vars for caching
 		 *
 		 * @since 2.0.0
 		 */
@@ -41,15 +41,21 @@
 				$windowTop              : $( window ).scrollTop(),
 				$body                   : $( 'body' ),
 				$viewportWidth          : '',
-				$is_rtl                 : false,
 				$wpAdminBar             : null,
 				$isRetina               : false,
+				$heightChanged          : false,
+				$widthChanged           : false,
+				$isRTL                  : false,
 
 				// Mobile
 				$isMobile               : false,
 				$mobileMenuStyle        : null,
 				$mobileMenuToggleStyle  : null,
 				$mobileMenuBreakpoint   : 960,
+
+				// Main
+				$siteWrap               : null,
+				$siteMain               : null,
 
 				// Header
 				$siteHeader             : null,
@@ -67,15 +73,18 @@
 				$siteLogo               : null,
 				$siteLogoHeight         : 0,
 				$siteLogoSrc            : null,
-				$retinaLogo             : null,
+
+				// Nav
 				$siteNavWrap            : null,
+				$siteNav                : null,
 				$siteNavDropdowns       : null,
 
 				// Local Scroll
-				$localScrollTargets     : 'li.local-scroll a, a.local-scroll, .local-scroll-link',
+				$localScrollTargets     : 'li.local-scroll a, a.local-scroll, .local-scroll-link, .local-scroll-link > a',
 				$localScrollOffset      : 0,
 				$localScrollSpeed       : 600,
-				$localScrollSections    : [],	
+				$localScrollEasing      : 'easeInOutCubic',
+				$localScrollSections    : [],   
 
 				// Topbar
 				$hasTopBar              : false,
@@ -84,8 +93,7 @@
 				$hasStickyTopBarMobile  : false,
 
 				// Footer
-				$hasFixedFooter         : false,
-				$hasFooterReveal        : false
+				$hasFixedFooter         : false
 
 			};
 
@@ -97,20 +105,21 @@
 		 * @since 2.0.0
 		 */
 		bindEvents : function() {
-
 			var self = this;
 
 			// Run on document ready
 			self.config.$document.on( 'ready', function() {
 
+				// Triggers
+				$( '.vcex-module' ).trigger( 'vcexModule' );
+
 				// Update vars on init
 				self.initUpdateConfig();
 
-				// Page animations
-				self.pageAnimations();
-
 				// Main nav dropdowns
-				self.superFish();
+				if ( self.config.$siteNav && $.fn.superfish !== undefined ) {
+					self.superfish();
+				}
 
 				// Calculate megamenu width
 				self.megaMenusWidth();
@@ -127,7 +136,7 @@
 				// Custom menu widget accordion
 				self.customMenuWidgetAccordion();
 
-				// Header 5 logo
+				// Center Header 5 Logo
 				self.inlineHeaderLogo();
 
 				// Menu search toggle,overlay,header replace
@@ -160,12 +169,6 @@
 				// Custom selects
 				self.customSelects();
 
-				// Skillbar
-				self.skillbar();
-
-				// Milestones
-				self.milestone();
-
 				// Carousels
 				self.owlCarousel();
 
@@ -178,8 +181,25 @@
 				// Overlay Hovers
 				self.overlayHovers();
 
+				// Skillbar
+				self.skillbar();
+
+				// Milestones
+				self.milestone();
+
+				// Countdown
+				self.countdown();
+
+				// TypedText
+				self.typedText();
+
+				// Equal height elements => Must run before masonry
+				self.equalHeights();
+
 				// Isotope masonry grids
 				self.isotopeGrids();
+
+				// VC Edits
 				if ( self.config.$body.hasClass( 'wpb-js-composer' ) ) {
 					self.visualComposer();
 				}
@@ -188,7 +208,9 @@
 
 			// Run on Window Load
 			self.config.$window.on( 'load', function() {
-				var $headerStyle = self.config.$siteHeaderStyle;
+				
+				// Add class to body tag
+				self.config.$body.addClass( 'wpex-window-loaded' );
 
 				// Update config on window load
 				self.windowLoadUpdateConfig();
@@ -198,9 +220,6 @@
 
 				// Setup flush dropdowns
 				self.flushDropdownsTop();
-
-				// Equal height elements
-				self.equalHeights();
 
 				// FadeIn elements
 				self.fadeIn();
@@ -215,7 +234,9 @@
 				self.sliderPro();
 
 				// Sticky Topbar
-				self.newStickyTopbar();
+				if ( self.config.$hasStickyTopBar ) {
+					self.stickyTopBar();
+				}
 
 				// Sticky Header
 				if ( self.config.$hasStickyHeader ) {
@@ -238,10 +259,20 @@
 				self.stickyVcexNavbar();
 
 				// Footer Reveal => Must run before fixed footer!!!
-				self.footerRevealInit();
+				self.footerReveal();
 
 				// Fixed Footer
 				self.fixedFooter();
+
+				// Title + Breadcrumbs fix
+				if ( self.config.$body.hasClass( 'has-breadcrumbs' ) ) {
+					self.titleBreadcrumbsFix();
+				}
+
+				// Infinite scroll
+				if ( $.fn.infinitescroll !== undefined && $( 'div.infinite-scroll-nav' ).length ) {
+					self.infiniteScrollInit();
+				}
 
 				// Scroll to hash
 				window.setTimeout( function() {
@@ -253,37 +284,44 @@
 			// Run on Window Resize
 			self.config.$window.resize( function() {
 
+				// Reset
+				self.config.$widthChanged  = false;
+				self.config.$heightChanged = false;
+
 				// Window width change
 				if ( self.config.$window.width() != self.config.$windowWidth ) {
-					self.resizeUpdateConfig(); // update vars
-					self.megaMenusWidth();
-					self.inlineHeaderLogo();
-					self.fixedFooter();
-					self.footerRevealInit();
-					self.cartSearchDropdownsRelocate();
+					self.config.$widthChanged = true;
+					self.widthResizeUpdateConfig();
 				}
 
-				// Window height change
+				// Height changes
 				if ( self.config.$window.height() != self.config.$windowHeight ) {
-					self.fixedFooter();
-					self.footerRevealInit();
+					self.config.$windowHeight  = self.config.$window.height(); // update height
+					self.config.$heightChanged = true;
 				}
 
 			} );
 
 			// Run on Scroll
 			self.config.$window.scroll( function() {
-				self.config.$windowTop = self.config.$window.scrollTop();
-				self.localScrollHighlight();
-				self.footerRevealScrollShow();
+
+				// Reset
+				self.config.$hasScrolled = false;
+
+				// Yes we actually scrolled
+				if ( self.config.$window.scrollTop() != self.config.$windowTop ) {
+					self.config.$hasScrolled = true;
+					self.config.$windowTop = self.config.$window.scrollTop();
+					self.localScrollHighlight();
+				}
+
 			} );
 
 			// On orientation change
 			self.config.$window.on( 'orientationchange',function() {
-				self.resizeUpdateConfig();
+				self.widthResizeUpdateConfig();
 				self.isotopeGrids();
 				self.archiveMasonryGrids();
-				self.inlineHeaderLogo();
 			} );
 
 		},
@@ -294,45 +332,53 @@
 		 * @since 3.0.0
 		 */
 		initUpdateConfig: function() {
+			var self = this;
 
 			// Get Viewport width
-			this.config.$viewportWidth = this.viewportWidth();
+			self.config.$viewportWidth = self.viewportWidth();
 
 			// Check if retina
-			this.config.$isRetina = this.retinaCheck();
-			if ( this.config.$isRetina ) {
-				this.config.$body.addClass( 'wpex-is-retina' );
+			self.config.$isRetina = self.retinaCheck();
+			if ( self.config.$isRetina ) {
+				self.config.$body.addClass( 'wpex-is-retina' );
 			}
 
 			// Mobile check & add mobile class to the header
-			if ( this.mobileCheck() ) {
-				this.config.$isMobile = true;
-				this.config.$body.addClass( 'wpex-is-mobile-device' );
-			}
-
-			// Local scroll speed
-			if ( wpexLocalize.localScrollSpeed ) {
-				this.config.$localScrollSpeed = parseInt( wpexLocalize.localScrollSpeed );
+			if ( self.mobileCheck() ) {
+				self.config.$isMobile = true;
+				self.config.$body.addClass( 'wpex-is-mobile-device' );
 			}
 
 			// Define Wp admin bar
 			var $wpAdminBar = $( '#wpadminbar' );
 			if ( $wpAdminBar.length ) {
-				this.config.$wpAdminBar = $wpAdminBar;
+				self.config.$wpAdminBar = $wpAdminBar;
+			}
+
+			// Define wrap
+			var $siteWrap = $( '#wrap' );
+			if ( $siteWrap ) {
+				self.config.$siteWrap = $siteWrap;
+			}
+
+			// Define main
+			var $siteMain = $( '#main' );
+			if ( $siteMain ) {
+				self.config.$siteMain = $siteMain;
 			}
 
 			// Define header
 			var $siteHeader = $( '#site-header' );
-			if ( $siteHeader.length ) {
-				this.config.$siteHeaderStyle = wpexLocalize.siteHeaderStyle;
-				this.config.$siteHeader = $( '#site-header' );
+			if ( $siteHeader.length && ! $siteHeader.hasClass( 'header-builder' ) ) {
+				self.config.$siteHeaderStyle = wpexLocalize.siteHeaderStyle;
+				self.config.$siteHeader = $( '#site-header' );
 			}
 
 			// Define logo
 			var $siteLogo = $( '#site-logo img' );
 			if ( $siteLogo.length ) {
-				this.config.$siteLogo = $siteLogo;
-				this.config.$siteLogoSrc = this.config.$siteLogo.attr( 'src' );
+				self.config.$siteLogo = $siteLogo;
+				self.config.$siteLogoSrc = self.config.$siteLogo.attr( 'src' );
 			}
 
 			// Menu Stuff
@@ -340,105 +386,101 @@
 			if ( $siteNavWrap.length ) {
 
 				// Define menu
-				this.config.$siteNavWrap = $siteNavWrap;
+				self.config.$siteNavWrap = $siteNavWrap;
+				var $siteNav = $( '#site-navigation', $siteNavWrap );
+				if ( $siteNav.length ) {
+					self.config.$siteNav = $siteNav;
+				}
 
 				// Check if sticky menu is enabled
 				if ( wpexLocalize.hasStickyNavbar ) {
-					this.config.$hasStickyNavbar = true;
+					self.config.$hasStickyNavbar = true;
 				}
 
 				// Store dropdowns
-				var $siteNavDropdowns = $( '#site-navigation-wrap .dropdown-menu > .menu-item-has-children > ul' );
+				var $siteNavDropdowns = $( '.dropdown-menu > .menu-item-has-children > ul', $siteNavWrap );
 				if ( $siteNavWrap.length ) {
-					this.config.$siteNavDropdowns = $siteNavDropdowns;
+					self.config.$siteNavDropdowns = $siteNavDropdowns;
 				}
-
-				// Mobile menu Style
-				this.config.$mobileMenuStyle       = wpexLocalize.mobileMenuStyle;
-				this.config.$mobileMenuToggleStyle = wpexLocalize.mobileMenuToggleStyle;
-
-				// Mobile menu breakpoint
-				this.config.$mobileMenuBreakpoint   = wpexLocalize.mobileMenuBreakpoint;
 
 			}
 
-			// Get local scrolling sections
-			this.config.$localScrollSections = this.localScrollSections();
+			// Mobile menu settings
+			if ( wpexLocalize.hasMobileMenu ) {
+				self.config.$mobileMenuStyle       = wpexLocalize.mobileMenuStyle;
+				self.config.$mobileMenuToggleStyle = wpexLocalize.mobileMenuToggleStyle;
+				self.config.$mobileMenuBreakpoint  = wpexLocalize.mobileMenuBreakpoint;
+			}
 
 			// Check if fixed footer is enabled
-			if ( this.config.$body.hasClass( 'wpex-has-fixed-footer' ) ) {
-				this.config.$hasFixedFooter = true;
+			if ( self.config.$body.hasClass( 'wpex-has-fixed-footer' ) ) {
+				self.config.$hasFixedFooter = true;
 			}
 			
 			// Footer reveal
-			if ( $( '.footer-reveal' ).length && $( '#wrap' ).length && $( '#main' ).length ) {
-				this.config.$hasFooterReveal = true;
+			self.config.$footerReveal = $( '.footer-reveal-visible' );
+			if ( self.config.$footerReveal.length && self.config.$siteWrap && self.config.$siteMain ) {
+				self.config.$hasFooterReveal = true;
 			}
 
 			// Header overlay
-			if ( this.config.$siteHeader && this.config.$body.hasClass( 'has-overlay-header' ) ) {
-				this.config.$hasHeaderOverlay = true;
+			if ( self.config.$siteHeader && self.config.$body.hasClass( 'has-overlay-header' ) ) {
+				self.config.$hasHeaderOverlay = true;
 			}
 
 			// RTL
 			if ( wpexLocalize.isRTL ) {
-				this.config.$isRTL = true;
+				self.config.$isRTL = true;
 			}
 
 			// Top bar enabled
-			if ( $( '#top-bar-wrap' ).length ) {
-				this.config.$hasTopBar = true;
-				if ( $( '#top-bar-wrap' ).hasClass( 'wpex-top-bar-sticky' ) ) {
-					this.config.$stickyTopBar = $( '#top-bar-wrap' );
+			var $topBarWrap =  $( '#top-bar-wrap' );
+			if ( $topBarWrap.length ) {
+				self.config.$hasTopBar = true;
+				if ( $topBarWrap.hasClass( 'wpex-top-bar-sticky' ) ) {
+					self.config.$stickyTopBar = $topBarWrap;
+					if ( self.config.$stickyTopBar.length ) {
+						self.config.$hasStickyTopBar = true;
+						self.config.$hasStickyTopBarMobile = wpexLocalize.hasStickyTopBarMobile;
+					}
 				}
 			}
 
-			// Local scroll speed
-			if ( wpexLocalize.localScrollSpeed ) {
-				this.config.localScrollSpeed = parseInt( wpexLocalize.localScrollSpeed );
-			}
-
 			// Sticky Header => Mobile Check (must check first)
-			if ( 'toggle' == this.config.$mobileMenuStyle ) {
-				this.config.$hasStickyMobileHeader = false;
-			} else {
-				this.config.$hasStickyMobileHeader = wpexLocalize.hasStickyMobileHeader;
-			}
+			self.config.$hasStickyMobileHeader = wpexLocalize.hasStickyMobileHeader;
 
 			// Check if sticky header is enabled
-			if ( this.config.$siteHeader && wpexLocalize.hasStickyHeader ) {
-				this.config.$hasStickyHeader = true;
-			}
-
-			// Retina logo
-			if ( typeof $wpexRetinaLogo !== 'undefined' && window.devicePixelRatio >= 2 ) {
-				this.config.retinaLogo = $wpexRetinaLogo;
+			if ( self.config.$siteHeader && wpexLocalize.hasStickyHeader ) {
+				self.config.$hasStickyHeader = true;
 			}
 
 			// Vertical header
 			if ( this.config.$body.hasClass( 'wpex-has-vertical-header' ) ) {
-				this.config.$verticalHeaderActive = true;
+				self.config.$verticalHeaderActive = true;
 			}
-
-			// Remove active class from has-scroll links
-			// And save array of localscroll- links
-			var $links = $( '#site-navigation a' );
-			$links.each( function() {
-				var $this = $( this ),
-					$ref = $this.attr( 'href' );
-					if ( $ref ) {
-						if ( $ref.indexOf( 'localscroll-' ) != -1 ) {
-							$this.parent( 'li' ).addClass( 'local-scroll' );
-						}
-					}
-			} );
 
 			// Sticky VCEX Navbar => Disable all other sticky elements
 			if ( $( '.vcex-navbar-sticky' ).length ) {
-				this.config.$hasStickyTopBar = false;
-				this.config.$hasStickyHeader = false;
-				this.config.$hasStickyNavbar = false;
+				self.config.$hasStickyTopBar = false;
+				self.config.$hasStickyHeader = false;
+				self.config.$hasStickyNavbar = false;
 			}
+
+			// Local scroll speed
+			if ( wpexLocalize.localScrollSpeed ) {
+				self.config.$localScrollSpeed = parseInt( wpexLocalize.localScrollSpeed );
+			}
+
+			// Local scroll easing
+			if ( wpexLocalize.localScrollEasing ) {
+				self.config.$localScrollEasing = wpexLocalize.localScrollEasing;
+				if ( 'false' == self.config.$localScrollEasing ) {
+					self.config.$localScrollEasing = 'swing';
+				}
+			}
+
+			// Get local scrolling sections
+			self.config.$localScrollSections = self.localScrollSections();
 
 		},
 
@@ -471,7 +513,7 @@
 		 *
 		 * @since 3.0.0
 		 */
-		resizeUpdateConfig: function() {
+		widthResizeUpdateConfig: function() {
 
 			// Update main configs
 			this.config.$windowHeight  = this.config.$window.height();
@@ -499,6 +541,13 @@
 			// Local scroll offset => update last
 			this.config.$localScrollOffset = this.parseLocalScrollOffset();
 
+			// Re-run functions
+			this.megaMenusWidth();
+			this.inlineHeaderLogo();
+			this.cartSearchDropdownsRelocate();
+			this.overlayHovers();
+			this.responsiveText();
+
 		},
 
 		/**
@@ -509,9 +558,9 @@
 		retinaCheck: function() {
 			var mediaQuery = '(-webkit-min-device-pixel-ratio: 1.5), (min--moz-device-pixel-ratio: 1.5), (-o-min-device-pixel-ratio: 3/2), (min-resolution: 1.5dppx)';
 			if ( window.devicePixelRatio > 1 ) {
-	            return true;
+				return true;
 			}
-	        if ( window.matchMedia && window.matchMedia( mediaQuery ).matches ) {
+			if ( window.matchMedia && window.matchMedia( mediaQuery ).matches ) {
 				return true;
 			}
 			return false;
@@ -535,7 +584,7 @@
 		 */
 		viewportWidth: function() {
 			var e = window, a = 'inner';
-			if ( !( 'innerWidth' in window ) ) {
+			if ( ! ( 'innerWidth' in window ) ) {
 				a = 'client';
 				e = document.documentElement || document.body;
 			}
@@ -543,60 +592,24 @@
 		},
 
 		/**
-		 * Page Animations
-		 *
-		 * @since 2.1.0
-		 */
-		pageAnimations: function() {
-
-			if ( ! $.fn.animsition ) {
-				return;
-			}
-
-			// Return if wrapper doesn't exist
-			if ( ! wpexLocalize.pageAnimation ) {
-				return;
-			}
-
-			// Run animsition
-			$( '.animsition' ).animsition( {
-				touchSupport: false,
-				inClass: wpexLocalize.pageAnimationIn,
-				outClass: wpexLocalize.pageAnimationOut,
-				inDuration: wpexLocalize.pageAnimationInDuration,
-				outDuration: wpexLocalize.pageAnimationOutDuration,
-				linkElement: 'a[href]:not([target="_blank"]):not([href^="#"]):not([href*="javascript"]):not([href*=".jpg"]):not([href*=".jpeg"]):not([href*=".gif"]):not([href*=".png"]):not([href*=".mov"]):not([href*=".swf"]):not([href*=".mp4"]):not([href*=".flv"]):not([href*=".avi"]):not([href*=".mp3"]):not([href^="mailto:"]):not([href*="?"]):not([href*="#localscroll"]):not([class="wcmenucart"])',
-				loading: true
-			} );
-
-		},
-
-		/**
 		 * Superfish menus
 		 *
 		 * @since 2.0.0
 		 */
-		superFish: function() {
-
-			if ( ! $.fn.superfish ) {
-				return;
-			}
-
-			$( '#site-navigation ul.sf-menu' ).superfish( {
-				delay: wpexLocalize.superfishDelay,
-				animation: {
-					opacity: 'show'
+		superfish: function() {
+			$( 'ul.sf-menu', this.config.$siteNav ).superfish( {
+				delay     : wpexLocalize.superfishDelay,
+				speed     : wpexLocalize.superfishSpeed,
+				speedOut  : wpexLocalize.superfishSpeedOut,
+				cssArrows : false,
+				disableHI : false,
+				animation   : {
+					opacity : 'show'
 				},
-				animationOut: {
-					opacity: 'hide'
-				},
-				speed: wpexLocalize.superfishSpeed,
-				speedOut: wpexLocalize.superfishSpeedOut,
-				cssArrows: false,
-				disableHI: false
+				animationOut : {
+					opacity : 'hide'
+				}
 			} );
-
-
 		},
 
 		 /**
@@ -606,15 +619,21 @@
 		 */
 		megaMenusWidth: function() {
 
-			if ( ! this.config.$siteHeader || wpexLocalize.siteHeaderStyle !== 'one' ) {
+			if ( ! wpexLocalize.megaMenuJS
+				|| 'one' != this.config.$siteHeaderStyle
+				|| ! this.config.$siteNavDropdowns
+				|| ! this.config.$siteNavWrap.is( ':visible' )
+			) {
 				return;
 			}
 
-			var $siteNavigationWrap         = $( '#site-navigation-wrap' ),
-				$headerContainerWidth       = this.config.$siteHeader.find( '.container' ).outerWidth(),
-				$navWrapWidth               = $siteNavigationWrap.outerWidth(),
-				$siteNavigationWrapPosition = $siteNavigationWrap.css( 'right' ),
-				$siteNavigationWrapPosition = parseInt( $siteNavigationWrapPosition );
+			var $megamenu = $( '.megamenu > ul', this.config.$siteNavWrap );
+			if ( ! $megamenu.length ) return; // Don't do anything if there isn't any megamenu
+
+			var $headerContainerWidth       = this.config.$siteHeader.find( '.container' ).outerWidth();
+			var $navWrapWidth               = this.config.$siteNavWrap.outerWidth();
+			var $siteNavigationWrapPosition = this.config.$siteNavWrap.css( 'right' );
+			var $siteNavigationWrapPosition = parseInt( $siteNavigationWrapPosition );
 
 			if ( 'auto' == $siteNavigationWrapPosition ) {
 				$siteNavigationWrapPosition = 0;
@@ -622,7 +641,7 @@
 
 			var $megaMenuNegativeMargin = $headerContainerWidth-$navWrapWidth-$siteNavigationWrapPosition;
 
-			$( '#site-navigation-wrap .megamenu > ul' ).css( {
+			$megamenu.css( {
 				'width'       : $headerContainerWidth,
 				'margin-left' : -$megaMenuNegativeMargin
 			} );
@@ -635,32 +654,43 @@
 		 * @since 2.0.0
 		 */
 		megaMenusTop: function() {
-			var self = this;
-			if ( ! self.config.$siteNavWrap
-				|| ! self.config.$siteNavDropdowns
-				|| ! self.config.$siteHeader.hasClass( 'header-one' )
+			var self = this
+			if ( ! self.config.$siteNavDropdowns
+				|| 'one' != self.config.$siteHeaderStyle
 			) {
 				return;
 			}
-			var $window = this.config.$window;
+
+			var $megamenu = $( '.megamenu > ul', self.config.$siteNavWrap );
+			if ( ! $megamenu.length ) return; // Don't do anything if there isn't any megamenu
+
 			function setPosition() {
-				var $headerHeight = self.config.$siteHeader.outerHeight(),
-					$navHeight    = self.config.$siteNavWrap.outerHeight(),
-					$megaMenuTop  = $headerHeight - $navHeight;
-				$( '#site-navigation-wrap .megamenu > ul' ).css( {
-					'top': $megaMenuTop/2 + $navHeight
-				} );
+				if ( self.config.$siteNavWrap.is( ':visible' ) ) {
+					var $headerHeight = self.config.$siteHeader.outerHeight();
+					var $navHeight    = self.config.$siteNavWrap.outerHeight();
+					var $megaMenuTop  = $headerHeight - $navHeight;
+					$megamenu.css( {
+						'top' : $megaMenuTop/2 + $navHeight
+					} );
+				}
 			}
 			setPosition();
-			$window.scroll( function() {
+
+			// update on scroll
+			this.config.$window.scroll( function() {
 				setPosition();
 			} );
-			$window.resize( function() {
+
+			// Update on resize
+			this.config.$window.resize( function() {
 				setPosition();
 			} );
-			$( '#site-navigation .megamenu > a' ).hover( function() {
+
+			// Update on hover just incase
+			$( '.megamenu > a', self.config.$siteNav ).hover( function() {
 				setPosition();
 			} );
+
 		},
 
 		/**
@@ -673,7 +703,8 @@
 			if ( ! self.config.$siteNavDropdowns || ! self.config.$siteNavWrap.hasClass( 'wpex-flush-dropdowns' ) ) {
 				return;
 			}
-			var $window = this.config.$window;
+
+			// Set position
 			function setPosition() {
 				if ( self.config.$siteNavWrap.is( ':visible' ) ) {
 					var $headerHeight      = self.config.$siteHeader.outerHeight();
@@ -683,15 +714,22 @@
 				}
 			}
 			setPosition();
-			$window.scroll( function() {
+
+			// Update on scroll
+			this.config.$window.scroll( function() {
 				setPosition();
 			} );
-			$window.resize( function() {
+
+			// Update on resize
+			this.config.$window.resize( function() {
 				setPosition();
 			} );
+
+			// Update on hover
 			$( '.wpex-flush-dropdowns li.menu-item-has-children > a' ).hover( function() {
 				setPosition();
 			} );
+
 		},
 
 		/**
@@ -700,13 +738,14 @@
 		 * @since 2.0.0
 		 */
 		mobileMenu: function( event ) {
-
 			var self = this;
 
 			/***** Sidr Mobile Menu ****/
 			if ( 'sidr' == this.config.$mobileMenuStyle && typeof wpexLocalize.sidrSource !== 'undefined' ) {
 
-				var self = this;
+				// Add dark overlay to content
+				self.config.$body.append( '<div class="wpex-sidr-overlay wpex-hidden"></div>' );
+				var $sidrOverlay = $( '.wpex-sidr-overlay' );
 
 				// Add sidr
 				$( 'a.mobile-menu-toggle, li.mobile-menu-toggle > a' ).sidr( {
@@ -722,7 +761,9 @@
 						$( '#sidr-main' ).addClass( 'wpex-mobile-menu' );
 
 						// Prevent body scroll
-						self.config.$body.addClass( 'wpex-noscroll' );
+						if ( wpexLocalize.sidrBodyNoScroll ) {
+							self.config.$body.addClass( 'wpex-noscroll' );
+						}
 
 						// Declare useful vars
 						var $hasChildren = $( '.sidr-class-menu-item-has-children' );
@@ -735,7 +776,7 @@
 
 						// Check localization
 						if ( wpexLocalize.sidrDropdownTarget == 'li' ) {
-							$sidrDropdownTarget = $( '.sidr-class-sf-with-ul' );
+							$sidrDropdownTarget = $( '.sidr-class-menu-item-has-children > a' );
 						}
 
 						// Add toggle click event
@@ -766,9 +807,14 @@
 
 						} );
 
-						// Add dark overlay to content
-						self.config.$body.append( '<div class="wpex-sidr-overlay wpex-hidden"></div>' );
-						$( '.wpex-sidr-overlay' ).fadeIn( wpexLocalize.sidrSpeed );
+						// FadeIn Overlay
+						$sidrOverlay.fadeIn( wpexLocalize.sidrSpeed );
+
+						// Close sidr when clicking on overlay
+						$( '.wpex-sidr-overlay' ).on( 'click', function( event ) {
+							$.sidr( 'close', 'sidr-main' );
+							return false;
+						} );
 
 						/* Bind scroll - buggy
 						$( '#sidr-main' ).bind( 'mousewheel DOMMouseScroll', function ( e ) {
@@ -778,44 +824,49 @@
 							e.preventDefault();
 						} );*/
 
-						// Close sidr when clicking toggle
-						$( 'a.sidr-class-toggle-sidr-close' ).on( 'click', function( event ) {
-							$.sidr( 'close', 'sidr-main' );
-							return false;
-						} );
-
-						// Close sidr when clicking on overlay
-						$( '.wpex-sidr-overlay' ).on( 'click', function( event ) {
-							$.sidr( 'close', 'sidr-main' );
-							return false;
-						} );
-
-						// Close on resize
-						self.config.$window.resize( function() {
-							if ( self.config.$windowWidth >= self.config.$mobileMenuBreakpoint ) {
-								$.sidr( 'close', 'sidr-main' );
-							}
-						} );
-
 					},
 					onClose : function() {
 
-						// Allow body scroll
-						self.config.$body.removeClass( 'wpex-noscroll' );
+						// Remove body noscroll class
+						if ( wpexLocalize.sidrBodyNoScroll ) {
+							self.config.$body.removeClass( 'wpex-noscroll' );
+						}
 
 						// Remove active dropdowns
 						$( '.sidr-class-menu-item-has-children.active' ).removeClass( 'active' ).children( 'ul' ).hide();
 						
 						// FadeOut overlay
-						$( '.wpex-sidr-overlay' ).fadeOut( wpexLocalize.sidrSpeed, function() {
-							$( this ).remove();
-						} );
+						$sidrOverlay.fadeOut( wpexLocalize.sidrSpeed );
 					}
 
 				} );
 
-				// Close when clicking local scroll link
-				$( 'li.sidr-class-local-scroll > a' ).click( function() {
+				// Cache main sidebar var
+				var $sidrMain = $( '#sidr-main' );
+
+				// Re-name font Icons to correct classnames
+				$( "[class*='sidr-class-fa']", $sidrMain ).attr( 'class',
+					function( i, c ) {
+					c = c.replace( 'sidr-class-fa', 'fa' );
+					c = c.replace( 'sidr-class-fa-', 'fa-' );
+					return c;
+				} );
+
+				// Close sidr when clicking toggle
+				$( 'a.sidr-class-toggle-sidr-close', $sidrMain ).on( 'click', function( event ) {
+					$.sidr( 'close', 'sidr-main' );
+					return false;
+				} );
+
+				// Close on resize past mobile menu breakpoint
+				self.config.$window.resize( function() {
+					if ( self.config.$viewportWidth >= self.config.$mobileMenuBreakpoint ) {
+						$.sidr( 'close', 'sidr-main' );
+					}
+				} );
+
+				// Close sidr when clicking local scroll link
+				$( 'li.sidr-class-local-scroll > a', $sidrMain ).click( function() {
 					var $hash = this.hash;
 					if ( $.inArray( $hash, self.config.$localScrollSections ) > -1 ) {
 						$.sidr( 'close', 'sidr-main' );
@@ -827,18 +878,23 @@
 			}
 
 			/***** Toggle Mobile Menu ****/
-			else if ( 'toggle' == self.config.$mobileMenuStyle && self.config.$siteHeader ) {
+			else if ( 'toggle' == self.config.$mobileMenuStyle && self.config.$siteNav ) {
 
-				var $classes = 'mobile-toggle-nav wpex-mobile-menu wpex-clr';
+				var $position = wpexLocalize.mobileToggleMenuPosition;
+				var $classes  = 'mobile-toggle-nav wpex-mobile-menu wpex-clr wpex-position-'+ $position;
 
-				// Insert nav
-				if ( $( '#wpex-mobile-menu-fixed-top' ).length ) {
+				// Insert nav in fixed_top mobile menu
+				if ( 'fixed_top' == self.config.$mobileMenuToggleStyle ) {
 					$( '#wpex-mobile-menu-fixed-top' ).append( '<nav class="'+ $classes +'"></nav>' );
 				}
 
-				// Overlay header
-				else if ( self.config.$hasHeaderOverlay && $( '#overlay-header-wrap' ).length ) {
-					$( '<nav class="'+ $classes +'"></nav>' ).insertBefore( "#overlay-header-wrap" );
+				// Absolute position
+				else if ( 'absolute' == $position ) {
+					if ( 'navbar' == self.config.$mobileMenuToggleStyle ) {
+						$( '#wpex-mobile-menu-navbar' ).append( '<nav class="'+ $classes +'"></nav>' );
+					} else {
+						self.config.$siteHeader.append( '<nav class="'+ $classes +'"></nav>' );
+					}
 				}
 
 				// Normal toggle insert
@@ -846,13 +902,16 @@
 					$( '<nav class="'+ $classes +'"></nav>' ).insertAfter( self.config.$siteHeader );
 				}
 
+				// cache element
+				var $mobileToggleNav = $( '.mobile-toggle-nav' );
+
 				// Grab all content from menu and add into mobile-toggle-nav element
 				if ( $( '#mobile-menu-alternative' ).length ) {
 					var mobileMenuContents = $( '#mobile-menu-alternative .dropdown-menu' ).html();
 				} else {
-					var mobileMenuContents = $( '#site-navigation .dropdown-menu' ).html();
+					var mobileMenuContents = $( '.dropdown-menu', self.config.$siteNav ).html();
 				}
-				$( '.mobile-toggle-nav' ).html( '<ul class="mobile-toggle-nav-ul">' + mobileMenuContents + '</ul>' );
+				$mobileToggleNav.html( '<ul class="mobile-toggle-nav-ul">' + mobileMenuContents + '</ul>' );
 
 				// Remove all styles
 				$( '.mobile-toggle-nav-ul, .mobile-toggle-nav-ul *' ).children().each( function() {
@@ -864,7 +923,7 @@
 				$( '.mobile-toggle-nav-ul' ).addClass( 'container' );
 
 				// Show/Hide
-				$( '.mobile-menu-toggle' ).on( self.config.$isMobile ? 'touchstart' : 'click', function( event ) {
+				$( '.mobile-menu-toggle' ).on( 'click', function( event ) {
 					if ( wpexLocalize.animateMobileToggle ) {
 						$( '.mobile-toggle-nav' ).stop(true,true).slideToggle( 'fast' ).toggleClass( 'visible' );
 					} else {
@@ -874,16 +933,18 @@
 				} );
 
 				// Close on resize
-				self.config.$window.resize( function() {
-					if ( self.config.$windowWidth >= self.config.$mobileMenuBreakpoint && $( '.mobile-toggle-nav' ).length ) {
-						$( '.mobile-toggle-nav' ).hide().removeClass( 'visible' );
-					}
-				} );
+				if ( $mobileToggleNav.length ) {
+					self.config.$window.resize( function() {
+						if ( self.config.$viewportWidth >= self.config.$mobileMenuBreakpoint ) {
+							$mobileToggleNav.hide().removeClass( 'visible' );
+						}
+					} );
+				}
 
 				// Add search to toggle menu
 				var $mobileSearch = $( '#mobile-menu-search' );
 				if ( $mobileSearch.length ) {
-					$( '.mobile-toggle-nav' ).append( '<div class="mobile-toggle-nav-search container"></div>' );
+					$mobileToggleNav.append( '<div class="mobile-toggle-nav-search container"></div>' );
 					$( '.mobile-toggle-nav-search' ).append( $mobileSearch );
 				}
 
@@ -906,6 +967,9 @@
 				}
 				$( '.full-screen-overlay-nav-ul' ).html( mobileMenuContents );
 
+				// Cache element
+				var $fullScreenNav = $( '.full-screen-overlay-nav' );
+
 				// Remove all styles
 				$( '.full-screen-overlay-nav, .full-screen-overlay-nav *' ).children().each( function() {
 					var attributes = this.attributes;
@@ -913,15 +977,15 @@
 				} );
 
 				// Show
-				$( '.mobile-menu-toggle' ).on( self.config.$isMobile ? 'touchstart' : 'click', function( event ) {
-					$( '.full-screen-overlay-nav' ).addClass( 'visible' );
+				$( '.mobile-menu-toggle' ).on( 'click', function( event ) {
+					$fullScreenNav.addClass( 'visible' );
 					self.config.$body.addClass( 'wpex-noscroll' );
 					return false;
 				} );
 
 				// Hide
-				$( '.full-screen-overlay-nav-close' ).on( self.config.$isMobile ? 'touchstart' : 'click', function( event ) {
-					$( '.full-screen-overlay-nav' ).removeClass( 'visible' );
+				$( '.full-screen-overlay-nav-close' ).on( 'click', function( event ) {
+					$fullScreenNav.removeClass( 'visible' );
 					self.config.$body.removeClass( 'wpex-noscroll' );
 					return false;
 				} );
@@ -936,7 +1000,7 @@
 		 * @since 2.0.0
 		 */
 		navNoClick: function() {
-			$( 'li.nav-no-click > a, li.sidr-class-nav-no-click > a' ).live( 'click', function() {
+			$( 'li.nav-no-click > a, li.sidr-class-nav-no-click > a' ).on( 'click', function() {
 				return false;
 			} );
 		},
@@ -947,7 +1011,6 @@
 		 * @since 2.0.0
 		 */
 		menuSearch: function() {
-
 			var self = this;
 
 			/**** Menu Search > Dropdown ****/
@@ -1054,25 +1117,31 @@
 				return;
 			}
 
+			var $toggle = $( '.toggle-cart-widget' );
+			if ( ! $toggle.length ) return;
+
 			// Drop-down
 			if ( 'drop_down' == wpexLocalize.wooCartStyle ) {
 
+				var $dropdown = $( 'div#current-shop-items-dropdown' );
+				if ( ! $dropdown.length ) return;
+
 				// Display cart dropdown
-				$( '.toggle-cart-widget' ).click( function( event ) {
+				$toggle.click( function( event ) {
 					$( '#searchform-dropdown' ).removeClass( 'show' );
 					$( 'a.search-dropdown-toggle' ).parent( 'li' ).removeClass( 'active' );
-					$( 'div#current-shop-items-dropdown' ).toggleClass( 'show' );
+					$dropdown.toggleClass( 'show' );
 					$( this ).toggleClass( 'active' );
 					return false;
 				} );
 
 				// Hide cart dropdown
-				$( 'div#current-shop-items-dropdown' ).click( function( event ) {
+				$dropdown.click( function( event ) {
 					event.stopPropagation(); 
 				} );
 				this.config.$document.click( function() {
-					$( 'div#current-shop-items-dropdown' ).removeClass( 'show' );
-					$( 'li.wcmenucart-toggle-dropdown' ).removeClass( 'active' );
+					$dropdown.removeClass( 'show' );
+					$toggle.removeClass( 'active' );
 				} );
 
 				/* Prevent body scroll on current shop dropdown - seems buggy...
@@ -1086,16 +1155,12 @@
 			}
 
 			// Modal
-			else if ( 'overlay' == wpexLocalize.wooCartStyle ) {
+			else if ( 'overlay' == wpexLocalize.wooCartStyle && $.fn.leanerModal != undefined ) {
 
-				if ( ! $.fn.leanerModal ) {
-					return;
-				}
-
-				$( '.toggle-cart-widget' ).leanerModal( {
-					id: '#current-shop-items-overlay',
-					top: 100,
-					overlay: 0.8
+				$toggle.leanerModal( {
+					id      : '#current-shop-items-overlay',
+					top     : 100,
+					overlay : 0.8
 				} );
 
 			}
@@ -1109,47 +1174,39 @@
 		 */
 		cartSearchDropdownsRelocate: function() {
 
-			// Get last menu item
-			var $lastMenuItem = $( '#site-navigation .dropdown-menu > li:nth-last-child(1)' );
-
 			// Validate first
 			if ( this.config.$hasHeaderOverlay
 				|| ! this.config.$siteHeader
-				|| ! $lastMenuItem.length
 				|| ! this.config.$siteHeader.hasClass( 'wpex-reposition-cart-search-drops' )
+				|| ! this.config.$siteNav
+				|| ! this.config.$siteNav.is( ':visible' )
 			) {
 				return;
 			}
 
-			// Define search and cart elements
-			var $searchDrop = $( '#searchform-dropdown' ),
-				$shopDrop   = $( '#current-shop-items-dropdown');
+			// Get last menu item
+			var $lastMenuItem = $( '.dropdown-menu > li:nth-last-child(1)', this.config.$siteNav );
+			if ( ! $lastMenuItem.length ) return;
 
-			// Get last menu item offset
+			// Define vars
+			var $searchDrop         = $( '#searchform-dropdown' );
+			var $shopDrop           = $( '#current-shop-items-dropdown' );
 			var $lastMenuItemOffset = $lastMenuItem.position();
 
 			// Position search dropdown
 			if ( $searchDrop.length ) {
-
-				var $searchDropPosition = $lastMenuItemOffset.left - $searchDrop.outerWidth() + $lastMenuItem.width();
-
 				$searchDrop.css( {
 					'right' : 'auto',
-					'left'  : $searchDropPosition
+					'left'  : $lastMenuItemOffset.left - $searchDrop.outerWidth() + $lastMenuItem.width()
 				} );
-
 			}
 
 			// Position Woo dropdown
 			if ( $shopDrop.length ) {
-
-				var $shopDropPosition = $lastMenuItemOffset.left - $shopDrop.outerWidth() + $lastMenuItem.width();
-
 				$shopDrop.css( {
-					'right': 'auto',
-					'left': $shopDropPosition
+					'right' : 'auto',
+					'left'  : $lastMenuItemOffset.left - $shopDrop.outerWidth() + $lastMenuItem.width()
 				} );
-
 			}
 
 		},
@@ -1160,12 +1217,10 @@
 		 * @since 2.0.0
 		 */
 		hideEditLink: function() {
-
-			$( 'a.hide-post-edit' ).click( function() {
+			$( 'a.hide-post-edit', $( '#content' ) ).click( function() {
 				$( 'div.post-edit' ).hide();
 				return false;
 			} );
-
 		},
 
 		/**
@@ -1174,21 +1229,22 @@
 		 * @since 2.0.0
 		 */
 		customMenuWidgetAccordion: function() {
-
 			var self = this;
 
-			$( '#main .widget_nav_menu .current-menu-ancestor' ).addClass( 'active' ).children( 'ul' ).show();
+			// Open toggle for active page
+			$( '.widget_nav_menu .current-menu-ancestor', self.config.$siteMain ).addClass( 'active' ).children( 'ul' ).show();
 
-			$( '#main .widget_nav_menu' ).each( function() {
-				var $widgetMenu  = $( this ),
-					$hasChildren = $( this ).find( '.menu-item-has-children' ),
-					$allSubs     = $hasChildren.children( '.sub-menu' );
+			// Toggle items
+			$( '.widget_nav_menu', self.config.$siteMain ).each( function() {
+				var $widgetMenu  = $( this );
+				var $hasChildren = $( this ).find( '.menu-item-has-children' );
+				var $allSubs     = $hasChildren.children( '.sub-menu' );
 				$hasChildren.each( function() {
 					$( this ).addClass( 'parent' );
 					var $links = $( this ).children( 'a' );
-					$links.on( self.config.$isMobile ? 'touchstart' : 'click', function( event ) {
-						var $linkParent = $( this ).parent( 'li' ),
-							$allParents = $linkParent.parents( 'li' );
+					$links.on( 'click', function( event ) {
+						var $linkParent = $( this ).parent( 'li' );
+						var $allParents = $linkParent.parents( 'li' );
 						if ( ! $linkParent.hasClass( 'active' ) ) {
 							$hasChildren.not( $allParents ).removeClass( 'active' ).children( '.sub-menu' ).slideUp( 'fast' );
 							$linkParent.addClass( 'active' ).children( '.sub-menu' ).stop( true, true ).slideDown( 'fast' );
@@ -1208,29 +1264,29 @@
 		 * @since 2.0.0
 		 */
 		inlineHeaderLogo: function() {
+			var self = this;
 
-			// Only needed for header style 5
-			if ( 'five' != wpexLocalize.siteHeaderStyle ) {
-				return;
+			// For header 5 only
+			if ( 'five' != self.config.$siteHeaderStyle ) return;
+
+			// Define vars
+			var $headerLogo        = $( '#site-header-inner > .header-five-logo', self.config.$siteHeader );
+			var $headerNav         = $( '.navbar-style-five', self.config.$siteHeader );
+			var $navLiCount        = $headerNav.children( '#site-navigation' ).children( 'ul' ).children( 'li' ).size();
+			var $navBeforeMiddleLi = Math.round( $navLiCount / 2 ) - parseInt( wpexLocalize.headerFiveSplitOffset );
+			var $centeredLogo      = $( '.menu-item-logo .header-five-logo' );
+
+			// Add logo into menu
+			if ( this.config.$viewportWidth >= this.config.$mobileMenuBreakpoint && $headerLogo.length && $headerNav.length ) {
+				$('<li class="menu-item-logo"></li>').insertAfter( $headerNav.find( '#site-navigation > ul > li:nth( '+ $navBeforeMiddleLi +' )' ) );
+				$headerLogo.appendTo( $headerNav.find( '.menu-item-logo' ) );
 			}
 
-			var $headerLogo        = $( '#site-header-inner > .header-five-logo' ),
-				$headerNav         = $( '#site-header-inner .navbar-style-five' ),
-				$navLiCount        = $headerNav.children( '#site-navigation' ).children( 'ul' ).children( 'li' ).size(),
-				$navBeforeMiddleLi = Math.round( $navLiCount / 2 ) - parseInt( wpexLocalize.headerFiveSplitOffset ),
-				$centeredLogo      = $( '.menu-item-logo .header-five-logo' );
-
-				// Add logo into menu
-				if ( this.config.$windowWidth >= this.config.$mobileMenuBreakpoint && $headerLogo.length && $headerNav.length ) {
-					$('<li class="menu-item-logo"></li>').insertAfter( $headerNav.find( '#site-navigation > ul > li:nth( '+ $navBeforeMiddleLi +' )' ) );
-						$headerLogo.appendTo( $headerNav.find( '.menu-item-logo' ) );
-				}
-
-				// Remove logo from menu and add to header
-				if ( this.config.$windowWidth < this.config.$mobileMenuBreakpoint && $centeredLogo.length ) {
-					$centeredLogo.prependTo( $( '#site-header-inner' ) );
-					$( '.menu-item-logo' ).remove();
-				}
+			// Remove logo from menu and add to header
+			if ( this.config.$viewportWidth < this.config.$mobileMenuBreakpoint && $centeredLogo.length ) {
+				$centeredLogo.prependTo( $( '#site-header-inner' ) );
+				$( '.menu-item-logo' ).remove();
+			}
 
 			// Add display class to logo (hidden by default)
 			$headerLogo.addClass( 'display' );
@@ -1243,27 +1299,26 @@
 		 * @since 2.0.0
 		 */
 		backTopLink: function() {
-
-			var self = this,
-				$scrollTopLink = $( 'a#site-scroll-top' );
+			var self           = this;
+			var $scrollTopLink = $( 'a#site-scroll-top' );
 
 			if ( $scrollTopLink.length ) {
 
-				var $speed = wpexLocalize.windowScrollTopSpeed ? wpexLocalize.windowScrollTopSpeed : 2000,
-					$speed = parseInt( $speed );
+				var $speed = wpexLocalize.scrollTopSpeed ? parseInt( wpexLocalize.scrollTopSpeed ) : 1000;
+				var $offset = wpexLocalize.scrollTopOffset ? parseInt( wpexLocalize.scrollTopOffset ) : 100;
 
-				this.config.$window.scroll( function() {
-					if ( $( this ).scrollTop() > 100 ) {
+				self.config.$window.scroll( function() {
+					if ( $( this ).scrollTop() > $offset ) {
 						$scrollTopLink.addClass( 'show' );
 					} else {
 						$scrollTopLink.removeClass( 'show' );
 					}
 				} );
 
-				$scrollTopLink.on( self.config.$isMobile ? 'touchstart' : 'click', function( event ) {
+				$scrollTopLink.on( 'click', function( event ) {
 					$( 'html, body' ).stop(true,true).animate( {
 						scrollTop : 0
-					}, $speed );
+					}, $speed, self.config.$localScrollEasing );
 					return false;
 				} );
 
@@ -1277,14 +1332,13 @@
 		 * @since 2.0.0
 		 */
 		smoothCommentScroll: function() {
-
+			var self = this;
 			$( '.single li.comment-scroll a' ).click( function( event ) {
-				$( 'html, body' ).stop(true,true).animate( {
-					scrollTop: $( this.hash ).offset().top -180
-				}, 'normal' );
+				var $target = $( '#comments' );
+				var $offset = $target.offset().top - self.config.$localScrollOffset - 20;
+				self.scrollTo( $target, $offset );
 				return false;
 			} );
-
 		},
 
 		/**
@@ -1318,31 +1372,25 @@
 
 
 		/**
-		 * Tooltips
+		 * Responsive Text
+		 * Inspired by FlowType.JS
 		 *
 		 * @since 3.2.0
 		 */
 		responsiveText: function() {
-
-			var self = this,
-				$responsiveText = $( '.wpex-responsive-txt' );
-
+			var self = this;
+			var $responsiveText = $( '.wpex-responsive-txt' );
 			$responsiveText.each( function() {
-
-				var $this  = $( this ),
-					$data  = $this.data(),
-					$min   = self.parseData( $data.minFontSize, 13 ),
-					$max   = self.parseData( $data.maxFontSize, 40 ),
-					$ratio = self.parseData( $data.responsiveTextRatio, 10 );
-
-				$this.flowtype( {
-					fontRatio : $ratio,
-					minFont   : $min,
-					maxFont   : $max
-				} );
-
+				var $this      = $( this );
+				var $thisWidth = $this.width();
+				var $data      = $this.data();
+				var $minFont   = self.parseData( $data.minFontSize, 13 );
+				var $maxMax    = self.parseData( $data.maxFontSize, 40 );
+				var $ratio     = self.parseData( $data.responsiveTextRatio, 10 );
+				var $fontBase  = $thisWidth / $ratio;
+				var $fontSize   = $fontBase > $maxMax ? $maxMax : $fontBase < $minFont ? $minFont : $fontBase;
+				$this.css( 'font-size', $fontSize + 'px' );
 			} );
-
 		},
 
 		/**
@@ -1354,11 +1402,11 @@
 
 			$( '.wpex-data-hover' ).each( function() {
 
-				var $this = $( this ),
-					$originalBg = $( this ).css( 'backgroundColor' ),
-					$originalColor = $( this ).css( 'color' ),
-					$hoverBg = $( this ).attr( 'data-hover-background' ),
-					$hoverColor = $( this ).attr( 'data-hover-color' );
+				var $this          = $( this );
+				var $originalBg    = $( this ).css( 'backgroundColor' );
+				var $originalColor = $( this ).css( 'color' );
+				var $hoverBg       = $( this ).attr( 'data-hover-background' );
+				var $hoverColor    = $( this ).attr( 'data-hover-color' );
 
 				$this.hover( function () {
 					if ( CSSStyleDeclaration.prototype.setProperty !== 'undefined' ) {
@@ -1406,16 +1454,18 @@
 		 */
 		toggleBar: function() {
 
-			var self = this;
-			var $toggleBtn = $( 'a.toggle-bar-btn' );
+			var self           = this;
+			var $toggleBtn     = $( 'a.toggle-bar-btn, a.togglebar-toggle' );
 			var $toggleBarWrap = $( '#toggle-bar-wrap' );
 
 			if ( $toggleBtn.length && $toggleBarWrap.length ) {
 
-				$toggleBtn.on( self.config.$isMobile ? 'touchstart' : 'click', function( event ) {
+				$toggleBtn.on( 'click', function( event ) {
 					var $fa = $( '.toggle-bar-btn' ).find( '.fa' );
-					$fa.toggleClass( $toggleBtn.data( 'icon' ) );
-					$fa.toggleClass( $toggleBtn.data( 'icon-hover' ) );
+					if ( $fa.length ) {
+						$fa.toggleClass( $toggleBtn.data( 'icon' ) );
+						$fa.toggleClass( $toggleBtn.data( 'icon-hover' ) );
+					}
 					$toggleBarWrap.toggleClass( 'active-bar' );
 					return false;
 				} );
@@ -1424,7 +1474,10 @@
 				self.config.$document.on( 'click', function( event ) {
 					if ( ! $( event.target ).closest( '#toggle-bar-wrap.active-bar' ).length ) {
 						$toggleBarWrap.removeClass( 'active-bar' );
-						$toggleBtn.children( '.fa' ).removeClass( $toggleBtn.data( 'icon-hover' ) ).addClass( $toggleBtn.data( 'icon' ) );
+						var $fa = $toggleBtn.children( '.fa' );
+						if ( $fa.length ) {
+							$fa.removeClass( $toggleBtn.data( 'icon-hover' ) ).addClass( $toggleBtn.data( 'icon' ) );
+						}
 					}
 				} );
 
@@ -1438,7 +1491,6 @@
 		 * @since 2.0.0
 		 */
 		skillbar: function() {
-
 			$( '.vcex-skillbar' ).each( function() {
 				var $this = $( this );
 				$this.appear( function() {
@@ -1450,7 +1502,6 @@
 				accX : 0,
 				accY : 0
 			} );
-
 		},
 
 		/**
@@ -1459,20 +1510,70 @@
 		 * @since 2.0.0
 		 */
 		milestone: function() {
+			$( '.vcex-milestone-time' ).each( function() {
+				var $this       = $( this ),
+					$data       = $this.data(),
+					$startVal   = $data.startVal,
+					$endVal     = $data.endVal,
+					$decimals   = $data.decimals,
+					$duration   = $data.duration;
 
-			$( '.vcex-animated-milestone' ).each( function() {
-				$( this ).appear( function() {
-					$( this ).find( '.vcex-milestone-time' ).countTo( {
-						formatter: function ( value, options ) {
-							return value.toFixed(options.decimals).replace(/\B(?=(?:\d{3})+(?!\d))/g, wpexLocalize.milestoneDecimalFormat );
-						},
-					} );
-				}, {
-					accX : 0,
-					accY : 0
+				var options = {
+					useEasing   : true,
+					useGrouping : true,
+					separator   : $data.separator,
+					decimal     : $data.decimal,
+					prefix      : '',
+					suffix      : ''
+				};
+				var numAnim    = new CountUp( this, $startVal, $endVal, $decimals, $duration, options );
+				$this.appear( function() {
+					numAnim.start();
 				} );
 			} );
+		},
 
+		/**
+		 * Countdown
+		 *
+		 * @since 2.0.0
+		 */
+		countdown: function() {
+			if ( $.fn.countdown != undefined ) {
+				$( '.vcex-countdown' ).each( function() {
+					var $this    = $( this );
+					var $endDate = $this.data( 'countdown' ),
+						$days    = $this.data( 'days' ),
+						$hours   = $this.data( 'hours' ),
+						$minutes = $this.data( 'minutes' ),
+						$seconds = $this.data( 'seconds' );
+					if ( $endDate ) {
+						$this.countdown( $endDate, function( event ) {
+							$this.html( event.strftime( '<div>%D <small>' + $days + '</small></div> <div>%H <small>' + $hours + '</small> <div>%M <small></div>' + $minutes + '</small></div> <div>%S <small>' + $seconds + '</small></div>' ) );
+						} );
+					}
+				} );
+			}
+		},
+
+		/**
+		 * Typed Text
+		 *
+		 * @since 2.0.0
+		 */
+		typedText: function() {
+			if ( $.fn.typed != undefined ) {
+				$( '.vcex-typed-text' ).each( function() {
+					var $this     = $( this );
+					var $settings = $this.data( 'settings' );
+					$settings.typeSpeed = parseInt( $settings.typeSpeed );
+					$settings.backDelay = parseInt( $settings.backDelay );
+					$settings.backSpeed = parseInt( $settings.backSpeed );
+					$settings.startDelay = parseInt( $settings.startDelay );
+					$settings.strings = $this.data( 'strings' );
+					$this.typed( $settings );
+				} );
+			}
 		},
 
 		/**
@@ -1481,7 +1582,6 @@
 		 * @since 2.0.0
 		 */
 		parallax: function() {
-
 			$( '.wpex-parallax-bg' ).each( function() {
 				var $this = $( this );
 				$this.scrolly2().trigger( 'scroll' );
@@ -1489,7 +1589,6 @@
 					'opacity' : 1
 				} );
 			} );
-
 		},
 
 		/**
@@ -1508,12 +1607,15 @@
 
 			// VCEX Navbar module
 			if ( $( '.vcex-navbar-sticky' ).length ) {
-				$offset = parseInt( $offset ) + parseInt( $( '.vcex-navbar-sticky' ).outerHeight() );
+				var $vcexNavbarSticky = $( '.vcex-navbar-sticky' );
+				if ( $vcexNavbarSticky.is( ':visible' ) ) {
+					$offset = parseInt( $offset ) + parseInt( $( '.vcex-navbar-sticky' ).outerHeight() );
+					return $offset; // when active it's the only thing to offset
+				}
 			}
 
 			// Fixed header
 			if ( self.config.$hasStickyHeader ) {
-
 
 				// Return 0 for small screens if mobile fixed header is disabled
 				if ( ! self.config.$hasStickyMobileHeader && self.config.$windowWidth <= wpexLocalize.stickyHeaderBreakPoint ) {
@@ -1539,8 +1641,16 @@
 
 			// Fixed Nav
 			if ( self.config.$hasStickyNavbar ) {
-				if ( self.config.$windowWidth >= wpexLocalize.stickyHeaderBreakPoint ) {
-					$offset = parseInt( $offset ) + parseInt( $( '#site-navigation-wrap' ).outerHeight() );
+				if ( self.config.$viewportWidth >= wpexLocalize.stickyNavbarBreakPoint ) {
+					$offset = parseInt( $offset ) + parseInt( self.config.$siteNavWrap.outerHeight() );
+				}
+			}
+
+			// Fixed Mobile menu
+			if ( 'fixed_top' == self.config.$mobileMenuToggleStyle ) {
+				var $mmFixed = $( '#wpex-mobile-menu-fixed-top' );
+				if ( $mmFixed.length && $mmFixed.is( ':visible' ) ) {
+					$offset = parseInt( $offset ) + parseInt( $mmFixed.outerHeight() );
 				}
 			}
 
@@ -1554,11 +1664,138 @@
 				$offset = parseInt( $offset ) +  parseInt( $( '#wpadminbar' ).outerHeight() );
 			}
 
-			// Add 1 extra decimal to prevent cross browser rounding issues
+			// Add 1 extra decimal to prevent cross browser rounding issues - @todo Double test
 			$offset = $offset ? $offset - 1 : 0;
 
 			// Return offset
 			return $offset;
+
+		},
+
+		/**
+		 * Scroll to function
+		 *
+		 * @since 2.0.0
+		 */
+		scrollTo: function( hash, offset, callback ) {
+
+			// Hash is required
+			if ( ! hash ) {
+				return;
+			}
+
+			// Define important vars
+			var self          = this;
+			var $target       = null;
+			var $page         = $( 'html, body' );
+			var $isLsDataLink = false;
+
+			// Check for target in data attributes
+			var $lsTarget = $( '[data-ls_id="'+ hash +'"]' );
+
+			if ( $lsTarget.length ) {
+				$target       = $lsTarget;
+				$isLsDataLink = true;
+			}
+
+			// Check for straight up element with ID
+			else {
+				if ( typeof hash == 'string' ) {
+					$target = $( hash );
+				} else {
+					$target = hash;
+				}
+			}
+
+			// Target check
+			if ( $target.length ) {
+
+				// LocalScroll vars
+				var $lsSpeed  = self.config.$localScrollSpeed ? parseInt( self.config.$localScrollSpeed ) : 1000
+				var $lsOffset = self.config.$localScrollOffset;
+				var $lsEasing = self.config.$localScrollEasing;
+
+				// Sanitize offset
+				offset = offset ? offset : $target.offset().top - $lsOffset;
+
+				// Update hash
+				if ( hash && $isLsDataLink && wpexLocalize.localScrollUpdateHash ) {
+					window.location.hash = hash;
+				}
+
+				/* Remove hash on site top click
+				if ( '#site_top' == hash && wpexLocalize.localScrollUpdateHash && window.location.hash ) {
+					history.pushState('', document.title, window.location.pathname);
+				}*/
+
+				// Mobile toggle Menu needs it's own code
+				var $mobileToggleNav = $( '.mobile-toggle-nav' );
+				if ( $mobileToggleNav.length && $mobileToggleNav.is( ':visible' ) ) {
+
+					if ( wpexLocalize.animateMobileToggle ) {
+						$( '.mobile-toggle-nav' ).slideUp( 'fast', function() {
+							$( '.mobile-toggle-nav' ).removeClass( 'visible' );
+							$page.stop( true, true ).animate( {
+								scrollTop: $target.offset().top - $lsOffset
+							}, $lsSpeed );
+						} );
+					} else {
+						$( '.mobile-toggle-nav' ).hide().removeClass( 'visible' );
+						$page.stop( true, true ).animate( {
+							scrollTop: $target.offset().top - $lsOffset
+						}, $lsSpeed );
+					}
+
+				}
+
+				// Scroll to target
+				else {
+					$page.stop( true, true ).animate( {
+						scrollTop: offset
+					}, $lsSpeed, $lsEasing );
+				}
+
+			}
+
+		},
+
+		/**
+		 * Scroll to Hash
+		 *
+		 * @since 2.0.0
+		 */
+		scrollToHash: function( $this ) {
+
+			// Declare function vars
+			var self  = $this;
+			var $hash = location.hash;
+
+			// Hash needed
+			if ( ! $hash ) {
+				return;
+			}
+
+			// Scroll to comments
+			if ( '#view_comments' == $hash || '#comments_reply' == $hash ) {
+				var $target = $( '#comments' );
+				var $offset = $target.offset().top - self.config.$localScrollOffset - 20;
+				if ( $target.length ) {
+					self.scrollTo( $target, $offset );
+				}
+				return;
+			}
+
+			// Scroll to hash for localscroll links
+			if ( $hash.indexOf( 'localscroll-' ) != -1 ) {
+				self.scrollTo( $hash.replace( 'localscroll-', '' ) );
+				return;
+			}
+
+			// Check elements with data attributes
+			if ( $( '[data-ls_id="'+ $hash +'"]' ).length ) {
+				self.scrollTo( $hash );
+				return;
+			}
 
 		},
 
@@ -1568,24 +1805,51 @@
 		 * @since 2.0.0
 		 */
 		localScrollSections: function() {
+			var self = this;
+
+			// Add local-scroll class to links in menu with localscroll- prefix (if on same page)
+			// And add to $localScrollTargets
+			// And add data-ls_linkto attr
+			if ( self.config.$siteNav ) {
+				var $navLinks    = $( 'a', this.config.$siteNav );
+				var $location    = location;
+				var $currentPage = $location.href;
+				var $currentPage = $location.hash ? $currentPage.substr( 0, $currentPage.indexOf( '#' ) ) : $currentPage;
+				$navLinks.each( function() {
+					var $this = $( this );
+					var $ref = $this.attr( 'href' );
+						if ( $ref && $ref.indexOf( 'localscroll-' ) != -1 ) {
+							$this.parent( 'li' ).addClass( 'local-scroll' );
+							var $withoutHash = $ref.substr( 0, $ref.indexOf( '#' ) );
+							if ( $withoutHash == $currentPage ) {
+								var $hash = $ref.substring( $ref.indexOf( '#' ) + 1 );
+								var $parseHash = $hash.replace( 'localscroll-', '' );
+								$this.attr( 'data-ls_linkto', '#' + $parseHash );
+							}
+						}
+				} );
+			}
 
 			// Define main vars
 			var $array = [],
-				$links = $( this.config.$localScrollTargets );
+				$links = $( self.config.$localScrollTargets );
 
 			// Loop through links
 			for ( var i=0; i < $links.length; i++ ) {
 
 				// Add to array and save hash
 				var $link = $links[i],
-					$hash = '#' + $( $link ).attr('href').replace(/^.*?(#|$)/,'');
+					$linkDom = $( $link ),
+					$href = $( $link ).attr( 'href' ),
+					$hash = $href ? '#' + $href.replace( /^.*?(#|$)/, '' ) : null;
 
 				// Hash required
 				if ( $hash ) {
 
 					// Add custom data attribute to each
-					$( $link ).attr( 'data-ls_linkto', $hash );
-					//$( $link ).parent( 'li.current-menu-item' ).removeClass( 'current-menu-item' );
+					if ( ! $linkDom.attr( 'data-ls_linkto' ) ) {
+						$linkDom.attr( 'data-ls_linkto', $hash );
+					}
 
 					// Data attribute targets
 					if ( $( '[data-ls_id="'+ $hash +'"]' ).length ) {
@@ -1611,124 +1875,30 @@
 		},
 
 		/**
-		 * Scroll to function
-		 *
-		 * @since 2.0.0
-		 */
-		scrollTo: function( hash, offset, callback ) {
-
-			// Hash is required
-			if ( ! hash ) {
-				return;
-			}
-
-			// Define important vars
-			var self          = this,
-				$target       = null,
-				$page         = $( 'html, body' ),
-				$isLsDataLink = false, // we can do special things here
-				$lsSpeed      = self.config.$localScrollSpeed ? parseInt( self.config.$localScrollSpeed ) : 1000;
-
-			// Check for target in data attributes
-			var $lsTarget = $( '[data-ls_id="'+ hash +'"]' );
-
-			if ( $lsTarget.length ) {
-				$target       = $lsTarget;
-				$isLsDataLink = true;
-			}
-
-			// Check for targets with localscroll- in hash
-			else if ( hash.indexOf( 'localscroll-' ) != -1 ) {
-				var $parseHash = hash.replace( 'localscroll-', '' );
-				$lsTarget = $( '[data-ls_id="'+ $parseHash +'"]' );
-				if ( $lsTarget.length ) {
-					$target = $lsTarget;
-				} else {
-					$target = $( $parseHash );
-				}
-			}
-
-			// Check for straight up element with ID
-			else {
-				$target = $( hash );
-			}
-
-			// Target check
-			if ( $target.length ) {
-
-				// Update hash
-				if ( hash && $isLsDataLink && wpexLocalize.localScrollUpdateHash ) {
-					window.location.hash = hash;
-				}
-
-				// Mobile toggle Menu needs it's own code
-				var $mobileToggleNav = $( '.mobile-toggle-nav' );
-				if ( $mobileToggleNav.length && $mobileToggleNav.is( ':visible' ) ) {
-					if ( wpexLocalize.animateMobileToggle ) {
-						$( '.mobile-toggle-nav' ).slideUp( 'fast', function() {
-							$( '.mobile-toggle-nav' ).removeClass( 'visible' );
-							$page.stop( true, true ).animate( {
-								scrollTop: $target.offset().top
-							}, $lsSpeed );
-						} );
-					} else {
-						$( '.mobile-toggle-nav' ).hide().removeClass( 'visible' );
-						$page.stop( true, true ).animate( {
-							scrollTop: $target.offset().top
-						}, $lsSpeed );
-					}
-
-				}
-
-				// Scroll to target
-				else {
-
-					// Get offset
-					var $scrollTo = offset ? offset : $target.offset().top - self.config.$localScrollOffset;
-
-					/* Stop animation if user tries to scroll while animating (BUGGY)
-					$page.on( 'scroll mousedown wheel DOMMouseScroll mousewheel keyup touchmove', function() {
-				       $page.stop();
-				 	} );*/
-
-					// Animate scroll
-					$page.stop( true, true ).animate( {
-						scrollTop: $scrollTo
-					}, $lsSpeed );
-
-				}
-
-			}
-
-		},
-
-		/**
 		 * Local Scroll link
 		 *
 		 * @since 2.0.0
 		 */
 		localScrollLinks: function() {
-
-			// Set global object to "self" var
-			var self = this,
-				$localScrollSections = self.config.$localScrollSections;
+			var self = this;
 
 			// Local Scroll - Menus
-			$( this.config.$localScrollTargets ).on( 'click', function() {
-				var $hash = this.hash;
-				if ( $.inArray( $hash, $localScrollSections ) > -1 ) {
+			$( self.config.$localScrollTargets ).on( 'click', function() {
+				var $hash = $( this ).attr( 'data-ls_linkto' );
+				$hash = $hash ? $hash : this.hash; // Fallback
+				if ( $.inArray( $hash, self.config.$localScrollSections ) > -1 ) {
 					self.scrollTo( $hash );
 					return false;
 				}
 			} );
 
 			// LocalScroll Woocommerce Reviews
-			$( 'body.single div.entry-summary a.woocommerce-review-link' ).click( function() {
-				var $hash   = this.hash,
-					$target = $( $hash );
+			$( 'a.woocommerce-review-link', $( 'body.single div.entry-summary' ) ).click( function() {
+				var $target = $( '.woocommerce-tabs' );
 				if ( $target.length ) {
-					var $offset = $target.offset().top - self.config.$localScrollOffset - 20;
-					self.scrollTo( $hash, $offset );
+					$( '.reviews_tab a' ).click();
+					var $offset = $target.offset().top - self.config.$localScrollOffset;
+					self.scrollTo( $target, $offset );
 				}
 				return false;
 			} );
@@ -1741,9 +1911,9 @@
 		 * @since 2.0.0
 		 */
 		localScrollHighlight: function() {
+			var self = this;
 
-			// Get local scroll array
-			var self              = this;
+			// Get local scroll sections
 			var $localScrollSections = self.config.$localScrollSections;
 
 			// Return if there aren't any local scroll items
@@ -1752,9 +1922,9 @@
 			}
 
 			// Define vars
-			var $windowPos    = this.config.$window.scrollTop(),
-				$windowHeight = this.config.$windowHeight,
-				$docHeight    = this.config.$document.height();
+			var $windowPos    = this.config.$window.scrollTop();
+			var $windowHeight = this.config.$windowHeight;
+			var $docHeight    = this.config.$document.height();
 
 			// Highlight active items
 			for ( var i=0; i < $localScrollSections.length; i++ ) {
@@ -1788,7 +1958,7 @@
 
 			}
 
-			/* Highlight last item if at bottom of page - needs major testing now.
+			/* @todo: Highlight last item if at bottom of page or last item clicked - needs major testing now.
 			var $lastLink = $localScrollSections[$localScrollSections.length-1];
 			if ( $windowPos + $windowHeight == $docHeight ) {
 				$( '.local-scroll.current-menu-item' ).removeClass( 'current-menu-item' );
@@ -1798,42 +1968,13 @@
 		},
 
 		/**
-		 * Scroll to Hash
-		 *
-		 * @since 2.0.0
-		 */
-		scrollToHash: function( $this ) {
-
-			// Declare function vars
-			var self  = $this,
-				$hash = location.hash;
-
-			// Hash needed
-			if ( ! $hash ) {
-				return;
-			}
-
-			// Scroll to hash for localscroll links
-			if ( $hash.indexOf( 'localscroll-' ) != -1 ) {
-				self.scrollTo( $hash.replace( 'localscroll-', '' ) );
-				return;
-			}
-
-			// Check elements with data attributes
-			else if ( $( '[data-ls_id="'+ $hash +'"]' ).length ) {
-				self.scrollTo( $hash );
-			}
-
-		},
-
-		/**
-		 * Equal heights function
+		 * Equal heights function => Must run before isotope method
 		 *
 		 * @since 2.0.0
 		 */
 		equalHeights: function() {
 
-			if ( $.fn.wpexEqualHeights!=undefined ) {
+			if ( $.fn.wpexEqualHeights != undefined ) {
 
 				// Add equal heights grid
 				$( '.match-height-grid' ).wpexEqualHeights( {
@@ -1851,8 +1992,13 @@
 				} );
 
 				// Blog entries
-				$( '.blog-entry-equal-heights' ).wpexEqualHeights( {
+				$( '.blog-equal-heights' ).wpexEqualHeights( {
 					children : '.blog-entry-inner'
+				} );
+
+				// Related entries
+				$( '.related-posts' ).wpexEqualHeights( {
+					children : '.related-post-content'
 				} );
 
 				// Rows
@@ -1860,7 +2006,7 @@
 					children : '.wpex-vc-column-wrapper'
 				} );
 
-				// Equal Height class targeting itself
+				// Manual equal heights
 				$( '.wpex-vc-columns-wrap' ).wpexEqualHeights( {
 					children : '.equal-height-column'
 				} );
@@ -1877,61 +2023,87 @@
 		 *
 		 * @since 2.0.0
 		 */
-		footerRevealInit: function() {
+		footerReveal: function() {
+			var self = this;
 
 			// Return if disabled
-			if ( ! this.config.$hasFooterReveal ) {
+			if ( ! self.config.$hasFooterReveal ) {
 				return;
 			}
 
-			// Declare main vars
-			var $showFooter         = false,
-				$windowHeight       = $( window ).height(),
-				$footerRevealHeight = $( '.footer-reveal' ).outerHeight();
+			// Footer reveal
+			var $footerReveal = self.config.$footerReveal;
 
-			// If window height is greater then the wrap height display footer
-			if ( $windowHeight > $( '#wrap' ).height() ) {
-				$showFooter = true;
-			}
+			function showHide() {
 
-			// If window height is smaller then footer reveal display footer
-			if ( $windowHeight < $footerRevealHeight ) {
-				$showFooter = true;
-			}
-
-			// Display footer reveal since we can't properly perform the reveal
-			if ( $showFooter ) {
-				$( '.footer-reveal' ).show().toggleClass( 'footer-reveal footer-reveal-visible' );
-			}
-
-			// Add margin to the wrap div for the footer reveal
-			else {
-				
-				$( '#wrap' ).css( {
-					'margin-bottom': $footerRevealHeight
-				} );
-
-			}
-
-		},
-
-		/**
-		 * Footer Reveal Display on Scroll
-		 *
-		 * @since 2.0.0
-		 */
-		footerRevealScrollShow: function() {
-			if ( this.config.$hasFooterReveal ) {
-				if ( this.config.$windowTop > $( '#main' ).offset().top ) {
-					if ( ! $( '.footer-reveal' ).hasClass( 'wpex-visible' ) ) {
-						$( '.footer-reveal' ).show().addClass( 'wpex-visible' );
+				// Disabled under 960
+				if ( self.config.$viewportWidth < 960 ) {
+					if ( $footerReveal.hasClass( 'footer-reveal' ) ) {
+						$footerReveal.toggleClass( 'footer-reveal footer-reveal-visible' );
+						self.config.$siteWrap.css( 'margin-bottom', '' );
 					}
+					return;
+				}
+
+				var $hideFooter         = false;
+				var $footerRevealHeight = $footerReveal.outerHeight();
+				var $windowHeight       = self.config.$windowHeight;
+
+				if ( $footerReveal.hasClass( 'footer-reveal' ) ) {
+					var $heightCheck = self.config.$siteWrap.outerHeight() + self.config.$localScrollOffset;
 				} else {
-					if ( $( '.footer-reveal' ).hasClass( 'wpex-visible' ) ) {
-						$( '.footer-reveal' ).removeClass( 'wpex-visible' ).hide();
+					var $heightCheck = self.config.$siteWrap.outerHeight() + self.config.$localScrollOffset - $footerRevealHeight;
+				}
+
+				// Check window height
+				if ( ( $windowHeight > $footerRevealHeight ) && ( $heightCheck  > $windowHeight ) ) {
+					$hideFooter = true;
+				}
+
+				// Footer Reveal
+				if ( $hideFooter && $footerReveal.hasClass( 'footer-reveal-visible' ) ) {
+					self.config.$siteWrap.css( {
+						'margin-bottom': $footerRevealHeight
+					} );
+					$footerReveal.removeClass( 'footer-reveal-visible' );
+					$footerReveal.addClass( 'footer-reveal' );
+				}
+
+				// Visible Footer
+				if ( ! $hideFooter && $footerReveal.hasClass( 'footer-reveal' ) ) {
+					self.config.$siteWrap.css( 'margin-bottom', '' );
+					$footerReveal.removeClass( 'footer-reveal' );
+					$footerReveal.removeClass( 'wpex-visible' );
+					$footerReveal.addClass( 'footer-reveal-visible' );
+				}
+
+			}
+
+			function reveal() {
+				if ( $footerReveal.hasClass( 'footer-reveal' ) ) {
+					if ( self.scrolledToBottom( self.config.$siteMain ) ) {
+						$footerReveal.addClass( 'wpex-visible' );
+					} else {
+						$footerReveal.removeClass( 'wpex-visible' );
 					}
 				}
 			}
+
+			// Fire on init
+			showHide();
+
+			// Fire onscroll event
+			self.config.$window.scroll( function() {
+				reveal();
+			} );
+
+			// Fire onResize
+			self.config.$window.resize( function() {
+				if ( self.config.$widthChanged || self.config.$heightChanged ) {
+					showHide();
+				}
+			} );
+
 		},
 
 		/**
@@ -1940,29 +2112,78 @@
 		 * @since 3.1.1
 		 */
 		fixedFooter: function() {
+			var self = this;
 
-			// Return if disabled
-			if ( ! this.config.$hasFixedFooter ) {
+			// Checks
+			if ( ! self.config.$siteMain || ! self.config.$hasFixedFooter ) {
 				return;
 			}
 
-			// Get main wrapper
-			var $main = $( '#main' );
-
-			// Make sure main exists
-			if ( $main.length ) {
+			function run() {
 
 				// Set main vars
-				var $mainHeight = $( '#main' ).outerHeight(),
-					$htmlHeight = $( 'html' ).height();
+				var $mainHeight = self.config.$siteMain.outerHeight();
+				var $htmlHeight = $( 'html' ).height();
 
-				// Check for footerReveal and add min height
-				var $minHeight = $mainHeight + ( this.config.$window.height() - $htmlHeight );
+				// Generate min Height
+				var $minHeight = $mainHeight + ( self.config.$window.height() - $htmlHeight );
 
 				// Add min height
-				$main.css( 'min-height', $minHeight );
+				self.config.$siteMain.css( 'min-height', $minHeight );
 
 			}
+
+			// Run on doc ready
+			run();
+
+			// Run on resize
+			self.config.$window.resize( function() {
+				if ( self.config.$widthChanged || self.config.$heightChanged ) {
+					run();
+				}
+			} );
+
+		},
+
+		/**
+		 * If title and breadcrumbs don't both fit in the header switch breadcrumb style
+		 *
+		 * @since 3.5.0
+		 */
+		titleBreadcrumbsFix: function() {
+
+			var $pageHeader = $( '.page-header' );
+			var $crumbs = $( '.site-breadcrumbs', $pageHeader );
+			if ( ! $crumbs.length || ! $crumbs.hasClass( 'has-js-fix' ) ) {
+				return;
+			}
+
+			var $crumbsTrail = $( '.breadcrumb-trail', $crumbs );
+			if ( ! $crumbsTrail.length ) return;
+
+			var $headerInner = $( '.page-header-inner', $pageHeader );
+			if ( ! $headerInner.length ) return;
+
+			var $title = $( '.page-header-title > span', $headerInner );
+			if ( ! $title.length ) return;
+
+			var self = this;
+
+			function tweak_classes() {
+				if ( ( $title.width() + $crumbsTrail.width() + 20 ) >= $headerInner.width() ) {
+					if ( 'absolute' == $crumbs.css( 'position' ) ) {
+						$crumbs.addClass( 'position-under-title' );
+					}
+				} else {
+					$crumbs.removeClass( 'position-under-title' );
+				}
+			}
+			tweak_classes();
+
+			self.config.$window.resize( function() {
+				tweak_classes();
+			} );
+			
 		},
 
 		/**
@@ -1999,20 +2220,18 @@
 		 * @since 2.0.0
 		 */
 		owlCarousel: function() {
-
-			var self = this;
 			
 			$( '.wpex-carousel' ).each( function() {
 
-				var $this = $( this ),
-					$data = $this.data();
+				var $this = $( this );
+				var $data = $this.data();
 
 				$this.owlCarousel( {
 					animateIn          : false,
 					animateOut         : false,
 					lazyLoad           : false,
-					smartSpeed         : self.parseData( $data.smartSpeed, wpexLocalize.carouselSpeed ),
-					rtl                : self.config.$isRTL,
+					smartSpeed         : $data.smartSpeed ? $data.smartSpeed : wpexLocalize.carouselSpeed,
+					rtl                : wpexLocalize.isRTL ? true : false,
 					dots               : $data.dots,
 					nav                : $data.nav,
 					items              : $data.items,
@@ -2022,6 +2241,7 @@
 					margin             : $data.margin,
 					autoplay           : $data.autoplay,
 					autoplayTimeout    : $data.autoplayTimeout,
+					autoHeight         : $data.autoHeight,
 					autoplayHoverPause : true,
 					navText            : [ '<span class="fa fa-chevron-left"><span>', '<span class="fa fa-chevron-right"></span>' ],
 					responsive         : {
@@ -2037,11 +2257,6 @@
 						960: {
 							items : $data.items
 						}
-					},
-					onInitialized : function() {
-						/*if ( $this.hasClass( 'lightbox-group' ) ) {
-							$this.find( '.cloned .wpex-lightbox-group-item' ).removeClass( 'wpex-lightbox-group-item' );
-						}*/
 					}
 				} );
 
@@ -2054,31 +2269,33 @@
 		 *
 		 * @since 2.0.0
 		 */
-		sliderPro: function() {
-
-			// Set main object to self
+		sliderPro: function( context ) {
 			var self = this;
 
 			// Loop through each slider
-			$( '.wpex-slider' ).each( function() {
+			$( '.wpex-slider', context ).each( function() {
 
 				// Declare vars
-				var $slider = $( this ),
-					$data   = $slider.data();
+				var $slider = $( this );
+				var $data   = $slider.data();
 
 				// Lets show things that were hidden to prevent flash
 				$( '.wpex-slider-slide, .wpex-slider-thumbnails' ).css( {
-					'opacity': 1,
-					'display': 'block'
+					'opacity' : 1,
+					'display' : 'block'
 				} );
 
 				// Get height based on first items to prevent animation on initial load
-				var $preloader               = $( '.wpex-slider' ).prev( '.wpex-slider-preloaderimg' ),
-					$height                  = $preloader.length ? $preloader.outerHeight() : null,
-					$heightAnimationDuration = self.parseData( $data.heightAnimationDuration, 500 );
+				var $preloader               = $( '.wpex-slider' ).prev( '.wpex-slider-preloaderimg' );
+				var $height                  = $preloader.length ? $preloader.outerHeight() : null;
+				var $heightAnimationDuration = self.parseData( $data.heightAnimationDuration, 600 );
+				var $loop                    = self.parseData( $data.loop, false );
+				var $autoplay                = self.parseData( $data.autoPlay, true );
 
 				// Run slider
 				$slider.sliderPro( {
+					
+					//supportedAnimation      : 'JavaScript', //(CSS3 2D, CSS3 3D or JavaScript)
 					responsive              : true,
 					width                   : '100%',
 					height                  : $height,
@@ -2087,15 +2304,15 @@
 					fadeDuration            : self.parseData( $data.animationSpeed, 600 ),
 					slideAnimationDuration  : self.parseData( $data.animationSpeed, 600 ),
 					autoHeight              : self.parseData( $data.autoHeight, true ),
-					heightAnimationDuration : $heightAnimationDuration,
+					heightAnimationDuration : parseInt( $heightAnimationDuration ),
 					arrows                  : self.parseData( $data.arrows, true ),
 					fadeArrows              : self.parseData( $data.fadeArrows, true ),
-					autoplay                : self.parseData( $data.autoPlay, true ),
+					autoplay                : $autoplay,
 					autoplayDelay           : self.parseData( $data.autoPlayDelay, 5000 ),
 					buttons                 : self.parseData( $data.buttons, true ),
 					shuffle                 : self.parseData( $data.shuffle, false ),
 					orientation             : self.parseData( $data.direction, 'horizontal' ),
-					loop                    : self.parseData( $data.loop, false ),
+					loop                    : $loop,
 					keyboard                : false,
 					fullScreen              : self.parseData( $data.fullscreen, false ),
 					slideDistance           : self.parseData( $data.slideDistance, 0 ),
@@ -2108,23 +2325,28 @@
 					fadeThumbnailArrows     : false,
 					thumbnailTouchSwipe     : true,
 					fadeCaption             : self.parseData( $data.fadeCaption, true ),
-					captionFadeDuration     : 500,
+					captionFadeDuration     : 600,
 					waitForLayers           : true,
 					autoScaleLayers         : true,
 					forceSize               : 'none',
 					reachVideoAction        : 'playVideo',
 					leaveVideoAction        : 'pauseVideo',
 					endVideoAction          : 'nextSlide',
-					fadeOutPreviousSlide    : false, // prevents flash on fast transitions
-					init                    : function( event ) {
-						$slider.prev( '.wpex-slider-preloaderimg' ).hide();
+					fadeOutPreviousSlide    : true, // If disabled testimonial/content slides are bad
+					init: function( event ) {
+						$slider.prev( '.wpex-slider-preloaderimg' ).remove();
 						if ( $slider.parent( '.gallery-format-post-slider' ) && $( '.blog-masonry-grid' ).length ) {
 							setTimeout( function() {
 								$( '.blog-masonry-grid' ).isotope( 'layout' );
 							}, $heightAnimationDuration + 1 );
 						}
 					},
-					gotoSlideComplete       : function( event ) {
+					gotoSlide: function( event ) {
+						if ( ! $loop && $autoplay && event.index === $slider.find( '.sp-slide' ).length - 1 ) {
+							$slider.data( 'sliderPro' ).stopAutoplay();
+						}
+					},
+					gotoSlideComplete: function( event ) {
 						if ( $slider.parent( '.gallery-format-post-slider' ) && $( '.blog-masonry-grid' ).length ) {
 							$( '.blog-masonry-grid' ).isotope( 'layout' );
 						}
@@ -2139,7 +2361,6 @@
 				return false;
 			} );
 
-		   
 		},
 
 		/**
@@ -2148,9 +2369,64 @@
 		 * @since 2.0.0
 		 */
 		isotopeGrids: function() {
-
 			var self = this;
 
+			var $filterNavbar = $( '.vcex-filter-nav' );
+
+			$filterNavbar.each( function() {
+
+				var $this = $( this );
+				var $filterGrid = $( '#' + $this.data( 'filter-grid' ) );
+
+				if ( ! $filterGrid.hasClass( 'wpex-row' ) ) {
+					$filterGrid = $filterGrid.find( '.wpex-row' );
+				}
+
+				if ( $filterGrid.length ) {
+
+					// Remove isotope class
+					$filterGrid.removeClass( 'vcex-isotope-grid' );
+
+					// Run functions after images are loaded for grid
+					$filterGrid.imagesLoaded( function() {
+
+						// Add isotope
+						if ( ! $filterGrid.hasClass( 'vcex-navbar-filter-grid' ) ) {
+
+							$filterGrid.addClass( 'vcex-navbar-filter-grid' );
+
+							var $grid = $filterGrid.isotope( {
+								itemSelector       : '.col',
+								transformsEnabled  : true,
+								isOriginLeft       : self.config.$isRTL ? false : true,
+								transitionDuration : $this.data( 'transition-duration' ) ? $this.data( 'transition-duration' ) + 's' : '0.4s',
+								layoutMode         : $this.data( 'layout-mode' ) ? $this.data( 'layout-mode' ) : 'masonry'
+							} );
+
+						} else {
+
+							var $grid = $filterGrid.isotope();
+
+						}
+
+						// Filter
+						var $filterLinks = $this.find( 'a' );
+						$filterLinks.click( function() {
+							$grid.isotope( {
+								filter : $( this ).attr( 'data-filter' )
+							} );
+							$( this ).parents( 'ul' ).find( 'li' ).removeClass( 'active' );
+							$( this ).parent( 'li' ).addClass( 'active' );
+							return false;
+						} );
+
+					} );
+
+				}
+
+			} );
+
+			// Loop through isotope grids
 			$( '.vcex-isotope-grid' ).each( function() {
 
 				// Isotope layout
@@ -2175,18 +2451,13 @@
 						var $filterLinks = $filter.find( 'a' );
 						$filterLinks.click( function() {
 							$grid.isotope( {
-								filter: $( this ).attr( 'data-filter' )
+								filter : $( this ).attr( 'data-filter' )
 							} );
 							$( this ).parents( 'ul' ).find( 'li' ).removeClass( 'active' );
 							$( this ).parent( 'li' ).addClass( 'active' );
 							return false;
 						} );
 					}
-
-					/* Run functions on trigger
-					$grid.on( 'arrangeComplete', function() {
-						// You can do cool things here
-					} );*/
 
 				} );
 
@@ -2232,18 +2503,16 @@
 		 *
 		 * @since 2.0.0
 		 */
-		iLightbox: function() {
-
-			// Set main object to self
+		iLightbox: function( context ) {
 			var self = this;
 
 			// Auto lightbox
 			if ( wpexLocalize.iLightbox.auto ) {
 				var $iLightboxAutoExtensions = ['bmp', 'gif', 'jpeg', 'jpg', 'png', 'tiff', 'tif', 'jfif', 'jpe'];
 				$( '.wpb_text_column a:has(img), body.no-composer .entry a:has(img)' ).each( function() {
-					var $this = $( this ),
-						$url  = $this.attr( 'href' ),
-						$ext  = self.getUrlExtension( $url );
+					var $this = $( this );
+					var $url  = $this.attr( 'href' );
+					var $ext  = self.getUrlExtension( $url );
 					if ( $iLightboxAutoExtensions.indexOf( $ext ) !== -1 ) {
 						$this.addClass( 'wpex-lightbox' );
 					}
@@ -2251,7 +2520,7 @@
 			}
 
 			// Lightbox Standard
-			$( '.wpex-lightbox' ).each( function() {
+			$( '.wpex-lightbox', context ).each( function() {
 
 				var $this = $( this );
 
@@ -2260,114 +2529,84 @@
 					var $data = $this.data();
 
 					$this.iLightBox( {
-						skin     : self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
-						controls : {
+						skin: self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
+						controls: {
 							fullscreen : wpexLocalize.iLightbox.controls.fullscreen
 						},
-						show     : {
-							title : wpexLocalize.iLightbox.show.title,
-							speed : parseInt( wpexLocalize.iLightbox.show.speed )
+						show: {
+							title: self.parseData( $data.show_title, wpexLocalize.iLightbox.show.title ),
+							speed: parseInt( wpexLocalize.iLightbox.show.speed )
 						},
-						hide     : {
-							speed : parseInt( wpexLocalize.iLightbox.hide.speed )
+						hide: {
+							speed: parseInt( wpexLocalize.iLightbox.hide.speed )
 						},
-						effects  : {
-							reposition      : true,
-							repositionSpeed : 200,
-							switchSpeed     : 300,
-							loadedFadeSpeed : wpexLocalize.iLightbox.effects.loadedFadeSpeed,
-							fadeSpeed       : wpexLocalize.iLightbox.effects.fadeSpeed
+						effects: {
+							reposition: true,
+							repositionSpeed: 200,
+							switchSpeed: 300,
+							loadedFadeSpeed: wpexLocalize.iLightbox.effects.loadedFadeSpeed,
+							fadeSpeed: wpexLocalize.iLightbox.effects.fadeSpeed
 						},
-						overlay  : wpexLocalize.iLightbox.overlay,
-						social   : wpexLocalize.iLightbox.social
+						overlay: wpexLocalize.iLightbox.overlay,
+						social: wpexLocalize.iLightbox.social
 					} );
 
 				}
 
 			} );
 
-			// Lightbox Videos => OLD SCHOOL STUFF, keep for old customers
-			$( '.wpex-lightbox-video, .wpb_single_image.video-lightbox a, .wpex-lightbox-autodetect, .wpex-lightbox-autodetect a' ).each( function() {
-
-				var $this = $( this ),
-					$data = $this.data();
-
-				$this.iLightBox( {
-					smartRecognition : true,
-					skin             : self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
-					path             : 'horizontal',
-					controls         : {
-						fullscreen : wpexLocalize.iLightbox.controls.fullscreen
-					},
-					show             : {
-						title : wpexLocalize.iLightbox.show.title,
-						speed : parseInt( wpexLocalize.iLightbox.show.speed )
-					},
-					hide             : {
-						speed : parseInt( wpexLocalize.iLightbox.hide.speed )
-					},
-					effects          : {
-						reposition      : true,
-						repositionSpeed : 200,
-						switchSpeed     : 300,
-						loadedFadeSpeed : wpexLocalize.iLightbox.effects.loadedFadeSpeed,
-						fadeSpeed       : wpexLocalize.iLightbox.effects.fadeSpeed
-					},
-					overlay : wpexLocalize.iLightbox.overlay,
-					social  : wpexLocalize.iLightbox.social
-				} );
-			} );
-
-			// Lightbox Galleries - NEW since 1.6.0
-			$( '.lightbox-group' ).each( function() {
+			// Lightbox Galleries - @todo change lightbox-group class to .wpex-lightbox-group to prevent conflicts 
+			$( '.lightbox-group', context ).each( function() {
 
 				// Get lightbox data
-				var $this = $( this ),
-					$item = $this.find( 'a.wpex-lightbox-group-item' ),
-					$data = $this.data();
+				var $this     = $( this );
+				var $item     = $this.find( 'a.wpex-lightbox-group-item' );
+				var $data     = $this.data();
+				var $itemData = $item.data();
 
 				// Start up lightbox
 				$item.iLightBox( {
-					skin     : self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
-					path     : self.parseData( $data.path, wpexLocalize.iLightbox.path ),
-					infinite : true,
-					show     : {
-						title : wpexLocalize.iLightbox.show.title,
-						speed : parseInt( wpexLocalize.iLightbox.show.speed )
+					skin: self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
+					path: self.parseData( $data.path, wpexLocalize.iLightbox.path ),
+					infinite: self.parseData( $data.skin, wpexLocalize.iLightbox.infinite ),
+					show: {
+						title: self.parseData( $itemData.show_title, wpexLocalize.iLightbox.show.title ),
+						speed: parseInt( wpexLocalize.iLightbox.show.speed )
 					},
-					hide     : {
+					hide: {
 						speed: parseInt( wpexLocalize.iLightbox.hide.speed )
 					},
-					controls : {
-						arrows     : self.parseData( $data.arrows, wpexLocalize.iLightbox.controls.arrows ),
-						thumbnail  : self.parseData( $data.thumbnails, wpexLocalize.iLightbox.controls.thumbnail ),
-						fullscreen : wpexLocalize.iLightbox.controls.fullscreen,
-						mousewheel : wpexLocalize.iLightbox.controls.mousewheel
+					controls: {
+						arrows: self.parseData( $data.arrows, wpexLocalize.iLightbox.controls.arrows ),
+						thumbnail: self.parseData( $data.thumbnails, wpexLocalize.iLightbox.controls.thumbnail ),
+						fullscreen: wpexLocalize.iLightbox.controls.fullscreen,
+						mousewheel: wpexLocalize.iLightbox.controls.mousewheel
 					},
-					effects : {
-						reposition      : true,
-						repositionSpeed : 200,
-						switchSpeed     : 300,
-						loadedFadeSpeed : wpexLocalize.iLightbox.effects.loadedFadeSpeed,
-						fadeSpeed       : wpexLocalize.iLightbox.effects.fadeSpeed
+					effects: {
+						reposition: true,
+						repositionSpeed: 200,
+						switchSpeed: 300,
+						loadedFadeSpeed: wpexLocalize.iLightbox.effects.loadedFadeSpeed,
+						fadeSpeed: wpexLocalize.iLightbox.effects.fadeSpeed
 					},
-					overlay : wpexLocalize.iLightbox.overlay,
-					social  : wpexLocalize.iLightbox.social
+					overlay: wpexLocalize.iLightbox.overlay,
+					social: wpexLocalize.iLightbox.social
 				} );
 
 			} );
 
 			// Lightbox Gallery with custom imgs
-			$( '.wpex-lightbox-gallery' ).on( 'click', function( event ) {
-				// event.preventDefault(); // to fix customizer bug
-				var imagesArray = $( this ).data( 'gallery' ).split( ',' );
+			$( '.wpex-lightbox-gallery', context ).on( 'click', function( event ) {
+				var $this       = $( this );
+				var $data       = $this.data();
+				var imagesArray = $this.data( 'gallery' ).split( ',' );
 				if ( imagesArray ) {
 					$.iLightBox( imagesArray, {
-						skin: wpexLocalize.iLightbox.skin,
+						skin: self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
 						path: 'horizontal',
-						infinite: true,
+						infinite: self.parseData( $data.skin, wpexLocalize.iLightbox.infinite ),
 						show: {
-							title: wpexLocalize.iLightbox.show.title,
+							//title: wpexLocalize.iLightbox.show.title,
 							speed: parseInt( wpexLocalize.iLightbox.show.speed )
 						},
 						hide: {
@@ -2393,20 +2632,23 @@
 				return false;
 			} );
 
-			// Carousel lightbox needs to be custom - zzz
-			$( '.wpex-carousel-lightbox' ).each( function() {
+			// Custom Lightbox for Carousels
+			$( '.wpex-carousel-lightbox', context ).each( function() {
 
-				var $owlItems      = $( this ).find( '.owl-item' ),
-					$lightboxItems = $( this ).find( '.wpex-carousel-lightbox-item' ),
-					$imagesArray   = new Array();
+				var $this          = $( this );
+				var $owlItems      = $this.find( '.owl-item' );
+				var $lightboxItems = $this.find( '.wpex-carousel-lightbox-item' );
+				var $data          = $this.find( '.wpex-carousel-lightbox-item' ).data();
+				var $imagesArray   = new Array();
 
 				$owlItems.each( function() {
 					if ( ! $( this ).hasClass( 'cloned' ) ) {
 						var $image = $( this ).find( '.wpex-carousel-lightbox-item' );
 						if ( $image.length > 0 ) {
 							$imagesArray.push( {
-								URL   : $image.attr( 'href' ),
-								title : $image.attr( 'title' )
+								URL     : $image.attr( 'href' ),
+								title   : $image.attr( 'data-title' ),
+								caption : $image.attr( 'data-caption' )
 							} );
 						}
 					}
@@ -2422,38 +2664,70 @@
 							$startFrom = $startFrom ? $startFrom : 0;
 
 						$.iLightBox( $imagesArray, {
-							startFrom : parseInt( $startFrom ),
-							path      : 'horizontal',
-							infinite  : true,
-							skin      : wpexLocalize.iLightbox.skin,
-							show      : {
-								title : wpexLocalize.iLightbox.show.title,
-								speed : parseInt( wpexLocalize.iLightbox.show.speed )
+							startFrom: parseInt( $startFrom ),
+							path: 'horizontal',
+							infinite: self.parseData( $data.infinite, wpexLocalize.iLightbox.infinite ),
+							skin: self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
+							show: {
+								title: self.parseData( $data.show_title, wpexLocalize.iLightbox.show.title ),
+								speed: parseInt( wpexLocalize.iLightbox.show.speed )
 							},
-							hide      : {
-								speed : parseInt( wpexLocalize.iLightbox.hide.speed )
+							hide: {
+								speed: parseInt( wpexLocalize.iLightbox.hide.speed )
 							},
-							controls  : {
-								arrows    : wpexLocalize.iLightbox.controls.arrows,
-								thumbnail  : wpexLocalize.iLightbox.controls.thumbnail,
-								fullscreen : wpexLocalize.iLightbox.controls.fullscreen,
-								mousewheel : wpexLocalize.iLightbox.controls.mousewheel
+							controls: {
+								arrows: wpexLocalize.iLightbox.controls.arrows,
+								thumbnail: wpexLocalize.iLightbox.controls.thumbnail,
+								fullscreen: wpexLocalize.iLightbox.controls.fullscreen,
+								mousewheel: wpexLocalize.iLightbox.controls.mousewheel
 							},
-							effects   : {
-								reposition      : true,
-								repositionSpeed : 200,
-								switchSpeed     : 300,
-								loadedFadeSpeed : wpexLocalize.iLightbox.effects.loadedFadeSpeed,
-								fadeSpeed       : wpexLocalize.iLightbox.effects.fadeSpeed
+							effects: {
+								reposition: true,
+								repositionSpeed: 200,
+								switchSpeed: 300,
+								loadedFadeSpeed: wpexLocalize.iLightbox.effects.loadedFadeSpeed,
+								fadeSpeed: wpexLocalize.iLightbox.effects.fadeSpeed
 							},
-							overlay   : wpexLocalize.iLightbox.overlay,
-							social    : wpexLocalize.iLightbox.social
+							overlay: wpexLocalize.iLightbox.overlay,
+							social: wpexLocalize.iLightbox.social
 						} );
 
 					} );
 
 				}
 
+			} );
+
+			// Lightbox Videos => OLD SCHOOL STUFF, keep for old customers
+			$( '.wpex-lightbox-video, .wpb_single_image.video-lightbox a, .wpex-lightbox-autodetect, .wpex-lightbox-autodetect a', context ).each( function() {
+
+				var $this = $( this ),
+					$data = $this.data();
+
+				$this.iLightBox( {
+					smartRecognition : true,
+					skin             : self.parseData( $data.skin, wpexLocalize.iLightbox.skin ),
+					path             : 'horizontal',
+					controls         : {
+						fullscreen : wpexLocalize.iLightbox.controls.fullscreen
+					},
+					show             : {
+						title : self.parseData( $data.show_title, wpexLocalize.iLightbox.show.title ),
+						speed : parseInt( wpexLocalize.iLightbox.show.speed )
+					},
+					hide             : {
+						speed : parseInt( wpexLocalize.iLightbox.hide.speed )
+					},
+					effects          : {
+						reposition      : true,
+						repositionSpeed : 200,
+						switchSpeed     : 300,
+						loadedFadeSpeed : wpexLocalize.iLightbox.effects.loadedFadeSpeed,
+						fadeSpeed       : wpexLocalize.iLightbox.effects.fadeSpeed
+					},
+					overlay : wpexLocalize.iLightbox.overlay,
+					social  : wpexLocalize.iLightbox.social
+				} );
 			} );
 
 		},
@@ -2492,8 +2766,8 @@
 						'position' : 'absolute',
 						'top'      : '0',
 						'left'     : '0',
-						'width'    : '100%',
-						'height'   : '100%'
+						'width'    : 'auto',
+						'height'   : 'auto'
 					} );
 
 					// Animate image on hover
@@ -2524,7 +2798,7 @@
 		 *
 		 * @since 3.4.0
 		 */
-		newStickyTopbar: function() {
+		stickyTopBar: function() {
 			var $isSticky     = false;
 			var self          = this;
 			var $window       = self.config.$window;
@@ -2535,9 +2809,8 @@
 			if ( ! $stickyTopbar ) return;
 
 			// Main vars
-			var $stickyTopbarHeight = $stickyTopbar.outerHeight(),
-				$mobileSupport      = self.config.$hasStickyTopBarMobile,
-				$brkPoint           = wpexLocalize.stickyTopBarBreakPoint;
+			var $mobileSupport = self.config.$hasStickyTopBarMobile;
+			var $brkPoint      = wpexLocalize.stickyTopBarBreakPoint;
 
 			// Add sticky wrapper
 			var $stickyWrap = $( '<div id="top-bar-wrap-sticky-wrapper" class="wpex-sticky-top-bar-holder not-sticky"></div>' );
@@ -2555,7 +2828,6 @@
 				}
 				return $offset;
 			}
-			var $initOffset = $stickyWrap.offset().top - getOffset();
 
 			// Stick the TopBar
 			function setSticky() {
@@ -2563,19 +2835,16 @@
 				// Already stuck
 				if ( $isSticky ) return;
 				
-				// Get correct width
-				var $stickyWrapWidth = $stickyWrap.width();
-
 				// Add wrap class and toggle sticky class
 				$stickyWrap
-					.css( 'height', $stickyTopbarHeight )
+					.css( 'height', $stickyTopbar.outerHeight() )
 					.removeClass( 'not-sticky' )
 					.addClass( 'is-sticky' );
 
 				// Add CSS to topbar
 				$stickyTopbar.css( {
 					'top'   : getOffset(),
-					'width' : $stickyWrapWidth
+					'width' : $stickyWrap.width()
 				} );
 
 				// Set sticky to true
@@ -2605,6 +2874,24 @@
 
 			}
 
+			// On load check
+			function initSetSticky() {
+
+				// Disable on mobile devices
+				if ( ! $mobileSupport && ( self.config.$viewportWidth < $brkPoint ) ) {
+					return;
+				}
+
+				// Offset
+				var $offset = $stickyWrap.offset().top - getOffset();
+
+				// Set or destroy sticky
+				if ( self.config.$windowTop > $offset ) {
+					setSticky();
+				}
+
+			}
+
 			// On scroll actions for sticky topbar
 			function stickyCheck() {
 
@@ -2613,12 +2900,22 @@
 					return;
 				}
 
-				// Set or destroy sticky
-				if ( self.config.$windowTop > $initOffset && 0 !== self.config.$windowTop ) {
-				 	setSticky();
+				// Offset
+				var $offset = $stickyWrap.offset().top - getOffset();
+
+				// Destroy sticky at top
+				if ( $isSticky && 0 == self.config.$windowTop ) {
+					destroySticky();
+					return;
+				}
+
+				// Set or destroy sticky based on offset
+				if ( self.config.$windowTop >= $offset ) {
+					setSticky();
 				} else {
 					destroySticky();
 				}
+
 			}
 
 			// On resize actions for sticky topbar
@@ -2631,6 +2928,7 @@
 
 					// Set correct width and top value
 					if ( $isSticky ) {
+						$stickyWrap.css( 'height', $stickyTopbar.outerHeight() );
 						$stickyTopbar.css( {
 							'top'   : getOffset(),
 							'width' : $stickyWrap.width()
@@ -2644,7 +2942,7 @@
 			}
 
 			// Fire on init
-			stickyCheck();
+			initSetSticky();
 
 			// Fire onscroll event
 			$window.scroll( function() {
@@ -2684,7 +2982,7 @@
 			}
 
 			// Offset adminbar
-			if ( this.config.$wpAdminBar ) {
+			if ( this.config.$wpAdminBar && this.config.$wpAdminBar.is( ':visible' ) ) {
 				$offset = $offset + this.config.$wpAdminBar.outerHeight();
 			}
 
@@ -2703,12 +3001,14 @@
 		 *
 		 * @since 3.4.0
 		 */
-		stickyHeader : function() {
+		stickyHeader: function() {
 			var $isSticky = false;
 			var self      = this;
 
 			// Return if sticky is disabled
-			if ( ! self.config.$hasStickyHeader ) return;
+			if ( ! self.config.$hasStickyHeader ) {
+				return;
+			}
 
 			// Define header vars
 			var $header      = self.config.$siteHeader;
@@ -2739,16 +3039,13 @@
 				$stickyLogo = wpexLocalize.stickyheaderCustomLogoRetina;
 			}
 
-			// Add offsets
-			var $stickyWrapTop = $stickyWrap.offset().top;
-			var $stickyOffset  = self.stickyOffset();
-			var $setStickyPos  = $stickyWrapTop - $stickyOffset;
-
 			// Set sticky
 			function setSticky() {
 
 				// Already stuck
-				if ( $isSticky ) return;
+				if ( $isSticky ) {
+					return;
+				}
 
 				// Custom Sticky logo
 				if ( $stickyLogo && $headerLogo ) {
@@ -2777,7 +3074,9 @@
 			function destroySticky() {
 
 				// Already unstuck
-				if ( ! $isSticky ) return;
+				if ( ! $isSticky ) {
+					return;
+				}
 
 				// Reset logo
 				if ( $stickyLogo && $headerLogo ) {
@@ -2804,6 +3103,26 @@
 
 			}
 
+			// On load check
+			function initResizeSetSticky() {
+
+				// Disable on mobile devices
+				if ( ! $mobileSupport && ( self.config.$viewportWidth < $brkPoint ) ) {
+					return;
+				}
+
+				// Check position
+				var $stickyWrapTop = $stickyWrap.offset().top;
+				var $stickyOffset  = self.stickyOffset();
+				var $setStickyPos  = $stickyWrapTop - $stickyOffset;
+
+				// Add and remove sticky classes and sticky logo
+				if ( self.config.$windowTop > $setStickyPos && 0 !== self.config.$windowTop ) {
+					setSticky();
+				}
+
+			}
+
 			// On scroll function
 			function stickyCheck() {
 
@@ -2812,9 +3131,20 @@
 					return;
 				}
 
+				// Destroy sticky at top
+				if ( $isSticky && 0 == self.config.$windowTop ) {
+					destroySticky();
+					return;
+				}
+
+				// Check position
+				var $stickyWrapTop = $stickyWrap.offset().top;
+				var $stickyOffset  = self.stickyOffset();
+				var $setStickyPos  = $stickyWrapTop - $stickyOffset;
+
 				// Add and remove sticky classes and sticky logo
-				if ( self.config.$windowTop >= $setStickyPos && 0 !== self.config.$windowTop ) {
-				 	setSticky();
+				if ( self.config.$windowTop >= $setStickyPos ) {
+					setSticky();
 				} else {
 					destroySticky();
 				}
@@ -2832,12 +3162,12 @@
 					// Update sticky
 					if ( $isSticky ) {
 
-						// Update Height
+						// Update wrapper height
 						if ( ! $header.hasClass( 'shrink-sticky-header' ) ) {
 							$stickyWrap.css( 'height', self.config.$siteHeaderHeight );
 						}
 
-						// Update width and top
+						// Update sticky width and top offset
 						$header.css( {
 							'top'   : self.stickyOffset(),
 							'width' : $stickyWrap.width()
@@ -2847,7 +3177,7 @@
 
 					// Add sticky
 					else {
-						stickyCheck();
+						initResizeSetSticky();
 					}
 
 				}
@@ -2855,16 +3185,20 @@
 			} // End onResize
 
 			// Fire on init
-			stickyCheck();
+			initResizeSetSticky();
 
 			// Fire onscroll event
 			$window.scroll( function() {
-				stickyCheck();
+				if ( self.config.$hasScrolled ) {
+					stickyCheck();
+				}
 			} );
 
 			// Fire onResize
 			$window.resize( function() {
-				onResize();
+				if ( self.config.$widthChanged || self.config.$heightChanged ) {
+					onResize();
+				}
 			} );
 
 		},
@@ -2879,30 +3213,26 @@
 			var $isShrunk = false;
 
 			// Define header element
-			var self     = this,
-				$header  = self.config.$siteHeader,
-				$enabled = $header.hasClass( 'shrink-sticky-header' );
+			var self     = this;
+			var $header  = self.config.$siteHeader;
+			var $enabled = $header.hasClass( 'shrink-sticky-header' );
 
 			// Return if shrink header disabled
 			if ( ! $enabled ) return;
 
 			// Define window and sticky wrap
-			var $window     = self.config.$window,
-				$brkPoint   = wpexLocalize.stickyHeaderBreakPoint,
-				$stickyWrap = $( '#site-header-sticky-wrapper' );
+			var $window     = self.config.$window;
+			var $brkPoint   = wpexLocalize.stickyHeaderBreakPoint;
+			var $stickyWrap = $( '#site-header-sticky-wrapper' );
 			if ( ! $stickyWrap.length ) return;
 
-			// Check if enabled on mobile
-			var $mobileSupport = self.config.$hasStickyMobileHeader;
-
 			// Get correct header offet
-			var $headerHeight       = self.config.$siteHeaderHeight,
-				$stickyWrapTop      = $stickyWrap.offset().top,
-				$shrinkHeaderOffset = $stickyWrapTop + $headerHeight;
+			var $headerHeight       = self.config.$siteHeaderHeight;
+			var $stickyWrapTop      = $stickyWrap.offset().top;
+			var $shrinkHeaderOffset = $stickyWrapTop + $headerHeight;
 
 			// Mobile checks
-			var $mtStyle = self.config.$mobileMenuToggleStyle;
-			if ( $mobileSupport && ( 'icon_buttons' == $mtStyle || 'fixed_top' == $mtStyle ) ) {
+			if ( self.config.$hasStickyMobileHeader && ( 'icon_buttons' == self.config.$mobileMenuToggleStyle || 'fixed_top' == self.config.$mobileMenuToggleStyle ) ) {
 				var $hasShrinkHeaderOnMobile = true;
 			} else {
 				var $hasShrinkHeaderOnMobile = false;
@@ -2970,12 +3300,16 @@
 
 			// Fire onscroll event
 			$window.scroll( function() {
-				shrinkCheck();
+				if ( self.config.$hasScrolled ) {
+					shrinkCheck();
+				}
 			} );
 
 			// Fire onResize
 			$window.resize( function() {
-				onResize();
+				if ( self.config.$widthChanged || self.config.$heightChanged ) {
+					onResize();
+				}
 			} );
 
 		},
@@ -3048,8 +3382,8 @@
 
 			}
 
-			// Sticky check / enable-disable
-			function stickyCheck() {
+			// On load check
+			function initResizeSetSticky() {
 
 				// Disable on mobile devices
 				if ( self.config.$viewportWidth <= wpexLocalize.stickyNavbarBreakPoint ) {
@@ -3058,6 +3392,29 @@
 
 				// Sticky menu
 				if ( self.config.$windowTop >= $setStickyPos && 0 !== self.config.$windowTop ) {
+					setSticky();
+				} else {
+					destroySticky();
+				}
+
+			}
+
+			// Sticky check / enable-disable
+			function stickyCheck() {
+
+				// Disable on mobile devices
+				if ( self.config.$viewportWidth <= wpexLocalize.stickyNavbarBreakPoint ) {
+					return;
+				}
+
+				// Destroy sticky at top
+				if ( $isSticky && 0 == self.config.$windowTop ) {
+					destroySticky();
+					return;
+				}
+
+				// Sticky menu
+				if ( self.config.$windowTop > $setStickyPos ) {
 					setSticky();
 				} else {
 					destroySticky();
@@ -3077,13 +3434,13 @@
 				if ( $isSticky ) {
 					$navWrap.css( 'width', $stickyWrap.width() );
 				} else {
-					stickyCheck();
+					initResizeSetSticky();
 				}
 
 			}
 
 			// Fire on init
-			stickyCheck();
+			initResizeSetSticky();
 
 			// Fire onscroll event
 			$window.scroll( function() {
@@ -3107,91 +3464,169 @@
 			var $nav = $( '.vcex-navbar-sticky' );
 			if ( ! $nav.length ) return;
 
-			var $navHeight = $nav.outerHeight();
-			var $isSticky  = false;
-			var $window    = self.config.$window;
+			$nav.each( function() {
 
-			// Add sticky wrap
-			var $stickyWrap = $( '<div class="vcex-navbar-sticky-wrapper not-sticky"></div>' );
-			$nav.wrapAll( $stickyWrap );
-			$stickyWrap = $( '.vcex-navbar-sticky-wrapper' );
+				var $this     = $( this );
+				var $isSticky = false;
+				var $window   = self.config.$window;
 
-			// Offset
-			var $stickyWrapTop = $stickyWrap.offset().top;
+				// Add sticky wrap
+				var $stickyWrap = $( '<div class="vcex-navbar-sticky-wrapper not-sticky"></div>' );
+				$this.wrapAll( $stickyWrap );
+				$stickyWrap = $this.parent( '.vcex-navbar-sticky-wrapper' );
 
-			// Shrink header function
-			function setSticky() {
+				// Shrink header function
+				function setSticky() {
 
-				// Already sticky
-				if ( $isSticky ) return;
+					// Not visible
+					if ( ! $this.is( ':visible' ) ) {
+						return;
+					}
 
-				// Add wrap class and toggle sticky class
-				$stickyWrap
-					.css( 'height', $navHeight )
-					.removeClass( 'not-sticky' )
-					.addClass( 'is-sticky' );
+					// Already sticky
+					if ( $isSticky ) {
+						return;
+					}
 
-				// Add CSS to topbar
-				$nav.css( {
-					'top'   : '0',
-					'width' : $stickyWrap.width()
-				} );
-				
-				// Update shrunk var
-				$isSticky = true;
+					// Add wrap class and toggle sticky class
+					$stickyWrap
+						.css( 'height', $this.outerHeight() )
+						.removeClass( 'not-sticky' )
+						.addClass( 'is-sticky' );
 
-			}
+					// Add CSS to topbar
+					$this.css( {
+						'top'   : '0',
+						'width' : $stickyWrap.width()
+					} );
+					
+					// Update shrunk var
+					$isSticky = true;
 
-			// Un-Shrink header function
-			function destroySticky() {
-
-				// Not shrunk
-				if ( ! $isSticky ) return;
-
-				// Remove sticky wrap height and toggle sticky class
-				$stickyWrap
-					.css( 'height', '' )
-					.removeClass( 'is-sticky' )
-					.addClass( 'not-sticky' );
-
-				// Remove navbar width
-				$nav.css( {
-					'width' : '',
-					'top'   : ''
-				} );
-
-				// Update shrunk var
-				$isSticky = false;
-
-			}
-
-			// On scroll function
-			function stickyCheck() {
-				if ( self.config.$windowTop > $stickyWrapTop && 0 !== self.config.$windowTop ) {
-					setSticky();
-				} else {
-					destroySticky();
 				}
-			}
 
-			// On resize function
-			function onResize() {
-				if ( $isSticky ) {
-					$nav.css( 'width', $stickyWrap.width() );
+				// Un-Shrink header function
+				function destroySticky() {
+
+					// Not shrunk
+					if ( ! $isSticky ) return;
+
+					// Remove sticky wrap height and toggle sticky class
+					$stickyWrap
+						.css( 'height', '' )
+						.removeClass( 'is-sticky' )
+						.addClass( 'not-sticky' );
+
+					// Remove navbar width
+					$this.css( {
+						'width' : '',
+						'top'   : ''
+					} );
+
+					// Update shrunk var
+					$isSticky = false;
+
 				}
-			}
 
-			// Fire on init
-			stickyCheck();
+				// On scroll function
+				function stickyCheck() {
+					if ( self.config.$windowTop > $stickyWrap.offset().top && 0 !== self.config.$windowTop ) {
+						setSticky();
+					} else {
+						destroySticky();
+					}
+				}
 
-			// Fire onscroll event
-			$window.scroll( function() {
+				// On resize function
+				function onResize() {
+					if ( $isSticky ) {
+						// Destroy if hidden
+						if ( ! $this.is( ':visible' ) ) {
+							destroySticky();
+						}
+						// Set correct height on wrapper
+						$stickyWrap.css( 'height', $nav.outerHeight() );
+						// Set correct width on sticky element
+						$nav.css( 'width', $stickyWrap.width() );
+					} else {
+						stickyCheck();
+					}
+				}
+
+				// Fire on init
 				stickyCheck();
-			} );
 
-			// Fire onResize
-			$window.resize( function() {
-				onResize();
+				// Fire onscroll event
+				$window.scroll( function() {
+					stickyCheck();
+				} );
+
+				// Fire onResize
+				$window.resize( function() {
+					onResize();
+				} );
+
+			} ); // End each loop
+
+		},
+
+		/**
+		 * Visual Composer tweaks
+		 *
+		 * @since 3.5.0
+		 */
+		infiniteScrollInit: function() {
+			var self = this;
+
+			// Get infinite scroll container
+			var $container = $( '#blog-entries' );
+
+			// Start infinite sccroll
+			$container.infinitescroll( {
+				loading : {
+					msg         : null,
+					finishedMsg : null,
+					msgText     : '<div class="infinite-scroll-loader">'+ wpexInfiniteScroll.msgText +'</div>',
+				},
+				navSelector  : 'div.infinite-scroll-nav',
+				nextSelector : 'div.infinite-scroll-nav div.older-posts a',
+				itemSelector : '.blog-entry',
+			},
+
+			// Callback function
+			function( newElements ) {
+
+				var $newElems = $( newElements ).css( 'opacity', 0 );
+
+				$newElems.imagesLoaded( function() {
+
+					// Isotope
+					if ( $container.hasClass( 'blog-masonry-grid' ) ) {
+						$container.isotope( 'appended', $newElems );
+						$newElems.css( 'opacity', 0 );
+					}
+
+					// Animate new Items
+					$newElems.animate( {
+						opacity : 1
+					} );
+
+					// Add trigger
+					$container.trigger( 'wpexinfiniteScrollLoaded' );
+
+					// Re-run functions
+					self.sliderPro( $newElems );
+					self.iLightbox( $newElems );
+
+					// Equal heights
+					if ( $.fn.wpexEqualHeights !== undefined ) {
+						$( '.blog-equal-heights' ).wpexEqualHeights( {
+							children : '.blog-entry-inner'
+						} );
+					}
+
+				} );
+
 			} );
 
 		},
@@ -3202,7 +3637,6 @@
 		 * @since 3.3.5
 		 */
 		visualComposer: function() {
-
 			var self = this;
 
 			// On window Load
@@ -3249,11 +3683,28 @@
 		 * Returns extension from URL
 		 */
 		getUrlExtension: function( url ) {
-			var ext = url.split( '.' ).pop().toLowerCase(),
-				extra = ext.indexOf( '?' ) !== -1 ? ext.split( '?' ).pop() : '';
+			var ext = url.split( '.' ).pop().toLowerCase();
+			var extra = ext.indexOf( '?' ) !== -1 ? ext.split( '?' ).pop() : '';
 			return ext.replace( extra, '' );
-		}
+		},
 
+		/**
+		 * Check if window has scrolled to bottom of element
+		 */
+		scrolledToBottom: function( elem ) {
+			return this.config.$windowTop >= elem.offset().top + elem.outerHeight() - window.innerHeight;
+		},
+
+		/**
+		 * Check if an element is currently in the window view
+		 */
+		isElementInWindowView: function( elem ) {
+			var docViewTop    = this.config.$window.scrollTop();
+			var docViewBottom = docViewTop + this.config.$windowHeight;
+			var elemTop       = $(elem).offset().top;
+			var elemBottom    = elemTop + $(elem).height();
+			return ( ( elemBottom <= docViewBottom) && (elemTop >= docViewTop ) );
+		}
 
 	}; // END wpexTheme
 

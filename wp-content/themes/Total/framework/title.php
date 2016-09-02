@@ -85,7 +85,7 @@ function wpex_title() {
 	} // End is archive check
 
 	// 404 Page
-	elseif ( is_404() ) {
+	elseif ( is_404() && ! wpex_get_mod( 'error_page_content_id' ) ) {
 
 		$title = wpex_get_translated_theme_mod( 'error_page_title' );
 		$title = $title ? $title : esc_html__( '404: Page Not Found', 'total' );

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Classes
- * @version 3.3.2
+ * @version 3.5.0
  *
  * @todo Finish adding this functionality...
  */
@@ -24,13 +24,11 @@ if ( ! class_exists( 'WPEX_Term_Colors' ) ) {
 		 * @since 3.0.0
 		 */
 		public function __construct() {
-
 			if ( is_admin() ) {
-				add_action( 'admin_init', array( $this, 'admin_init' ) );
-				add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-				add_action( 'admin_footer', array( $this, 'color_picker_js' ) );
+				add_action( 'admin_init', array( 'WPEX_Term_Colors', 'admin_init' ) );
+				add_action( 'admin_enqueue_scripts', array( 'WPEX_Term_Colors', 'admin_enqueue_scripts' ) );
+				add_action( 'admin_footer', array( 'WPEX_Term_Colors', 'color_picker_js' ) );
 			}
-
 		}
 
 		/**
@@ -51,14 +49,14 @@ if ( ! class_exists( 'WPEX_Term_Colors' ) ) {
 			foreach ( $taxonomies as $taxonomy ) {
 
 				// Edit form fields
-				add_action( $taxonomy . '_edit_form_fields', array( $this, 'edit_form_fields' ) );
+				add_action( $taxonomy . '_edit_form_fields', array( 'WPEX_Term_Colors', 'edit_form_fields' ) );
 				
 				// Add columns
-				add_filter( 'manage_edit-'. $taxonomy .'_columns', array( $this, 'admin_columns' ) );
-				add_filter( 'manage_'. $taxonomy .'_custom_column', array( $this, 'admin_column' ), 10, 3 );
+				add_filter( 'manage_edit-'. $taxonomy .'_columns', array( 'WPEX_Term_Colors', 'admin_columns' ) );
+				add_filter( 'manage_'. $taxonomy .'_custom_column', array( 'WPEX_Term_Colors', 'admin_column' ), 10, 3 );
 
 				// Save forms
-				add_action( 'edit_'. $taxonomy, array( $this, 'edited_category' ), 10, 3 );
+				add_action( 'edit_'. $taxonomy, array( 'WPEX_Term_Colors', 'edited_category' ), 10, 3 );
 
 			}
 
@@ -190,7 +188,7 @@ if ( ! class_exists( 'WPEX_Term_Colors' ) ) {
 	}
 
 }
-$wpex_category_colors = new WPEX_Term_Colors();
+new WPEX_Term_Colors();
 
 /**
  * Helper function returns all category tags

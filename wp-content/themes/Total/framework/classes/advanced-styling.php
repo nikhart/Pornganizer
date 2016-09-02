@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.4.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -23,7 +23,7 @@ if ( ! class_exists( 'WPEX_Advanced_Styling' ) ) {
 		 * @since 2.0.0
 		 */
 		public function __construct() {
-			add_filter( 'wpex_head_css', array( $this, 'generate' ), 999 );
+			add_filter( 'wpex_head_css', array( 'WPEX_Advanced_Styling', 'generate' ), 999 );
 		}
 
 		/**
@@ -40,13 +40,13 @@ if ( ! class_exists( 'WPEX_Advanced_Styling' ) ) {
 			if ( wpex_global_obj( 'shrink_fixed_header' ) ) {
 				$shrink_header_style = wpex_global_obj( 'fixed_header_style' );
 				if ( 'shrink' == $shrink_header_style || 'shrink_animated' == $shrink_header_style ) {
-					$height = intval( wpex_get_mod( 'fixed_header_shrink_end_height', 50 ) );
+					$height = intval( wpex_get_mod( 'fixed_header_shrink_end_height' ) );
 					$height = $height ? $height : 50;
-					if ( 50 !== $height ) {
-						$height = $height + 20;
-						$output .= '/*Shrink Fixed header*/';
-						$output .= '.sticky-header-shrunk #site-header-inner{height:'. $height .'px;}';
-					}
+					$header_height = $height + 20;
+					$output .= '/*Shrink Fixed header*/';
+					$output .= '.sticky-header-shrunk #site-header-inner{height:'. $header_height .'px;}';
+					$output .= '.shrink-sticky-header.sticky-header-shrunk .navbar-style-five .dropdown-menu > li > a{height:'. $height .'px;}';
+					$output .= '.shrink-sticky-header.sticky-header-shrunk #site-logo img{max-height:'. $height .'px !important;}';
 				}
 			}
 
@@ -78,7 +78,7 @@ if ( ! class_exists( 'WPEX_Advanced_Styling' ) ) {
 				&& $height = intval( wpex_get_mod( 'logo_height' ) )
 			) {
 				$output .= '/*Logo Height*/';
-				$output .= '#site-logo img{height:'. $height .'px;}';
+				$output .= '#site-logo img{max-height:'. $height .'px;}';
 
 			}
 

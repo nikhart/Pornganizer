@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Adds button to mce
@@ -65,6 +65,18 @@ if ( ! function_exists( 'wpex_fix_shortcodes' ) ) {
 	}
 }
 add_filter( 'the_content', 'wpex_fix_shortcodes' );
+
+/**
+ * Searchform shortcode
+ *
+ * @since Total 3.5.0
+ */
+if ( ! function_exists( 'wpex_searchform_shortcode' ) && ! shortcode_exists( 'searchform' ) ) {
+	function wpex_searchform_shortcode() {
+		return get_search_form();
+	}
+	add_shortcode( 'searchform', 'wpex_searchform_shortcode' );
+}
 
 /**
  * Year shortcode

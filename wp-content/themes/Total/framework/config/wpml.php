@@ -4,10 +4,8 @@
  *
  * @package Total WordPress Theme
  * @subpackage Configs
- * @version 3.3.5
+ * @version 3.5.3
  */
-
-global $wpml_config;
 
 if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 
@@ -21,16 +19,15 @@ if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 		public function __construct() {
 
 			// Add Actions
-			add_action( 'admin_init', array( $this, 'register_strings' ) );
-			add_filter( 'body_class', array( $this, 'body_class' ) );
+			add_action( 'admin_init', array( 'WPEX_WPML_Config', 'register_strings' ) );
+			add_filter( 'body_class', array( 'WPEX_WPML_Config', 'body_class' ) );
 
 			// Add Filters
-			add_filter( 'upload_dir', array( $this, 'upload_dir' ) );
-			add_filter( 'wpex_toggle_bar_content_id', array( $this, 'toggle_bar_content_id' ) );
+			add_filter( 'upload_dir', array( 'WPEX_WPML_Config', 'upload_dir' ) );
 
 			// Register shortcodes
-			add_shortcode( 'wpml_translate', array( $this, 'translate_shortcode' ) );
-			add_shortcode( 'wpml_lang_selector', array( $this, 'switcher_shortcode' ) );
+			add_shortcode( 'wpml_translate', array( 'WPEX_WPML_Config', 'translate_shortcode' ) );
+			add_shortcode( 'wpml_lang_selector', array( 'WPEX_WPML_Config', 'switcher_shortcode' ) );
 
 		}
 
@@ -39,7 +36,7 @@ if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function register_strings() {
+		public static function register_strings() {
 			if ( function_exists( 'icl_register_string' ) && $strings = wpex_register_theme_mod_strings() ) {
 				foreach( $strings as $string => $default ) {
 					icl_register_string( 'Theme Mod', $string, get_theme_mod( $string, $default ) );
@@ -52,7 +49,7 @@ if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 		 *
 		 * @since 3.0.0
 		 */
-		public function body_class( $classes ) {
+		public static function body_class( $classes ) {
 			if ( defined( 'ICL_LANGUAGE_CODE' ) ) {
 				$classes[] = 'wpml-language-'. ICL_LANGUAGE_CODE;
 			}
@@ -65,7 +62,7 @@ if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function upload_dir( $upload ) {
+		public static function upload_dir( $upload ) {
 
 			// Check if WPML language_negociation type
 			$language_negociation = apply_filters( 'wpml_setting', false, 'language_negotiation_type' );
@@ -79,18 +76,6 @@ if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 		}
 
 		/**
-		 * Converts toggle page ID to WPML compatible ID
-		 *
-		 * @since 1.6.0
-		 */
-		public function toggle_bar_content_id( $id ) {
-			if ( function_exists( 'icl_object_id' ) && defined( 'ICL_LANGUAGE_CODE' ) ) {
-				$id = icl_object_id( $id, 'page', false, ICL_LANGUAGE_CODE );
-			}
-			return $id;
-		}
-
-		/**
 		 * WPML Translation Shortcode
 		 *
 		 * [wpml_translate lang=es]Hola[/wpml_translate]
@@ -98,7 +83,7 @@ if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function translate_shortcode( $atts, $content = null ) {
+		public static function translate_shortcode( $atts, $content = null ) {
 			extract( shortcode_atts( array(
 				'lang'	=> '',
 			), $atts ) );
@@ -113,11 +98,11 @@ if ( ! class_exists( 'WPEX_WPML_Config' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function switcher_shortcode( $atts, $content = null ) {
+		public static function switcher_shortcode( $atts, $content = null ) {
 			do_action( 'icl_language_selector' );
 		}
 
 	}
 	
 }
-$wpml_config = new WPEX_WPML_Config();
+new WPEX_WPML_Config();

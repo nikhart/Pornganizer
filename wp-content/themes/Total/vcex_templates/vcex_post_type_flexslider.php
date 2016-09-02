@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,8 +17,14 @@ if ( is_admin() ) {
     return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) || ! function_exists( 'vc_shortcode_custom_css_class' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_post_type_flexslider', $atts );
 extract( $atts );
 
 // Query posts with thumbnails_only
@@ -37,7 +43,7 @@ if ( $wpex_query->have_posts() ) :
 
 	// Sanitize data, declate main vars & fallbacks
 	$wrap_data  = array();
-	$slideshow  = vc_is_inline() ? 'false' : $slideshow;
+	$slideshow  = wpex_vc_is_inline() ? 'false' : $slideshow;
 	$caption    = $caption ? $caption : 'true';
 	$title      = $title ? $title : 'true';
 
@@ -106,7 +112,7 @@ if ( $wpex_query->have_posts() ) :
 	// Main Classes
 	$wrap_classes = array( 'vcex-posttypes-slider', 'wpex-slider', 'slider-pro', 'vcex-image-slider', 'clr' );
 	if ( $classes ) {
-		$wrap_classes[] = $this->getExtraClass( $classes );
+		$wrap_classes[] = vcex_get_extra_class( $classes );
 	}
 	if ( 'under-image' == $caption_location ) {
 		$wrap_classes[] = 'arrows-topright';
@@ -176,7 +182,7 @@ if ( $wpex_query->have_posts() ) :
 
 							<?php if ( has_post_thumbnail() ) : ?>
 
-									<a href="<?php wpex_permalink(); ?>" title="<?php wpex_esc_title(); ?>">
+									<a href="<?php wpex_permalink(); ?>" title="<?php wpex_esc_title(); ?>" class="wpex-slider-media-link">
 										<?php wpex_post_thumbnail( array(
 											'size'   => $img_size,
 											'crop'   => $img_crop,

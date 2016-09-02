@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,17 +17,24 @@ if ( is_admin() ) {
 	return;
 }
 
-// FALLBACK VARS
-$padding = isset( $atts['padding'] ) ? $atts['padding'] : '';
-$style = isset( $atts['style'] ) ? $atts['style'] : '';
-$link_title = isset( $atts['link_title'] ) ? $atts['link_title'] : '';
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
+// FALLBACK VARS => NEVER REMOVE !!!
+$padding     = isset( $atts['padding'] ) ? $atts['padding'] : '';
+$style       = isset( $atts['style'] ) ? $atts['style'] : '';
+$link_title  = isset( $atts['link_title'] ) ? $atts['link_title'] : '';
 $link_target = isset( $atts['link_target'] ) ? $atts['link_target'] : '';
 
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_icon', $atts );
 extract( $atts );
 
 // Sanitize data & declare vars
+$output = '';
 $icon = vcex_get_icon_class( $atts, 'icon' );
 $data_attributes = '';
 
@@ -55,7 +62,7 @@ if ( $link_url ) {
 
 		// Local links
 		if ( 'true' == $link_local_scroll || 'local' == $link_target ) {
-			$link_target = 'local';
+			$link_target = '';
 			$link_wrap_classes[] = 'local-scroll-link';
 		}
 
@@ -70,15 +77,15 @@ if ( $link_url ) {
 
 // Add styling
 $icon_style = vcex_inline_style( array(
-	'font_size' => $custom_size,
-	'color' => $color,
-	'padding' => $padding,
+	'font_size'        => $custom_size,
+	'color'            => $color,
+	'padding'          => $padding,
 	'background_color' => $background,
-	'border_radius' => $border_radius,
-	'height' => $height,
-	'line_height' => wpex_sanitize_data( $height, 'px' ),
-	'width' => $width,
-	'border' => $border,
+	'border_radius'    => $border_radius,
+	'height'           => $height,
+	'line_height'      => wpex_sanitize_data( $height, 'px' ),
+	'width'            => $width,
+	'border'           => $border,
 ) );
 
 // Icon Classes 
@@ -106,10 +113,10 @@ if ( $height || $width ) {
 	$wrap_classes[] = 'remove-dimensions';
 }
 if ( $css_animation ) {
-	$wrap_classes[] = $this->getCSSAnimation( $css_animation );
+	$wrap_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $el_class ) {
-	$wrap_classes[] = $this->getExtraClass( $el_class );
+	$wrap_classes[] = vcex_get_extra_class( $el_class );
 }
 $wrap_classes = implode( ' ', $wrap_classes );
 
@@ -144,28 +151,29 @@ if ( $color_hover || $background_hover ) {
 	// Load js for front end composer
 	vcex_inline_js( 'data_hover' );
 
-} ?>
+}
 
-<div class="<?php echo $wrap_classes; ?>"<?php vcex_unique_id( $unique_id ); ?>>
+$output .= '<div class="'. $wrap_classes .'"'. vcex_get_unique_id( $unique_id ) .'>';
 
-	<?php
 	// Open link tag
-	if ( $link_url ) : ?>
+	if ( $link_url ) :
 
-		<?php
 		// Turn link wrap_classes into string
-		$link_wrap_classes = implode( ' ', $link_wrap_classes ); ?>
+		$link_wrap_classes = implode( ' ', $link_wrap_classes );
 
-		<a href="<?php echo $link_url; ?>" class="<?php echo $link_wrap_classes; ?>"<?php echo $link_title; ?><?php echo $link_target; ?>>
+		$output .= '<a href="'. $link_url .'" class="'. $link_wrap_classes .'"'. $link_title . $link_target .'>';
 
-	<?php endif; ?>
+	endif;
 
-	<div class="<?php echo $icon_classes; ?>"<?php echo $icon_style; ?><?php echo $data_attributes; ?>>
-		<span class="<?php echo $icon; ?>"></span>
-	</div><!-- .vcex-icon-wrap -->
+	$output .= '<div class="'. $icon_classes .'"'. $icon_style .''. $data_attributes .'>';
+		$output .= '<span class="'. $icon .'"></span>';
+	$output .= '</div>';
 
-	<?php
 	// Close link tag
-	if ( $link_url ) echo '</a>'; ?>
+	if ( $link_url ) {
+		$output .= '</a>';
+	}
 
-</div><!-- .<?php echo $wrap_classes; ?> -->
+$output .= '</div>';
+
+echo $output;

@@ -4,9 +4,8 @@
  *
  * @package Total WordPress theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.0
  *
- * @todo Remove deprecated 'single-staff-position' class
  */
 
 // Exit if accessed directly

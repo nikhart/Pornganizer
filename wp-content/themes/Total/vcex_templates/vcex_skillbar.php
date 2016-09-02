@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage VC Templates
- * @version 3.0.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -17,26 +17,35 @@ if ( is_admin() ) {
     return;
 }
 
+// Required VC functions
+if ( ! function_exists( 'vc_map_get_attributes' ) ) {
+	vcex_function_needed_notice();
+	return;
+}
+
 // Get and extract shortcode attributes
-$atts = vc_map_get_attributes( $this->getShortcode(), $atts );
+$atts = vc_map_get_attributes( 'vcex_skillbar', $atts );
 extract( $atts );
+
+// Define output var
+$output = '';
 
 // Load inline js
 vcex_inline_js( array( 'skillbar' ) );
 
 // Classes
-$wrapper_classes = 'vcex-skillbar clr';
+$wrapper_classes = array( 'vcex-skillbar clr' );
 if ( 'false' == $box_shadow ) {
-   $wrapper_classes .= ' disable-box-shadow';
+   $wrapper_classes[] = ' disable-box-shadow';
 }
 if ( $visibility ) {
-    $wrapper_classes .= ' '. $visibility;
+    $wrapper_classes[] = $visibility;
 }
 if ( $css_animation ) {
-	$wrapper_classes .= $this->getCSSAnimation( $css_animation );
+	$wrapper_classes[] = vcex_get_css_animation( $css_animation );
 }
 if ( $classes ) {
-	$wrapper_classes .= $this->getExtraClass( $classes );
+	$wrapper_classes[] = vcex_get_extra_class( $classes );
 }
 
 // Set icon and enqueue font styles
@@ -60,27 +69,45 @@ $title_style = vcex_inline_style( array(
 ) );
 $bar_style = vcex_inline_style( array(
 	'background' => $color,
-) ); ?>
+) );
 
-<div class="<?php echo $wrapper_classes; ?>" data-percent="<?php echo intval( $percentage ); ?>&#37;"<?php vcex_unique_id( $unique_id ); ?><?php echo $wrapper_style; ?>>
+// Start shortcode output
+$output .= '<div class="'. implode( ' ', $wrapper_classes ) .'" data-percent="'. intval( $percentage ) .'&#37;"'. vcex_get_unique_id( $unique_id ) . $wrapper_style .'>';
+	
+	// Title
+	$output .= '<div class="vcex-skillbar-title"'. $title_style .'>';
 
-	<div class="vcex-skillbar-title"<?php echo $title_style; ?>>
+		$output .= '<div class="vcex-skillbar-title-inner">';
 
-		<div class="vcex-skillbar-title-inner">
-			<?php if ( 'true' == $show_icon && $icon ) : ?>
-				<span class="vcex-icon-wrap"><span class="<?php echo $icon; ?>"></span></span>
-			<?php endif; ?>
-			<?php echo $title; ?>
-		</div><!-- .vcex-skillbar-title-inner -->
+				// Display icon
+				if ( 'true' == $show_icon && $icon ) :
 
-	</div><!-- .vcex-skillbar-title -->
+					$output .= '<span class="vcex-icon-wrap"><span class="'. $icon .'"></span></span>';
 
-	<?php if ( $percentage ) : ?>
-		<div class="vcex-skillbar-bar"<?php echo $bar_style; ?>>
-			<?php if ( 'true' == $show_percent ) : ?>
-				<div class="vcex-skill-bar-percent"><?php echo intval( $percentage ); ?>&#37;</div>
-			<?php endif; ?>
-		</div><!-- .vcex-skillbar -->
-	<?php endif; ?>
+				endif;
 
-</div><!-- .vcex-skillbar -->
+			$output .= $title;
+
+		$output .= '</div>';
+
+	$output .= '</div>';
+
+	// Percentage
+	if ( $percentage ) :
+
+		$output .= '<div class="vcex-skillbar-bar"'. $bar_style .'>';
+
+			// Display perfect value
+			if ( 'true' == $show_percent ) :
+
+				$output .= '<div class="vcex-skill-bar-percent">'. intval( $percentage ) .'&#37;</div>';
+
+			endif;
+
+		$output .= '</div>';
+
+	endif;
+
+$output .= '</div>';
+
+echo $output;

@@ -4,6 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
+ * @version 3.5.0
  */
 
 /**

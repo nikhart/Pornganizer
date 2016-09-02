@@ -4,7 +4,7 @@
  *
  * @package Total WordPress theme
  * @subpackage Framework
- * @version 3.3.0
+ * @version 3.5.0
  */
 
 // Exit if accessed directly
@@ -14,16 +14,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_Favicons' ) ) {
+
 	class WPEX_Favicons {
 
 		/**
 		 * Start things up
 		 */
 		public function __construct() {
-			add_action( 'admin_menu', array( $this, 'add_page' ) );
-			add_action( 'admin_init', array( $this,'register_page_options' ) );
-			add_action( 'admin_enqueue_scripts',array( $this,'scripts' ) );
-			add_action( 'wp_head', array( $this, 'output_favicons' ) );
+
+			// Total actions
+			if ( is_admin() ) {
+				add_action( 'admin_menu', array( 'WPEX_Favicons', 'add_page' ) );
+				add_action( 'admin_init', array( 'WPEX_Favicons', 'register_page_options' ) );
+				add_action( 'admin_enqueue_scripts', array( 'WPEX_Favicons', 'scripts' ) );
+				add_action( 'admin_head', array( 'WPEX_Favicons', 'output_favicons' ) );
+				remove_action( 'login_head', 'wp_site_icon', 99 );
+				add_action( 'admin_init', array( 'WPEX_Favicons', 'remove_admin_wp_site_icon' ), 99 );
+			} else {
+				add_action( 'wp_head', array( 'WPEX_Favicons', 'output_favicons' ) );
+				remove_action( 'wp_head', 'wp_site_icon', 99 );
+			}
+
 		}
 
 		/**
@@ -31,14 +42,14 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function add_page() {
+		public static function add_page() {
 			add_submenu_page(
 				WPEX_THEME_PANEL_SLUG,
 				esc_html__( 'Favicons', 'total' ),
 				esc_html__( 'Favicons', 'total' ),
 				'administrator',
 				WPEX_THEME_PANEL_SLUG .'-favicons',
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_Favicons', 'create_admin_page' )
 			);
 		}
 
@@ -74,19 +85,19 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function register_page_options() {
+		public static function register_page_options() {
 
 			// Register Setting
-			register_setting( 'wpex_favicons', 'wpex_favicons', array( $this, 'sanitize' ) );
+			register_setting( 'wpex_favicons', 'wpex_favicons', array( 'WPEX_Favicons', 'sanitize' ) );
 
 			// Add main section to our options page
-			add_settings_section( 'wpex_favicons_main', false, array( $this, 'section_main_callback' ), 'wpex-favicons' );
+			add_settings_section( 'wpex_favicons_main', false, array( 'WPEX_Favicons', 'section_main_callback' ), 'wpex-favicons' );
 
 			// Favicon
 			add_settings_field(
 				'wpex_favicon',
 				esc_html__( 'Favicon', 'total' ),
-				array( $this, 'favicon_callback' ),
+				array( 'WPEX_Favicons', 'favicon_callback' ),
 				'wpex-favicons',
 				'wpex_favicons_main'
 			);
@@ -95,7 +106,7 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 			add_settings_field(
 				'wpex_iphone_icon',
 				esc_html__( 'Apple iPhone Icon ', 'total' ),
-				array( $this, 'iphone_icon_callback' ),
+				array( 'WPEX_Favicons', 'iphone_icon_callback' ),
 				'wpex-favicons',
 				'wpex_favicons_main'
 			);
@@ -104,7 +115,7 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 			add_settings_field(
 				'wpex_ipad_icon',
 				esc_html__( 'Apple iPad Icon ', 'total' ),
-				array( $this, 'ipad_icon_callback' ),
+				array( 'WPEX_Favicons', 'ipad_icon_callback' ),
 				'wpex-favicons',
 				'wpex_favicons_main'
 			);
@@ -113,7 +124,7 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 			add_settings_field(
 				'wpex_iphone_icon_retina',
 				esc_html__( 'Apple iPhone Retina Icon ', 'total' ),
-				array( $this, 'iphone_icon_retina_callback' ),
+				array( 'WPEX_Favicons', 'iphone_icon_retina_callback' ),
 				'wpex-favicons',
 				'wpex_favicons_main'
 			);
@@ -122,7 +133,7 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 			add_settings_field(
 				'wpex_ipad_icon_retina',
 				esc_html__( 'Apple iPad Retina Icon ', 'total' ),
-				array( $this, 'ipad_icon_retina_callback' ),
+				array( 'WPEX_Favicons', 'ipad_icon_retina_callback' ),
 				'wpex-favicons',
 				'wpex_favicons_main'
 			);
@@ -185,12 +196,13 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 		 */
 
 		// Favicon
-		public function favicon_callback() {
+		public static function favicon_callback() {
 			$val     = wpex_get_mod( 'favicon' );
-			$val     = $this->sanitize_val( $val );
-			$preview = $this->sanitize_val( $val, 'image' ); ?>
+			$val     = self::sanitize_val( $val );
+			$preview = self::sanitize_val( $val, 'image' ); ?>
 			<input type="text" name="wpex_favicons[favicon]" value="<?php echo esc_attr( $val ); ?>" class="wpex-image-input">
 			<input class="wpex-media-upload-button button-secondary" name="login_page_design_bg_img_button" type="button" value="<?php esc_attr_e( 'Upload', 'total' ); ?>" />
+			<a href="#" class="wpex-media-remove button-secondary" style="display:none;"><span class="dashicons dashicons-no-alt" style="line-height: inherit;"></span></a>
 			<p class="description">32x32</p>
 			<div class="wpex-media-live-preview" data-image-size="32">
 				<?php if ( $preview ) { ?>
@@ -200,12 +212,13 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 		<?php }
 
 		// iPhone
-		public function iphone_icon_callback() {
+		public static function iphone_icon_callback() {
 			$val	 = wpex_get_mod( 'iphone_icon' );
-			$val     = $this->sanitize_val( $val );
-			$preview = $this->sanitize_val( $val, 'image' ); ?>
+			$val     = self::sanitize_val( $val );
+			$preview = self::sanitize_val( $val, 'image' ); ?>
 			<input type="text" name="wpex_favicons[iphone_icon]" value="<?php echo esc_attr( $val ); ?>" class="wpex-image-input">
 			<input class="wpex-media-upload-button button-secondary" name="login_page_design_bg_img_button" type="button" value="<?php esc_attr_e( 'Upload', 'total' ); ?>" />
+			<a href="#" class="wpex-media-remove button-secondary" style="display:none;"><span class="dashicons dashicons-no-alt" style="line-height: inherit;"></span></a>
 			<p class="description">57x57</p>
 			<div class="wpex-media-live-preview" data-image-size="57">
 				<?php if ( $preview ) { ?>
@@ -214,14 +227,14 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 			</div>
 		<?php }
 
-
 		// iPad
-		public function ipad_icon_callback() {
+		public static function ipad_icon_callback() {
 			$val	 = wpex_get_mod( 'ipad_icon' );
-			$val     = $this->sanitize_val( $val );
-			$preview = $this->sanitize_val( $val, 'image' ); ?>
+			$val     = self::sanitize_val( $val );
+			$preview = self::sanitize_val( $val, 'image' ); ?>
 			<input type="text" name="wpex_favicons[ipad_icon]" value="<?php echo esc_attr( $val ); ?>" class="wpex-image-input">
 			<input class="wpex-media-upload-button button-secondary" name="login_page_design_bg_img_button" type="button" value="<?php esc_attr_e( 'Upload', 'total' ); ?>" />
+			<a href="#" class="wpex-media-remove button-secondary" style="display:none;"><span class="dashicons dashicons-no-alt" style="line-height: inherit;"></span></a>
 			<p class="description">76x76</p>
 			<div class="wpex-media-live-preview" data-image-size="76">
 				<?php if ( $preview ) { ?>
@@ -231,12 +244,13 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 		<?php }
 
 		// iPhone Retina
-		public function iphone_icon_retina_callback() {
+		public static function iphone_icon_retina_callback() {
 			$val	 = wpex_get_mod( 'iphone_icon_retina' );
-			$val     = $this->sanitize_val( $val );
-			$preview = $this->sanitize_val( $val, 'image' ); ?>
+			$val     = self::sanitize_val( $val );
+			$preview = self::sanitize_val( $val, 'image' ); ?>
 			<input type="text" name="wpex_favicons[iphone_icon_retina]" value="<?php echo esc_attr( $val ); ?>" class="wpex-image-input">
 			<input class="wpex-media-upload-button button-secondary" name="login_page_design_bg_img_button" type="button" value="<?php esc_attr_e( 'Upload', 'total' ); ?>" />
+			<a href="#" class="wpex-media-remove button-secondary" style="display:none;"><span class="dashicons dashicons-no-alt" style="line-height: inherit;"></span></a>
 			<p class="description">120x120</p>
 			<div class="wpex-media-live-preview" data-image-size="120">
 				<?php if ( $preview ) { ?>
@@ -246,12 +260,13 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 		<?php }
 
 		// iPad Retina
-		public function ipad_icon_retina_callback() {
+		public static function ipad_icon_retina_callback() {
 			$val	 = wpex_get_mod( 'ipad_icon_retina' );
-			$val     = $this->sanitize_val( $val );
-			$preview = $this->sanitize_val( $val, 'image' ); ?>
+			$val     = self::sanitize_val( $val );
+			$preview = self::sanitize_val( $val, 'image' ); ?>
 			<input type="text" name="wpex_favicons[ipad_icon_retina]" value="<?php echo esc_attr( $val ); ?>" class="wpex-image-input">
 			<input class="wpex-media-upload-button button-secondary" name="login_page_design_bg_img_button" type="button" value="<?php esc_attr_e( 'Upload', 'total' ); ?>" />
+			<a href="#" class="wpex-media-remove button-secondary" style="display:none;"><span class="dashicons dashicons-no-alt" style="line-height: inherit;"></span></a>
 			<p class="description">152x152</p>
 			<div class="wpex-media-live-preview" data-image-size="152">
 				<?php if ( $preview ) { ?>
@@ -283,35 +298,46 @@ if ( ! class_exists( 'WPEX_Favicons' ) ) {
 		 *
 		 * @since 1.6.0
 		 */
-		public function output_favicons() {
+		public static function output_favicons() {
 
 			// Favicon - Standard
 			if ( $icon = wpex_get_mod( 'favicon' ) ) {
-				echo "\r\n" . '<link rel="shortcut icon" href="'. esc_url( $this->sanitize_val( $icon, 'image' ) ) .'">';
+				echo "\r\n" . '<link rel="shortcut icon" href="'. esc_url( self::sanitize_val( $icon, 'image' ) ) .'">';
 			}
 
 			// Apple iPhone Icon - 57px
 			if ( $icon = wpex_get_mod( 'iphone_icon' ) ) {
-				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" href="'. esc_url( $this->sanitize_val( $icon, 'image' ) ) .'">';
+				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" href="'. esc_url( self::sanitize_val( $icon, 'image' ) ) .'">';
 			}
 
 			// Apple iPad Icon - 76px
 			if ( $icon = wpex_get_mod( 'ipad_icon' ) ) {
-				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" sizes="76x76" href="'. esc_url( $this->sanitize_val( $icon, 'image' ) ) .'">';
+				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" sizes="76x76" href="'. esc_url( self::sanitize_val( $icon, 'image' ) ) .'">';
 			}
 
 			// Apple iPhone Retina Icon - 120px
 			if ( $icon = wpex_get_mod( 'iphone_icon_retina' ) ) {
-				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" sizes="120x120" href="'. esc_url( $this->sanitize_val( $icon, 'image' ) ) .'">';
+				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" sizes="120x120" href="'. esc_url( self::sanitize_val( $icon, 'image' ) ) .'">';
 			}
 
 			// Apple iPad Retina Icon - 114px
 			if ( $icon = wpex_get_mod( 'ipad_icon_retina' ) ) {
-				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" sizes="114x114" href="'. esc_url( $this->sanitize_val( $icon, 'image' ) ) .'">';
+				echo "\r\n" . '<link rel="apple-touch-icon-precomposed" sizes="114x114" href="'. esc_url( self::sanitize_val( $icon, 'image' ) ) .'">';
 			}
 
 		}
 
+		/**
+		 * Remove the WP site icon in the admin
+		 *
+		 * @since 1.6.0
+		 */
+		public static function remove_admin_wp_site_icon() {
+			remove_action( 'admin_head', 'wp_site_icon', 10 );
+		}
+
 	}
+
+	new WPEX_Favicons();
+
 }
-$wpex_favicons = new WPEX_Favicons();

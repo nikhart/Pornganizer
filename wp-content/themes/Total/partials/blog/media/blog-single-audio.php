@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $audio = wpex_get_post_audio_html();
 
 // Display audio if audio exists and the post isn't protected
-if ( $audio && ! post_password_required()  ) : ?>
+if ( $audio && ! post_password_required() ) : ?>
 
 	<div id="post-media" class="clr"><div class="blog-post-audio clr"><?php echo $audio; ?></div></div>
 

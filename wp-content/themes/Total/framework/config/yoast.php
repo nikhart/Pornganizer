@@ -45,15 +45,22 @@ if ( ! class_exists( 'WPEX_Yoast_Config' ) ) {
 
 			if ( current_theme_supports( 'yoast-seo-breadcrumbs' ) ) {
 
+				// Breadcrumbs position
+				$position = wpex_get_mod( 'breadcrumbs_position' );
+
 				// Breadcrumbs classes
-				$classes = 'site-breadcrumbs clr';
-				if ( $breadcrumbs_position = wpex_get_mod( 'breadcrumbs_position' ) ) {
-					$classes .= ' position-'. $breadcrumbs_position;
+				$classes = array( 'site-breadcrumbs', 'wpex-clr' );
+				if ( $position && 'default' != $position ) {
+					$classes[] = 'position-'. $position;
+				} else {
+					$classes[] = 'has-js-fix';
 				}
 
+				$classes = apply_filters( 'wpex_breadcrumbs_classes', $classes );
+
 				// Breadcrumbs settings
-				$before  = '<nav class="'. $classes .'">';
-				$after   = '</nav>';
+				$before  = '<nav class="'. implode( ' ', $classes ) .'"><span class="breadcrumb-trail">';
+				$after   = '</span></nav>';
 				$display = false;
 
 				// Return breadcrumbs

@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Framework
- * @version 3.3.3
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Start Class
 if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
+
 	class WPEX_Image_Sizes {
-		private $sizes;
 
 		/**
 		 * Main constructor
@@ -23,30 +23,33 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		 * @since Total 1.6.3
 		 */
 		public function __construct() {
-		
-			// Array of image sizes
-			$this->sizes = array();
 
 			// Define and add image sizes => Needs low priority for Visual Composer
-			add_filter( 'init', array( $this, 'define_sizes' ), 0 );
-			add_filter( 'init', array( $this, 'add_sizes' ), 1 );
+			add_action( 'init', array( 'WPEX_Image_Sizes', 'add_sizes' ), 1 );
 
 			// Prevent images from cropping when on the fly is enabled
-			add_filter( 'intermediate_image_sizes_advanced', array( $this, 'do_not_crop_on_upload' ) );
+			if ( wpex_get_mod( 'image_resizing', true ) ) {
+				add_filter( 'intermediate_image_sizes_advanced', array( 'WPEX_Image_Sizes', 'do_not_crop_on_upload' ) );
+			}
 
-			// Create admin panel
-			add_action( 'admin_menu', array( $this, 'add_admin_page' ), 10 );
-			add_action( 'admin_init', array( $this,'register_settings' ) );
+			// Admin only functions
+			if ( is_admin() ) {
+
+				// Create admin panel
+				add_action( 'admin_menu', array( 'WPEX_Image_Sizes', 'add_admin_page' ), 10 );
+				add_action( 'admin_init', array( 'WPEX_Image_Sizes', 'register_settings' ) );
+
+			}
 
 		}
 
 		/**
-		 * Define array of image sizes used by the theme
+		 * Return array of image sizes used by the theme
 		 *
-		 * @since  2.0.0
+		 * @since 2.0.0
 		 */
-		public function define_sizes() {
-			$this->sizes = apply_filters( 'wpex_image_sizes', array(
+		public static function get_sizes() {
+			return apply_filters( 'wpex_image_sizes', array(
 				'lightbox'    => array(
 					'label'   => esc_html__( 'Lightbox Images', 'total' ),
 					'width'   => 'lightbox_image_width',
@@ -102,11 +105,14 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function do_not_crop_on_upload( $sizes ) {
+		public static function do_not_crop_on_upload( $sizes ) {
+
+			// Get image sizes
+			$get_sizes = self::get_sizes();
 
 			// Remove my image sizes from cropping if image resizing is enabled
-			if ( wpex_get_mod( 'image_resizing', true ) && ! empty ( $this->sizes ) ) {
-				foreach( $this->sizes as $size => $args ) {
+			if ( ! empty ( $get_sizes ) ) {
+				foreach( $get_sizes as $size => $args ) {
 					unset( $sizes[$size] );
 				}
 			}
@@ -121,10 +127,10 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function add_sizes() {
+		public static function add_sizes() {
 			
 			// Get sizes array
-			$sizes = $this->sizes;
+			$sizes = self::get_sizes();
 
 			// Loop through sizes
 			foreach ( $sizes as $size => $args ) {
@@ -161,14 +167,14 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function add_admin_page() {
+		public static function add_admin_page() {
 			add_submenu_page(
 				WPEX_THEME_PANEL_SLUG,
 				esc_html__( 'Image Sizes', 'total' ),
 				esc_html__( 'Image Sizes', 'total' ),
 				'administrator',
 				WPEX_THEME_PANEL_SLUG . '-image-sizes',
-				array( $this, 'create_admin_page' )
+				array( 'WPEX_Image_Sizes', 'create_admin_page' )
 			);
 		}
 
@@ -177,8 +183,8 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function register_settings() {
-			register_setting( 'wpex_image_sizes', 'wpex_image_sizes', array( $this, 'admin_sanitize' ) ); 
+		public static function register_settings() {
+			register_setting( 'wpex_image_sizes', 'wpex_image_sizes', array( 'WPEX_Image_Sizes', 'admin_sanitize' ) ); 
 		}
 
 		/**
@@ -186,7 +192,7 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function admin_sanitize( $options ) {
+		public static function admin_sanitize( $options ) {
 
 			// Check options first
 			if ( ! is_array( $options ) || empty( $options ) || ( false === $options ) ) {
@@ -228,10 +234,10 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		 *
 		 * @since 2.0.0
 		 */
-		public function create_admin_page() {
+		public static function create_admin_page() {
 
 			// Get sizes & crop locations
-			$sizes          = $this->sizes;
+			$sizes          = self::get_sizes();
 			$crop_locations = wpex_image_crop_locations(); ?>
 
 			<div class="wrap">
@@ -422,5 +428,7 @@ if ( ! class_exists( 'WPEX_Image_Sizes' ) ) {
 		}
 
 	}
+
+	new WPEX_Image_Sizes();
+
 }
-new WPEX_Image_Sizes();

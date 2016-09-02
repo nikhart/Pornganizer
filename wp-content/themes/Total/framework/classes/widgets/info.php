@@ -6,7 +6,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Widgets
- * @version 3.3.3
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -40,68 +40,80 @@ class WPEX_Info_Widget extends WP_Widget {
 	 */
 	public function widget( $args, $instance ) {
 
+		// Define output var
+		$output = '';
+
 		// Set vars for widget usage
 		$title        = isset( $instance['title'] ) ? apply_filters( 'widget_title', $instance['title'] ) : '';
 		$address      = isset( $instance['address'] ) ? $instance['address'] : '';
 		$phone_number = isset( $instance['phone_number'] ) ? $instance['phone_number'] : '';
 		$fax_number   = isset( $instance['fax_number'] ) ? $instance['fax_number'] : '';
 		$email        = isset( $instance['email'] ) ? $instance['email'] : '';
+		$email_label  = isset( $instance['email_label'] ) ? $instance['email_label'] : '';
 
 		// Before widget WP hook
-		echo $args['before_widget'];
+		$output .= $args['before_widget'];
 
 		// Display title if defined
 		if ( $title ) {
-			echo $args['before_title'] . $title . $args['after_title']; 
-		} ?>
+			$output .= $args['before_title'];
+				$output .= $title;
+			$output .= $args['after_title']; 
+		}
 
-		<div class="wpex-info-widget wpex-clr">
+		$output .= '<div class="wpex-info-widget wpex-clr">';
 
-			<?php if ( $address ) : ?>
+			if ( $address ) {
 
-				<div class="wpex-info-widget-address wpex-clr">
-					<span class="fa fa-map-marker"></span>
-					<?php echo wpautop( wpex_sanitize_data( $address, 'html' ) ); ?>
-				</div><!-- .wpex-info-widget-address -->
+				$output .= '<div class="wpex-info-widget-address wpex-clr">';
+					$output .= '<span class="fa fa-map-marker"></span>';
+					$output .= wpautop( wpex_sanitize_data( $address, 'html' ) );
+				$output .= '</div>';
 
-			<?php endif; ?>
+			}
 
-			<?php if ( $phone_number ) : ?>
+			if ( $phone_number ) {
 
-				<div class="wpex-info-widget-phone wpex-clr">
-					<span class="fa fa-phone"></span><?php echo strip_tags( $phone_number ); ?>
-				</div><!-- .wpex-info-widget-phone -->
+				$output .= '<div class="wpex-info-widget-phone wpex-clr">';
+					$output .= '<span class="fa fa-phone"></span>';
+					$output .= strip_tags( $phone_number );
+				$output .= '</div>';
 
-			<?php endif; ?>
+			}
 
-			<?php if ( $fax_number ) : ?>
+			if ( $fax_number ) {
 
-			<div class="wpex-info-widget-fax wpex-clr">
-				<span class="fa fa-fax"></span><?php echo strip_tags( $fax_number ); ?>
-			</div><!-- .wpex-info-widget-fax -->
+				$output .= '<div class="wpex-info-widget-fax wpex-clr">';
+					$output .= '<span class="fa fa-fax"></span>';
+					$output .= strip_tags( $fax_number );
+				$output .= '</div>';
 
-			<?php endif; ?>
+			}
 
-			<?php if ( $email ) : ?>
+			if ( $email ) {
 
-				<div class="wpex-info-widget-email wpex-clr">
-					<span class="fa fa-envelope"></span>
-					<?php if ( is_email( sanitize_email( $email ) ) ) : ?>
-						<a href="mailto:<?php echo sanitize_email( $email ); ?>" title="<?php esc_attr_e( 'Email Us', 'total' ); ?>"><?php echo sanitize_email( $email ); ?></a>
-					<?php else : ?>
-						<?php echo strip_tags( $email ); ?>
-					<?php endif; ?>
-				</div><!-- .wpex-info-widget-address -->
+				$sanitize_email = sanitize_email( $email );
+				$email_label = $email_label ? $email_label : $sanitize_email;
 
-			<?php endif; ?>
+				$output .= '<div class="wpex-info-widget-email wpex-clr">';
+					$output .= '<span class="fa fa-envelope"></span>';
+					if ( is_email( $sanitize_email ) ) {
+						$output .= '<a href="mailto:'. $sanitize_email .'" title="'. esc_attr__( 'Email Us', 'total' ) .'">'. $email_label .'</a>';
+					} else {
+						$output .= strip_tags( $email_label );
+					}
+				$output .= '</div>';
 
-		</div><!-- .wpex-info-widget -->
+			}
 
-		<?php
+		$output .= '</div>';
+
 		// After widget WP hook
-		echo $args['after_widget']; ?>
+		$output .= $args['after_widget'];
+
+		// Eco output
+		echo $output;
 		
-	<?php
 	}
 
 	/**
@@ -121,6 +133,7 @@ class WPEX_Info_Widget extends WP_Widget {
 		$instance['phone_number'] = ( ! empty( $new_instance['phone_number'] ) ) ? strip_tags( $new_instance['phone_number'] ) : '';
 		$instance['fax_number']   = ( ! empty( $new_instance['fax_number'] ) ) ? strip_tags( $new_instance['fax_number'] ) : '';
 		$instance['email']        = ( ! empty( $new_instance['email'] ) ) ? strip_tags( $new_instance['email'] ) : '';
+		$instance['email_label']  = ( ! empty( $new_instance['email_label'] ) ) ? strip_tags( $new_instance['email_label'] ) : '';
 		return $instance;
 	}
 
@@ -139,6 +152,7 @@ class WPEX_Info_Widget extends WP_Widget {
 			'phone_number' => '',
 			'fax_number'   => '',
 			'email'        => '',
+			'email_label'  => '',
 		) ) ); ?>
 
 		<?php /* Title */ ?>
@@ -170,6 +184,14 @@ class WPEX_Info_Widget extends WP_Widget {
 		<p>
 			<label for="<?php echo esc_attr( $this->get_field_id( 'email' ) ); ?>"><?php esc_attr_e( 'Email', 'total' ); ?></label>
 			<input class="widefat" name="<?php echo esc_attr( $this->get_field_name( 'email' ) ); ?>" type="text" value="<?php echo esc_attr( $email ); ?>" />
+		</p>
+
+
+		<?php /* Email Label */ ?>
+		<p>
+			<label for="<?php echo esc_attr( $this->get_field_id( 'email_label' ) ); ?>"><?php esc_attr_e( 'Email Label', 'total' ); ?></label>
+			<input class="widefat" name="<?php echo esc_attr( $this->get_field_name( 'email_label' ) ); ?>" type="text" value="<?php echo esc_attr( $email_label ); ?>" />
+			<small><?php esc_attr_e( 'Will display your email by default if this field is empty.', 'total' ); ?></small>
 		</p>
 
 		

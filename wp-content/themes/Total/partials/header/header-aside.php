@@ -4,7 +4,7 @@
  *
  * @package Total WordPress Theme
  * @subpackage Partials
- * @version 3.3.0
+ * @version 3.5.3
  */
 
 // Exit if accessed directly
@@ -45,7 +45,7 @@ if ( $content || ( wpex_get_mod( 'main_search', true ) && 'two' == $header_style
 			<div id="header-two-search" class="clr">
 				<form method="get" class="header-two-searchform" action="<?php echo esc_url( home_url( '/' ) ); ?>">
 					<input type="search" id="header-two-search-input" name="s" value="<?php esc_attr_e( 'search', 'total' ); ?>" onfocus="if(this.value==this.defaultValue)this.value='';" onblur="if(this.value=='')this.value=this.defaultValue;"/>
-					<button type="submit" value="" id="header-two-search-submit" />
+					<button type="submit" value="" id="header-two-search-submit">
 						<span class="fa fa-search"></span>
 					</button>
 				</form><!-- #header-two-searchform -->
